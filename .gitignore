@@ -1,0 +1,41 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Private browser captures: never commit real student/account data.
+/private-debug/
+/page-dumps/
+/browser-profile/
+*.har
+*.har.*
+*.mhtml
+*.mht
+[Pp]age[Ss]ource*
+[Pp]age [Ss]ource*
+[Pp]age [Ss]ouce*
+cookies*.txt
+cookies*.json
+session*.txt
+session*.json
+
+# Tooling, logs, and editor/OS files
+node_modules/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# This is a convenience filter, not a security boundary or history scrubber.
+# Deliberately do not ignore every .txt/.html/image: synthetic fixtures and docs
+# can be legitimate. Review their contents before committing or uploading.
