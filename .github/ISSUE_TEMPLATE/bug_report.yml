@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a display or userscript problem using invented example data.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not upload real grades, student names, page source, copied DOM, cookies, or account URLs.
+        Use fictional values and generic course names. For sensitive security reports, read SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Userscript version
+      description: The version shown in Tampermonkey, or source not installed.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and Tampermonkey versions
+      placeholder: Browser name/version; Tampermonkey version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use generic course names and fictional values. Do not paste a logged-in URL.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe the wrong display and any relevant settings without private data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I have not included real student/account data, page dumps, credentials, or session tokens.
+          required: true
