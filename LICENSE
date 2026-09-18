@@ -1,0 +1,108 @@
+Aeries Playground Source-Available License
+
+Copyright (c) 2026 sodium-qed
+
+1. Scope
+
+This license applies to the Aeries Playground code and accompanying material
+that carry this notice, to the extent sodium-qed (the "Licensor") owns the
+relevant rights (the "Software"). It is a source-available license with
+restrictions on redistribution and sale. It is not an open-source license.
+The Licensor grants you the nonexclusive, worldwide copyright permissions
+below without a license fee, subject to these terms. All other rights are
+reserved, except rights available independently under section 5.
+
+2. Downloading, using, and changing your own copy
+
+You may download, install, run, read, inspect, and analyze the Software. You may
+make copies for your own use, backups, and transfers between your devices,
+including private cloud storage. You may change the Software for your own
+private use and testing. These permissions include use at school or work and
+do not depend on whether you or your organization earn money.
+
+Keep this license and existing copyright, attribution, and third-party notices
+with copies you keep or provide under the permissions below. Do not represent
+your changes as an official release or as changes approved by the Licensor.
+
+3. Permission for AI tools and security review
+
+You may submit the complete source code, including privately modified copies,
+to ChatGPT, other AI services, automated scanners, and human reviewers for
+requested explanation, analysis, debugging, or security review. Uploading the
+entire source for these purposes is expressly permitted. A reviewer may be
+paid, and a service provider may operate commercially. Paying for review or
+processing is permitted and is not a sale of the Software.
+
+Reviewers, service providers, and their processors receive permission directly
+from the Licensor to receive, copy, store, process, and analyze submitted code
+as reasonably needed to perform the requested review, produce its results,
+and retain associated review records. They may make private working changes
+for that review. No separate signature or advance approval from the Licensor
+is required for these activities.
+
+You and reviewers may report findings, publish explanations and security
+reports, and include short portions of code reasonably needed to support those
+reports. You may privately return reviewed code and proposed changes to the
+person requesting review or the Licensor. This permission does not allow
+publishing or distributing the complete Software, a substantially complete
+copy, or a collection of excerpts that substitutes for it. It does not allow
+selling the Software or releasing a modified or repackaged copy.
+
+Findings, explanations, and independently created material, including AI
+outputs, do not become subject to this license merely because the Software
+was reviewed. Portions copied from the Software remain subject to applicable
+rights and the permissions in this license.
+
+4. Distribution and sales requiring permission
+
+Except for the specific permissions above and below, you must obtain the
+Licensor's written permission before sharing or distributing copies of the
+Software to others, whether unchanged, modified, renamed, bundled, repackaged,
+or incorporated into another product. This includes public mirrors, downloads,
+and releases of your own modified copy, even when offered free of charge.
+
+You must also obtain written permission before selling, licensing for a fee,
+renting, or otherwise charging others for copies of or access to the Software,
+including as part of a paid bundle. Sharing a link to the Licensor's official
+release is permitted.
+
+Hosting platforms may exercise the limited rights needed to host, display,
+deliver, and operate platform features for copies that the Licensor has
+authorized to be hosted there, including rights granted through applicable
+platform terms. Rights the Licensor grants to platform users through those
+terms, including viewing and in-platform forking, are also unaffected. This
+does not independently authorize distributing copies outside those platform
+rights. Personal storage and review providers may operate as expressly
+permitted in sections 2 and 3.
+
+For additional permission, contact the owner of the repository at
+https://github.com/sodium-qed/aeries-playground.
+
+5. Rights this license does not change
+
+This license does not restrict independently written implementations or ideas,
+facts, and other material that copyright does not protect. It does not limit
+fair use, fair dealing, or other rights and exceptions provided by law.
+Separately licensed third-party material remains under its own license.
+
+This license does not revoke or replace valid permissions already received for
+earlier copies, including MIT-licensed copies. It does not automatically apply
+to earlier repository history. You may rely on another valid license for the
+copy and material it covers. No trademark rights or permission to imply
+endorsement are granted here.
+
+6. Breach and correction
+
+If you breach these terms, the Licensor may notify you in writing. Your rights
+under this license end if you do not correct the breach within 30 days after
+receiving that notice. Correction includes stopping unauthorized distribution
+and taking reasonable steps to remedy it. Rights independently held under
+another license or law are unaffected.
+
+7. No warranty; limitation of liability
+
+To the extent permitted by applicable law, the Software is provided "as is,"
+without warranties of any kind. To that same extent, the Licensor is not liable
+for loss or damage arising from use of the Software or this license. Nothing
+here excludes liability or rights that applicable law does not allow to be
+excluded.
