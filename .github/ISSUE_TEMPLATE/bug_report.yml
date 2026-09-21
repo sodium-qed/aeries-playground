@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a display or userscript problem using invented example data.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use invented grades, assignment titles, and generic course names. Never share an Aeries account, password, session cookie, full page export, or saved-settings export. Remove identifying information from screenshots. For sensitive reports, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md) before posting details here.
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and userscript manager
+      description: Include browser and manager release numbers if known. Do not include account details.
+      placeholder: Chrome with Tampermonkey; fresh install or manually replaced file
+    validations:
+      required: true
+  - type: dropdown
+    id: page
+    attributes:
+      label: Where does the problem happen?
+      options:
+        - Dashboard
+        - Gradebook details
+        - Grade testing or grading rules
+        - Next-class widget
+        - Settings
+        - Installation
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings and installation
+      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it.
+  - type: textarea
+    id: example
+    attributes:
+      label: Small invented example
+      description: For calculations, give fictional scores, possible points, category weights, and the expected calculation. For schedules, give the school date, approximate time, and expected period, without your class names.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use generic course names and fictional values. Do not paste a logged-in URL.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Describe the wrong display or error without private data. If you already tried disabling the script and reloading, say whether the problem remained. Do not clear saved settings just to submit this report.
+    validations:
+      required: true

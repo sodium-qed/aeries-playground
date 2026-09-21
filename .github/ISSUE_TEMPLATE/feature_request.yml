@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a specific improvement to Aeries Playground.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe a user need with invented examples. Do not include actual grades, student names, copied Aeries pages, saved-settings exports, or login details. For a possible security issue, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Explain the task or display problem using fictional examples.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe what you would expect to see or do, including the relevant page and controls. Say whether the feature should be optional and what its default should be.
+    validations:
+      required: true
+  - type: textarea
+    id: existing
+    attributes:
+      label: Existing settings or alternatives
+      description: Which current controls or workarounds have you considered? Check the feature guide first. The next-class widget requires an explicit opt-in, and fresh Tampermonkey installations use manual updates.
+  - type: textarea
+    id: information
+    attributes:
+      label: Information the feature would need
+      description: If known, explain whether the idea needs new saved preferences, page information, or an external service. Describe the type of information only; do not attach personal data. Leave blank if unsure.

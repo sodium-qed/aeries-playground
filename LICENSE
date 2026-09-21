@@ -1,0 +1,133 @@
+Aeries Playground Open Source License, Version 1.0
+
+Copyright (c) 2026 sodium-qed
+
+1. Scope and grant
+
+This license applies to the code and accompanying material distributed with
+this license, except material expressly covered by separate license terms
+(the "Software"). Each copyright holder offering material under this license
+(a "Licensor") grants everyone a nonexclusive, worldwide, royalty-free copyright
+license to use, reproduce, modify, make derivative works of, display, perform,
+and distribute that material, in source or other forms, for any purpose,
+including commercial purposes, subject to the conditions below. This grant is
+perpetual and cannot be revoked except for breach under section 6.
+
+These permissions apply to every person and organization, in every field of
+activity, using any technology. They apply whether the Software is used alone,
+extracted from this project, renamed, or included in another distribution.
+No separate signature, registration, payment to a Licensor, or advance approval
+is required. Copyright ownership remains with the respective copyright holders.
+
+2. Use and private changes
+
+You may download, install, run, read, inspect, analyze, copy, and change the
+Software. This includes personal, educational, business, and other uses,
+backups, transfers between your devices, and private cloud storage. You need
+not publish your private changes or provide them to a Licensor.
+
+Keep existing copyright, attribution, license, and third-party notices in
+copies of the Software. Do not misrepresent the origin of the Software or
+claim that a Licensor approved your modifications.
+
+3. Explicit permission for AI tools and security review
+
+You may give the COMPLETE source code, including privately modified copies,
+to ChatGPT, any other AI service or model, automated scanners, and human
+reviewers for explanation, analysis, debugging, testing, or security auditing.
+Uploading the entire source for these purposes is expressly permitted. You
+may use paid reviewers and commercial services without asking a Licensor.
+
+Reviewers, service providers, and their processors receive permission directly
+from each Licensor to receive, copy, store, process, and analyze the submitted
+code, make working changes for the review, produce results, and retain review
+records. They may return reviewed code, patches, and proposed changes to the
+person requesting review. No separate signature or permission is required.
+
+You and reviewers may publish findings, explanations, and security reports,
+including relevant code excerpts. Independently created findings, reports,
+and AI outputs do not become subject to this license merely because the
+Software was reviewed. Material copied or derived from the Software remains
+covered to the extent copyright applies; the independent remainder does not.
+
+Private review does not require making submitted code, private changes, or
+review records public. Preserve the notices when supplying code for review.
+Distribution of the Software or modified copies remains subject to section 4;
+that section requires source access for recipients, not publication to everyone.
+This section clarifies permissions and does not limit the broader grant in
+section 1. It grants rights in the Software, not in anyone's private account
+data or other material that a Licensor does not own.
+
+4. Redistribution, commercial use, and source sharing
+
+You may share, mirror, publish, sell, rent, or otherwise distribute unchanged
+or modified copies, alone or as part of a bundle, and may charge for copies,
+access, support, or services. No royalty or separate permission is required.
+Public forks and releases of modified versions are expressly allowed.
+
+When you distribute the Software or a derivative work based on it:
+
+a. Include this complete license and preserve existing copyright, attribution,
+   and third-party notices. You may add accurate notices for your contributions.
+
+b. Clearly identify modified versions as modified, with a brief description
+   of the changes and their dates. Do not present them as an official release
+   or imply a Licensor's endorsement.
+
+c. License the covered work, including your modifications, under this same
+   license. Every recipient automatically receives the permissions in this
+   license directly from the relevant copyright holders. Do not impose extra
+   legal or contractual restrictions on exercising those permissions. Charging
+   for a copy does not restrict the recipient's right to share it further.
+
+d. Provide the complete corresponding source for the covered work, including
+   your modifications, to every recipient. Include it with the copy, or give
+   clear instructions for obtaining it without an additional charge by a
+   readily accessible means maintained for as long as you distribute that
+   version. Source must be the preferred form for making changes, including
+   any project-specific files or scripts needed to build, install, and run
+   that version. Deliberately obfuscated code, minified code, and generated
+   intermediate output do not substitute for that preferred form. General
+   purpose tools and unchanged third-party dependencies need not be included
+   if ordinarily available separately; their own license terms still apply.
+
+An unchanged source distribution already containing the complete corresponding
+source and this license satisfies the source requirement. No public release of
+private changes is required merely because you run the Software, including to
+provide a service. Supplying a copy to someone is distribution even if private.
+
+The same-license requirement covers the Software and copyright-derived works
+based on it. It does not require independent software or material to adopt
+this license merely because it is bundled with, runs alongside, communicates
+with, or is used to review the Software. Separately licensed third-party
+material retains its own terms and notices.
+
+5. Rights this license does not change
+
+This license does not restrict independently written implementations or ideas,
+facts, and other material that copyright does not protect. It does not limit
+fair use, fair dealing, or other rights and exceptions provided by law.
+
+This license does not revoke or replace valid permissions already received for
+earlier copies, including MIT-licensed copies. It does not automatically apply
+to earlier repository history. You may rely on another valid license for the
+copy and material it covers. No trademark rights or permission to imply
+endorsement are granted here.
+
+6. Breach and correction
+
+If you breach these terms, a Licensor may notify you in writing. Your rights
+in that Licensor's material under this license end if you do not correct the
+breach within 30 days after receiving that notice. Correction includes ending
+noncompliant distribution and taking reasonable steps to remedy the breach.
+Recipients who comply retain their own directly granted rights; your breach
+does not terminate theirs. Rights independently held under another license
+or law are unaffected.
+
+7. No warranty; limitation of liability
+
+To the extent permitted by applicable law, the Software is provided "as is,"
+without warranties of any kind. To that same extent, no Licensor is liable
+for loss or damage arising from use of the Software or this license. Nothing
+here excludes liability or rights that applicable law does not allow to be
+excluded.
