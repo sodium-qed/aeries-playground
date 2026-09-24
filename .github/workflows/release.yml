@@ -3,6 +3,8 @@ name: Publish launch release
 on:
   push:
     branches: [main]
+    paths:
+      - 'aeries-playground.user.js'
   workflow_dispatch:
 
 permissions:

@@ -28,16 +28,22 @@ body:
         - Documentation
     validations:
       required: true
+  - type: input
+    id: script-version
+    attributes:
+      label: Installed script version and source
+      description: Read @version in the installed userscript and say whether you used a stable release, prerelease, or the main-branch install link. Weighted GPA is an upcoming prerelease feature; documentation alone does not install it.
+      placeholder: Metadata version; stable release, prerelease, or main; fresh install or manual update
   - type: textarea
     id: settings
     attributes:
       label: Relevant settings and installation
-      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it.
+      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. For GPA issues, say whether numeric 4/3/2/1 mode is on and, if using the prerelease, which fictional courses are included and checked Honors/AP. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it.
   - type: textarea
     id: example
     attributes:
       label: Small invented example
-      description: For calculations, give fictional scores, possible points, category weights, and the expected calculation. For schedules, give the school date, approximate time, and expected period, without your class names.
+      description: For calculations, give fictional scores, possible points, category weights, and the expected calculation. For GPA, give fictional posted letters and expected unweighted/weighted results, not real grades. For schedules, give the school date, approximate time, and expected period, without your class names.
   - type: textarea
     id: steps
     attributes:

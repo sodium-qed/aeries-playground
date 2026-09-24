@@ -34,7 +34,43 @@ With numeric display off, use the original posted letter:
 
 A, B+, and F therefore produce `(4 + 3 + 0) / 3 = 2.3333…`, displayed as **2.33**. Threshold changes have no effect on this mode. Blank, pass/fail, and numeric-only marks do not count.
 
-Both summaries are unofficial, equal-weight averages of included visible courses, with duplicate course identities counted once. Neither applies course credits or AP/Honors weighting; neither is an official school GPA.
+Both summaries are unofficial, equal-weight averages of included visible courses, with duplicate course identities counted once. The currently installable script does not apply AP/Honors bonuses. Course-credit weighting is not applied, and neither summary is an official school GPA.
+
+### Weighted GPA (upcoming prerelease)
+
+This subsection describes the prepared **2.1.0 prerelease**, not the currently installable script. See [availability and installation details](FEATURES.md#upcoming-weighted-gpa-prerelease). The prerelease displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+
+Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
+
+| Letter, ignoring plus/minus | Unweighted `u_i` | Weighted if unchecked | Weighted if checked |
+| --- | --- | --- | --- |
+| A | 4 | 4 | 5 |
+| B | 3 | 3 | 4 |
+| C | 2 | 2 | 3 |
+| D | 1 | 1 | 1 |
+| F | 0 | 0 | 0 |
+
+For `N > 0`:
+
+```text
+bonus_i = 1 if h_i = 1 and the posted letter is A, B, or C; otherwise 0
+w_i = u_i + bonus_i
+unweighted GPA = sum(u_i for i in S) / N
+weighted GPA   = sum(w_i for i in S) / N
+```
+
+The denominator is identical for both averages. Honors/AP adds grade points; it does not give a course a larger share of the average. D/F receive no bonus. Unchecked courses still count normally when included, and checked but excluded courses contribute to neither average. Blank, pass/fail, numeric-only, or unrecognized marks are omitted; a posted F is included as zero. If `N = 0`, both GPAs display **—**, not zero or an invalid division.
+
+For five included courses with posted A, B, C, D, and F, all checked as Honors/AP:
+
+```text
+unweighted GPA = (4 + 3 + 2 + 1 + 0) / 5 = 10 / 5 = 2.00
+weighted GPA   = (5 + 4 + 3 + 1 + 0) / 5 = 13 / 5 = 2.60
+```
+
+If none is checked, both are **2.00**. If only A and B are checked, weighted GPA is **12 / 5 = 2.40**, while unweighted GPA stays **2.00**. If the A course is excluded from the all-checked example, both denominators become 4: unweighted **6 / 4 = 1.50**, weighted **8 / 4 = 2.00**. A single included F gives **0.00** for both; it is not an empty set.
+
+Playground thresholds, numeric percentages, and hypothetical assignment scores do not determine these letters. Honors/AP selections are saved by course within the manually selected profile/year; posted marks and calculated GPA results are not persisted. The summary uses compact formatting with up to two decimal places (so exact values may omit trailing zeroes). Calculation details use the configured display precision. These are current-visible-course estimates without transcript credit weighting, prior years, automatic honors eligibility, or institution-specific bonus caps.
 
 ## Counted assignments and score limits
 

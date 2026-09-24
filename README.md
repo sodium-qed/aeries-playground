@@ -6,6 +6,8 @@ Personalize your Aeries dashboard, understand assignment weights, and explore hy
 
 [Feature guide](docs/FEATURES.md) · [Calculation reference](docs/CALCULATIONS.md) · [Security information and reporting](SECURITY.md)
 
+**Upcoming prerelease:** weighted and unweighted GPA displayed together, with manual honors/AP checkboxes. This is not yet in the currently installable script. When the prerelease is published, the installation link above will serve it because it follows `main`; the stable **Latest** GitHub release will remain separate. See [prerelease availability and downloads](docs/FEATURES.md#upcoming-weighted-gpa-prerelease).
+
 Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
 
 ## Install
@@ -25,6 +27,7 @@ Keep one copy of Aeries Playground enabled at a time. After installation, open t
 | --- | --- |
 | Dashboard customization | Set course names, icons, periods, progress-bar scales, grade colors, and per-course thresholds. |
 | Grade summaries | Choose posted letters or custom 4/3/2/1 ratings, and view an overall average or an unweighted GPA estimate from visible classes. |
+| Upcoming weighted GPA prerelease | Show both GPAs and manually select honors/AP courses; A/B/C receive one bonus point, while D/F remain 1/0. Not yet available in the current installation. |
 | Assignment analysis | Filter by category, inspect grade impacts, and compare assignment weights in assignment-number order. Circle area shows each assignment's weight. |
 | Grade testing lab | Change points or number correct, include/exclude work, and add hypothetical assignments with live grade calculations. |
 | Course grading profiles | Configure total-points or weighted-category grading, score limits, average scales, and final-grade rounding. |
@@ -38,6 +41,7 @@ Keep one copy of Aeries Playground enabled at a time. After installation, open t
 Press **S** outside a text field to open Settings, or use Tampermonkey's **Aeries Playground — open settings (S)** menu command.
 
 - **Courses:** edit display names, icons, periods, progress bars, and course cutoffs; use **Save course settings**.
+- **Upcoming GPA controls:** the prerelease adds an **Honors/AP — weighted GPA bonus** checkbox beside each course's period setting, plus **Honors/AP** checkboxes in GPA details. Selections start unchecked; Courses uses **Save course settings**, while GPA-detail changes save immediately.
 - **Settings:** toggle features, set colors and default cutoffs, or choose a profile/year. Toggles save immediately; other fields use **Save settings**. Both custom 4/3/2/1 ratings and the MVHS next-class panel start off. Read the explanation beside **What class is next (MVHS)** before enabling it.
 - **Gradebook details:** open **Grade testing lab**, **Category**, or **Assignment weight map**. Start with all assignments loaded and Aeries' missing-only filter off. Grading-profile edits and replacement-rule changes save automatically. Hypothetical scores reset when you exit or reload.
 
