@@ -1,4 +1,4 @@
-name: Publish launch release
+name: Publish 2.1 prerelease
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aeries-playground-launch-release
+  group: aeries-playground-2-1-prerelease
   cancel-in-progress: false
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Publish the prepared launch release
+      - name: Publish the prepared 2.1 prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         shell: python
@@ -41,26 +41,26 @@ jobs:
           import tempfile
 
           source = Path('aeries-playground.user.js')
-          launch_time = datetime(2026, 9, 21, 6, 59, tzinfo=timezone.utc)
-          expected_hash = '3d05231694773febf9d36032ce6b0bde1cd4a90a455bd6e56cf9f23a951f4242'
+          launch_time = datetime(2026, 9, 28, 6, 59, tzinfo=timezone.utc)
+          expected_hash = '92cde5d374ed0a39efef9f946d5492fdb9cec1e01cd274175b301c4658115279'
           if not source.is_file() or datetime.now(timezone.utc) < launch_time:
               print('The launch source is not available yet; no release was created.')
               raise SystemExit(0)
           if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
               raise SystemExit('The userscript does not match the prepared launch file.')
-          if not re.search(r'^//\s*@version\s+2\.0\.0\s*$', source.read_text(), re.MULTILINE):
-              raise SystemExit('The userscript metadata does not match the launch release.')
+          if not re.search(r'^//\s*@version\s+2\.1\.0\s*$', source.read_text(), re.MULTILINE):
+              raise SystemExit('The userscript metadata does not match the 2.1 prerelease.')
 
           subprocess.run(['node', 'scripts/check-userscripts.mjs'], check=True)
           repo = os.environ['GITHUB_REPOSITORY']
           commit = os.environ['GITHUB_SHA']
-          tag = 'v2.0.0'
-          title = 'Aeries Playground 2.0'
+          tag = 'v2.1.0'
+          title = 'Aeries Playground 2.1.0'
 
           def gh(*args, check=True):
               return subprocess.run(['gh', *args], check=check, text=True, capture_output=True)
 
-          # A pre-existing tag must identify this exact launch commit.
+          # A pre-existing tag must identify this exact release commit.
           refs = subprocess.run(
               ['git', 'ls-remote', '--tags', 'origin', f'refs/tags/{tag}', f'refs/tags/{tag}^{{}}'],
               check=True, text=True, capture_output=True).stdout
@@ -72,8 +72,10 @@ jobs:
           with tempfile.TemporaryDirectory() as folder:
               notes = Path(folder) / 'release-notes.md'
               notes.write_text(
-                  'Aeries Playground adds dashboard customization, assignment analysis, '
-                  'hypothetical grade calculations, score planning, and the MVHS next-class panel.\n\n'
+                  'Aeries Playground 2.1.0 is a prerelease that displays weighted and '
+                  'unweighted current-year GPA estimates together. Honors/AP bonus eligibility '
+                  'is selected manually per course and starts unchecked. A/B/C receive one '
+                  'bonus point; D/F remain 1/0.\n\n'
                   'Install the attached `aeries-playground.user.js` with Tampermonkey. '
                   'Read the security and privacy explanation and license at the top of the file.\n\n'
                   '[Installation and feature guide](https://github.com/sodium-qed/aeries-playground#install)\n'
@@ -86,16 +88,21 @@ jobs:
                       if release['targetCommitish'] != commit:
                           raise SystemExit('An existing draft targets a different commit.')
                       gh('release', 'upload', tag, str(source), '--repo', repo, '--clobber')
-                      gh('release', 'edit', tag, '--repo', repo, '--draft=false', '--latest',
+                      gh('release', 'edit', tag, '--repo', repo, '--draft=false',
+                         '--prerelease', '--latest=false',
                          '--title', title, '--notes-file', str(notes))
               else:
                   gh('release', 'create', tag, str(source), '--repo', repo,
-                     '--target', commit, '--title', title, '--notes-file', str(notes), '--latest')
+                     '--target', commit, '--title', title, '--notes-file', str(notes),
+                     '--prerelease', '--latest=false')
 
               release = json.loads(gh('release', 'view', tag, '--repo', repo,
                                       '--json', 'isDraft,isPrerelease,name,url').stdout)
-              if release['isDraft'] or release['isPrerelease'] or release['name'] != title:
+              if release['isDraft'] or not release['isPrerelease'] or release['name'] != title:
                   raise SystemExit('The release was not published in the expected state.')
+              latest = json.loads(gh('api', f'repos/{repo}/releases/latest').stdout)
+              if latest['tag_name'] != 'v2.0.0':
+                  raise SystemExit('The stable Latest release was unexpectedly changed.')
               actual_commit = gh('api', f'repos/{repo}/commits/{tag}', '--jq', '.sha').stdout.strip()
               if actual_commit != commit:
                   raise SystemExit('The published tag does not identify the launch commit.')

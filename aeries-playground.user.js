@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.0.0
-// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, letter-based GPA or a color-coded overall average, and the next class from mvhs.io with seconds cross-checked against bell.plus.
+// @version      2.1.0
+// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, and the next class from mvhs.io with seconds cross-checked against bell.plus.
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -54,7 +54,8 @@
  * - GM_getValue and GM_setValue read and write this userscript's storage in
  *   your userscript manager. Saved data includes preferences, profile/year
  *   labels, course names and identifiers, nicknames, icons, period mappings,
- *   color thresholds, grading rules, and unfinished grading-rule forms.
+ *   honors/AP GPA selections, color thresholds, grading rules, and unfinished
+ *   grading-rule forms.
  * - Saved replacement rules also include the referenced assignment names,
  *   identifiers, and categories, plus the replacement policy and score cap.
  *   The script does not save posted grades, hypothetical scores, calculated
@@ -1305,6 +1306,7 @@ const GradeDOM = (() => {
       if(!Number.isFinite(c.minimum)||c.minimum>=c.maximum)c.minimum=Math.min(c.scale==='average'?1:50,c.maximum/2);
       if(c.customCutoffs!==null&&!validCutoffs(c.customCutoffs))c.customCutoffs=null;
       if(typeof c.overallIncluded!=='boolean')c.overallIncluded=true;
+      if(typeof c.gpaWeighted!=='boolean')c.gpaWeighted=false;
       c.schedulePeriod=CourseSchedule.normalize(c.schedulePeriod) || '';
       // Keep existing object identities: open course controls may reference them.
       if(old===saved)Object.assign(old,c);else p.courses[key]=c;
@@ -1336,7 +1338,7 @@ const GradeDOM = (() => {
   function courseDefaults(title) {
     const avg = GradeDOM.isFourPointCourse(title);
     const icon = '';
-    return {title,nickname:'',icon,schedulePeriod:'',minimum:avg?1:50,maximum:avg?4:100,scale:avg?'average':'percent',customCutoffs:null,overallIncluded:true};
+    return {title,nickname:'',icon,schedulePeriod:'',minimum:avg?1:50,maximum:avg?4:100,scale:avg?'average':'percent',customCutoffs:null,overallIncluded:true,gpaWeighted:false};
   }
   function courseFor(card) {
     const p=profile(); if (!Object.hasOwn(p.courses,card.key)) { p.courses[card.key]=courseDefaults(card.title); queueSave(); }
@@ -1424,7 +1426,8 @@ const GradeDOM = (() => {
       dashboardMarks.delete(node);
     }
   }
-  // Two independent, equal-weight summaries of the current visible courses.
+  // Threshold-based ratings and letter-based GPAs of the current visible courses.
+  // Both GPAs count the same included A–F courses equally; weighting is opt-in.
   // Neither is an official transcript GPA; posted marks are never persisted.
   const OverallMath = (() => {
     function rating(value, limits) {
@@ -1433,11 +1436,14 @@ const GradeDOM = (() => {
       const band = limits.findIndex(limit => value >= limit);
       return band < 0 ? 1 : 4 - band;
     }
-    function letterPoints(mark) {
+    function letterPoints(mark, weighted = false) {
       // This GPA intentionally ignores +/- and all Playground thresholds.
       // F is a counted zero; blank, pass/fail and numeric marks are not A–F.
       const match = typeof mark === 'string' ? mark.trim().match(/^([ABCDF])[+−–-]?$/i) : null;
-      return match ? {A: 4, B: 3, C: 2, D: 1, F: 0}[match[1].toUpperCase()] : null;
+      if (!match) return null;
+      const points = {A: 4, B: 3, C: 2, D: 1, F: 0}[match[1].toUpperCase()];
+      // Only A, B and C receive a bonus. D and F remain 1 and 0.
+      return points + (weighted === true && points >= 2 ? 1 : 0);
     }
     function summarize(courses, limits, numericGrades = false) {
       const seen = new Set(), rows = [];
@@ -1445,14 +1451,17 @@ const GradeDOM = (() => {
         if (seen.has(course.key)) continue;
         seen.add(course.key);
         const score = numericGrades ? rating(course.value, course.cutoffs) : letterPoints(course.mark);
-        rows.push({...course, score, counted: course.included !== false && score !== null});
+        const weightedScore = numericGrades ? score : letterPoints(course.mark, course.gpaWeighted);
+        rows.push({...course, score, weightedScore, counted: course.included !== false && score !== null});
       }
       const counted = rows.filter(row => row.counted);
       const total = counted.reduce((sum, row) => sum + row.score, 0);
       const average = counted.length ? total / counted.length : null;
+      const weightedTotal = counted.reduce((sum, row) => sum + row.weightedScore, 0);
+      const weightedAverage = counted.length ? weightedTotal / counted.length : null;
       // Keep the average as the displayed value in BOTH modes. The overall
       // threshold band is separate and controls only the numeric-mode color.
-      return {rows, count: counted.length, total, average, band: numericGrades ? rating(average, limits) : null};
+      return {rows, count: counted.length, total, average, weightedTotal, weightedAverage, band: numericGrades ? rating(average, limits) : null};
     }
     return {rating, letterPoints, summarize};
   })();
@@ -1532,60 +1541,88 @@ const GradeDOM = (() => {
       const c = courseFor(card);
       return {key: card.key, title: c.nickname || card.title, value: card.value,
         mark: dashboardOriginalMark(card), cutoffs: overallIsRating ? cutoffs(c) : null,
-        included: c.overallIncluded !== false};
+        included: c.overallIncluded !== false, gpaWeighted: c.gpaWeighted === true};
     }), limits, overallIsRating);
     if (!overallHost) {
       overallHost = el('div', null, {id: 'ap-overall-card', role: 'region', 'data-ap-owned': 'overall', 'aria-label': 'Playground overall score'});
       overallHost.attachShadow({mode: 'open'});
     }
-    overallHost.setAttribute('aria-label', overallIsRating ? 'Playground overall score' : 'Current-year GPA');
+    overallHost.setAttribute('aria-label', overallIsRating ? 'Playground overall score' : 'Current-year weighted and unweighted GPA');
     mountSummary(overallHost, section, true);
-    const signature = JSON.stringify([profileKey(), result, limits, db.settings.colors, db.settings.numericGrades]);
+    const signature = JSON.stringify([profileKey(), result, limits, db.settings.colors, db.settings.numericGrades, db.settings.precise]);
     if (signature === overallSignature) return;
     overallSignature = signature;
     const root = overallHost.shadowRoot;
     const wasOpen = root.querySelector('details')?.open || false;
     const focusedKey = root.activeElement?.dataset.course;
+    const focusedControl = root.activeElement?.dataset.control;
+    const calculationScroll = root.querySelector('.calculation')?.scrollTop || 0;
     const style = el('style');
-    style.textContent = `:host{display:block;position:static;min-width:0;max-width:100%;font-family:inherit;margin:0;color:#24354b;overflow-wrap:anywhere}*{box-sizing:border-box}.card{border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:12px 14px}.heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.title{font-size:15px;font-weight:700}.heading>div:first-child{min-width:0}.score{flex-shrink:0;font-size:30px;font-weight:750;line-height:1}.sub{font-size:12px;color:#536981;margin-top:5px}details{font-size:13px;margin-top:8px}.calculation{max-height:min(220px,35vh);overflow:auto;overscroll-behavior:contain;padding-right:4px}summary{cursor:pointer;width:fit-content}p{margin:10px 0;line-height:1.5}.row{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid #e2e8f0}.row input{margin:0}.name{flex:1;min-width:0;overflow-wrap:anywhere}.rating{font-weight:700}.muted{color:#536981;font-size:12px}input:focus-visible,summary:focus-visible{outline:2px solid #2563eb;outline-offset:3px}`;
+    style.textContent = `:host{display:block;position:static;min-width:0;max-width:100%;font-family:inherit;margin:0;color:#24354b;overflow-wrap:anywhere}*{box-sizing:border-box}.card{border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:12px 14px}.heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}.scores{display:flex;flex-wrap:wrap;gap:14px 24px}.gpa-score{display:flex;flex-direction:column;gap:7px}.score-label{font-size:12px;font-weight:600;color:#536981}.title{font-size:15px;font-weight:700}.heading>div:first-child{min-width:0}.score{flex-shrink:0;font-size:30px;font-weight:750;line-height:1}.sub{font-size:12px;color:#536981;margin-top:5px}details{font-size:13px;margin-top:8px}.calculation{max-height:min(220px,35vh);overflow:auto;overscroll-behavior:contain;padding-right:4px}summary{cursor:pointer;width:fit-content}p{margin:10px 0;line-height:1.5}.row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;padding:7px 0;border-top:1px solid #e2e8f0}.course-include{display:flex;align-items:center;flex:1 1 210px;gap:9px;min-width:0}.weight-toggle{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}.row input{margin:0;flex-shrink:0}.name{flex:1;min-width:0;overflow-wrap:anywhere}.rating{font-weight:700}.muted{color:#536981;font-size:12px}input:focus-visible,summary:focus-visible{outline:2px solid #2563eb;outline-offset:3px}`;
     const card = el('div', null, {class: 'card'}), heading = el('div', null, {class: 'heading'});
     const title = el('div');
     title.append(el('div', overallIsRating ? 'Playground overall score' : 'Current-year GPA', {class: 'title'}),
       el('div', `${result.count} class${result.count === 1 ? '' : 'es'} included · Equal weight`, {class: 'sub'}));
     const displayScore = result.average === null ? '—' : fmt(result.average, 2);
-    const scoreDescription = result.average === null ? 'No overall score' : overallIsRating
+    const scoreDescription = result.average === null ? (overallIsRating ? 'No overall score' : 'No unweighted GPA') : overallIsRating
       ? `Overall average ${displayScore} out of 4${result.band === null ? '' : `; color indicates band ${result.band}`}`
       : `Current-year unweighted GPA ${displayScore} out of 4`;
     const score = el('div', displayScore, {class: 'score', 'aria-label': scoreDescription, title: scoreDescription});
     if (overallIsRating && result.band !== null) score.style.color = db.settings.colors[4 - result.band];
-    heading.append(title, score); card.append(heading);
+    heading.append(title);
+    if (overallIsRating) heading.append(score);
+    else {
+      const scores = el('div', null, {class: 'scores'});
+      const unweighted = el('div', null, {class: 'gpa-score'});
+      unweighted.append(el('span', 'Unweighted GPA', {class: 'score-label'}), score);
+      const weighted = el('div', null, {class: 'gpa-score'});
+      const weightedDisplay = result.weightedAverage === null ? '—' : fmt(result.weightedAverage, 2);
+      const weightedDescription = result.weightedAverage === null ? 'No weighted GPA' : `Current-year weighted GPA ${weightedDisplay} out of 5`;
+      weighted.append(el('span', 'Weighted GPA', {class: 'score-label'}), el('div', weightedDisplay, {class: 'score', 'aria-label': weightedDescription, title: weightedDescription}));
+      scores.append(unweighted, weighted); heading.append(scores);
+    }
+    card.append(heading);
     const details = el('details'); details.open = wasOpen;
-    details.append(el('summary', 'Calculation & included classes'));
+    details.append(el('summary', overallIsRating ? 'Calculation & included classes' : 'Calculation & GPA class selection'));
     const calculation = el('div', null, {class: 'calculation', tabindex: '0', role: 'region', 'aria-label': 'Overall calculation and included classes'});
     if (overallIsRating) {
       const thresholds = `4 ≥ ${fmt(limits[0])}; 3 ≥ ${fmt(limits[1])}; 2 ≥ ${fmt(limits[2])}; otherwise 1.`;
       calculation.append(el('p', result.count ? `Each class becomes a 1–4 rating using its own thresholds. Average: ${result.total} ÷ ${result.count} = ${fmt(result.average)}. The displayed number stays an average; only its color indicates the overall band, using these thresholds: ${thresholds}` : 'Include a class with a posted numeric grade to see an overall average.'));
       calculation.append(el('p', 'This is your custom Playground average, not an official GPA. Ungraded and excluded classes do not count. Change the overall color cutoffs under Settings → Average ≥.', {class: 'muted'}));
     } else {
-      calculation.append(el('p', result.count ? `Posted letter grades are averaged equally: A = 4, B = 3, C = 2, D = 1, F = 0. Plus/minus signs are ignored. Current-year GPA: ${result.total} ÷ ${result.count} = ${fmt(result.average)}.` : 'Include a class with a posted A–F letter grade to see your current-year GPA.'));
-      calculation.append(el('p', 'This is an unweighted estimate from the courses currently shown in Aeries, not an official transcript GPA. Playground thresholds do not affect it. Classes without an A–F letter and excluded classes do not count; F counts as 0.', {class: 'muted'}));
+      calculation.append(el('p', 'Posted letter grades are averaged equally. Unweighted: A = 4, B = 3, C = 2, D = 1, F = 0. Checked honors/AP classes use A = 5, B = 4, C = 3, D = 1, F = 0 for weighted GPA. Plus/minus signs are ignored.'));
+      calculation.append(el('p', result.count ? `Unweighted GPA: ${result.total} ÷ ${result.count} = ${fmt(result.average)}. Weighted GPA: ${result.weightedTotal} ÷ ${result.count} = ${fmt(result.weightedAverage)}.` : 'Include a class with a posted A–F letter grade to see both GPAs.'));
+      calculation.append(el('p', 'Check Honors/AP for each class that receives bonus points. These selections are also available beside class periods in Courses. Both GPAs include the same selected classes. Classes without an A–F letter and excluded classes do not count; F counts as 0. These are current-year estimates from the courses shown in Aeries, not official transcript GPAs. Playground thresholds do not affect them.', {class: 'muted'}));
     }
     for (const row of result.rows) {
-      const label = el('label', null, {class: 'row'}), include = input('', 'checkbox');
-      include.checked = row.included !== false; include.dataset.course = row.key;
-      include.setAttribute('aria-label', `Include ${row.title} in ${overallIsRating ? 'the overall average' : 'the current-year GPA'}`);
+      const line = el('div', null, {class: 'row'});
+      const label = el('label', null, {class: 'course-include'}), include = input('', 'checkbox');
+      include.checked = row.included !== false; include.dataset.course = row.key; include.dataset.control = 'include';
+      include.setAttribute('aria-label', `Include ${row.title} in ${overallIsRating ? 'the overall average' : 'both current-year GPAs'}`);
       include.addEventListener('change', () => {
         const c = profile().courses[row.key]; if (!c) return;
         c.overallIncluded = include.checked; persist(); refreshOverallGrade();
       });
       const rowText = row.score === null ? (overallIsRating ? 'No numeric grade' : 'No A–F grade')
-        : overallIsRating ? String(row.score) : `${row.mark} → ${fmt(row.score, 2)}`;
+        : overallIsRating ? String(row.score) : `${row.mark} · ${fmt(row.score, 2)} unweighted · ${fmt(row.weightedScore, 2)} weighted`;
       label.append(include, el('span', row.title, {class: 'name'}), el('span', rowText, {class: row.score === null ? 'muted' : 'rating'}));
-      calculation.append(label);
+      line.append(label);
+      if (!overallIsRating) {
+        const weightedLabel = el('label', null, {class: 'weight-toggle'}), weighted = input('', 'checkbox');
+        weighted.checked = row.gpaWeighted === true; weighted.dataset.course = row.key; weighted.dataset.control = 'weighted';
+        weighted.setAttribute('aria-label', `Honors/AP bonus for ${row.title}`);
+        weighted.addEventListener('change', () => {
+          const c = profile().courses[row.key]; if (!c) return;
+          c.gpaWeighted = weighted.checked; persist(); refreshOverallGrade();
+        });
+        weightedLabel.append(weighted, el('span', 'Honors/AP')); line.append(weightedLabel);
+      }
+      calculation.append(line);
     }
     details.append(calculation);
     card.append(details); root.replaceChildren(style, card);
-    if (focusedKey) [...root.querySelectorAll('input')].find(n => n.dataset.course === focusedKey)?.focus({preventScroll: true});
+    calculation.scrollTop = calculationScroll;
+    if (focusedKey) [...root.querySelectorAll('input')].find(n => n.dataset.course === focusedKey && n.dataset.control === focusedControl)?.focus({preventScroll: true});
   }
 
   const pageStyle=el('style',null,{'data-ap-owned':'style'});
@@ -3930,7 +3967,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     else if(name==='weights')renderWeightMap();else renderSettings();
   }
   function renderCourses(){
-    content.append(el('h2','Courses & class periods'),note('Your display names appear on the dashboard. Hover over a name to see the original. Dashboard grade colors and number grades are controlled in Settings. Class periods connect your courses to the MVHS next-class widget.'));
+    content.append(el('h2','Courses & class periods'),note('Your display names appear on the dashboard. Hover over a name to see the original. Dashboard grade colors and number grades are controlled in Settings. Class periods connect your courses to the MVHS next-class widget. Check the honors/AP courses that receive weighted GPA bonus points, then save course settings.'));
     const p=profile(),entries=Object.entries(p.courses);
     renderedCourseKeys=JSON.stringify(Object.keys(p.courses));coursesFormDirty=false;
     if(!entries.length){content.append(note('Open your Aeries dashboard once to discover your courses.','ap-empty'));return;}
@@ -3946,14 +3983,18 @@ window.addEventListener('pagehide',abortScheduleRequests);
       const schedulePeriod=input(c.schedulePeriod);schedulePeriod.maxLength=12;schedulePeriod.placeholder=detected?`Automatic: Period ${detected}`:'Not detected — enter period';
       schedulePeriod.setAttribute('aria-label',`${c.title} class period`);
       box.append(field('Class period (optional override)',schedulePeriod),note(detected?`Aeries shows Period ${detected}. Leave blank to use it.`:'Enter the period from your class schedule, for example 1 or 7.'));
+      const gpaWeighted=input('', 'checkbox');gpaWeighted.checked=c.gpaWeighted===true;
+      gpaWeighted.setAttribute('aria-label',`Honors/AP bonus for ${c.title}`);
+      const gpaToggle=el('label',null,{class:'ap-toggle'});gpaToggle.append(gpaWeighted,el('span','Honors/AP — weighted GPA bonus'));
+      box.append(gpaToggle,note('Weighted GPA: A = 5, B = 4, C = 3, D = 1, F = 0. Unchecked classes use the unweighted scale.'));
       const scale=el('select');for(const [value,label] of [['percent','Percentage'],['average','Average points']])scale.append(el('option',label,{value}));scale.value=c.scale;
       const row2=el('div',null,{class:'ap-row'});row2.append(field('Bar scale',scale),field('Bar minimum',min),field('Bar maximum',max));box.append(row2);
       const custom=input(Boolean(c.customCutoffs),'checkbox');custom.checked=Boolean(c.customCutoffs);const toggle=el('label',null,{class:'ap-toggle'});toggle.append(custom,el('span','Custom thresholds for this course'));box.append(toggle);
       const cutrow=el('div',null,{class:'ap-row'});const values=cutoffs(c);const nums=values.map((n,i)=>{const v=input(n,'number');v.step='any';v.min='0';v.style.width='70px';cutrow.append(field(['4 ≥','3 ≥','2 ≥'][i],v));return v;});cutrow.hidden=!custom.checked;custom.addEventListener('change',()=>cutrow.hidden=!custom.checked);box.append(cutrow);
-      controls.push({key,nick,icon,schedulePeriod,min,max,scale,custom,nums});grid.append(box);
+      controls.push({key,nick,icon,schedulePeriod,gpaWeighted,min,max,scale,custom,nums});grid.append(box);
     }
     const message=note('','ap-saving');const save=button('Save course settings',()=>{
-      const draft={};for(const c of controls){const period=CourseSchedule.normalize(c.schedulePeriod.value);if(c.schedulePeriod.value.trim() && period===null){message.className='ap-error';message.textContent='Enter a valid class period (for example 1 or 7), or leave it blank for automatic detection.';return;}const min=GradeMath.parseNumber(c.min.value),max=GradeMath.parseNumber(c.max.value),limits=c.nums.map(n=>GradeMath.parseNumber(n.value));if(min===null||max===null||max<=0||min>=max||(c.custom.checked&&!validCutoffs(limits))){message.className='ap-error';message.textContent='Enter a bar minimum below its positive maximum, and descending nonnegative thresholds.';return;}draft[c.key]={...p.courses[c.key],nickname:c.nick.value.trim(),icon:c.icon.value.trim(),schedulePeriod:period || '',minimum:min,maximum:max,scale:c.scale.value,customCutoffs:c.custom.checked?limits:null};}
+      const draft={};for(const c of controls){const period=CourseSchedule.normalize(c.schedulePeriod.value);if(c.schedulePeriod.value.trim() && period===null){message.className='ap-error';message.textContent='Enter a valid class period (for example 1 or 7), or leave it blank for automatic detection.';return;}const min=GradeMath.parseNumber(c.min.value),max=GradeMath.parseNumber(c.max.value),limits=c.nums.map(n=>GradeMath.parseNumber(n.value));if(min===null||max===null||max<=0||min>=max||(c.custom.checked&&!validCutoffs(limits))){message.className='ap-error';message.textContent='Enter a bar minimum below its positive maximum, and descending nonnegative thresholds.';return;}draft[c.key]={...p.courses[c.key],nickname:c.nick.value.trim(),icon:c.icon.value.trim(),schedulePeriod:period || '',gpaWeighted:c.gpaWeighted.checked,minimum:min,maximum:max,scale:c.scale.value,customCutoffs:c.custom.checked?limits:null};}
       Object.assign(p.courses,draft);coursesFormDirty=false;const ok=persist();restoreTitles();scan();message.className=ok?'ap-muted':'ap-error';message.textContent=ok?'Saved. Your dashboard has been updated.':storageError;
     },'ap-primary');content.append(save,message);
   }
@@ -3969,7 +4010,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     }
     box.append(note('Toggles apply and save immediately. Impact estimates and the weight map use the open gradebook’s scores and grading rules.'));
     box.append(note('Number grades replace only the dashboard letter: 4, 3, 2, or 1 from your thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
-    box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA averages posted A/B/C/D/F letters as 4/3/2/1/0, ignoring plus/minus signs and thresholds.'));
+    box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA displays both unweighted and weighted averages of posted letters. Unweighted A/B/C/D/F = 4/3/2/1/0; honors/AP classes you check use 5/4/3/1/0 for weighted GPA. Select them in Courses or in the GPA details. Both averages ignore plus/minus signs and thresholds.'));
     box.append(note('Precise mode shows up to 8 decimals for calculated percentages and impact estimates, and keeps the precision Aeries actually displays. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const scopeBox=el('div',null,{class:'ap-box'});scopeBox.append(el('h3','Separate course settings'));
     const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('Use a separate profile for each student or account. Change this before switching students; the script does not read account identity. Use a new year to start fresh.'));

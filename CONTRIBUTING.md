@@ -12,7 +12,7 @@ Do not offer or request an Aeries account, login credentials, session cookies, p
 
 For schedule problems, include the displayed school date, approximate time, expected period, and whether **What class is next (MVHS)** was enabled. That setting starts off and must be enabled explicitly. For an update or installation problem, say whether this was a fresh install or a manually replaced file; a fresh Tampermonkey install uses manual updates. For settings problems, describe the selected profile/year with generic labels and whether more than one Aeries tab was open.
 
-For GPA problems, include the installed userscript's metadata version and whether it came from a stable release, a prerelease, or `main`. Weighted GPA is an [upcoming prerelease feature](docs/FEATURES.md#upcoming-weighted-gpa-prerelease), not part of the currently installable script. Use a few fictional courses with posted letters, inclusion choices, and Honors/AP selections; say whether numeric 4/3/2/1 display is on. Report both expected averages rather than real student grades or storage exports.
+For GPA problems, include the installed userscript's metadata version and whether it came from a stable release, the [weighted-GPA prerelease](docs/FEATURES.md#weighted-gpa-prerelease), or `main`. Use a few fictional courses with posted letters, inclusion choices, and Honors/AP selections; say whether numeric 4/3/2/1 display is on. Report both expected averages rather than real student grades or storage exports.
 
 ## Source and documentation
 
@@ -20,7 +20,7 @@ The installable source is [aeries-playground.user.js](aeries-playground.user.js)
 
 Keep the [README](README.md) as the installation guide and overview, the [feature guide](docs/FEATURES.md) as the user manual, and the [calculation reference](docs/CALCULATIONS.md) as the explanation of modeled behavior. Document actual behavior and limitations.
 
-Keep upcoming features clearly separate from currently installed behavior. The prepared weighted-GPA source is scheduled as a publicly downloadable prerelease, not the stable Latest release. The raw-`main` installation link will serve that prerelease once published. Use its explicit version-tagged release/asset address rather than a Latest-download shortcut. Documentation-only commits must not replace the installed source or publish release tags/assets; the release workflow's source-path filter prevents ordinary documentation pushes from triggering publication.
+Keep prerelease features clearly separate from stable-release behavior. The weighted-GPA source is a publicly downloadable prerelease, not the stable Latest release. The raw-`main` installation link serves that prerelease. Use its explicit version-tagged release/asset address rather than a Latest-download shortcut. Documentation-only commits must not replace the installed source or publish release tags/assets; the release workflow's source-path filter prevents ordinary documentation pushes from triggering publication.
 
 Keep security, permissions, data-handling, and review information in the explanatory comment at the top of the userscript. Update that comment whenever the corresponding behavior changes, and mention the change in the pull request. `SECURITY.md` points readers there and explains the reporting process.
 

@@ -4,25 +4,25 @@ This guide describes Aeries Playground's controls, defaults, and limitations. Se
 
 For a first session, open the Aeries dashboard to discover courses, configure display preferences in **Settings**, and then open one course's gradebook with all assignments loaded. Compare its posted totals before starting a hypothetical scenario. The optional next-class panel is configured separately; grade tools do not require it.
 
-## Upcoming weighted GPA prerelease
+## Weighted GPA prerelease
 
-The weighted-GPA controls described as **upcoming** in this guide belong to the prepared **2.1.0 prerelease**, planned for **September 27, 2026 at 11:59 PM America/Los_Angeles (Pacific time)**. They are not yet in the currently installable script. This documentation update does not publish or replace that script.
+The weighted-GPA controls in this guide are available in the publicly downloadable **2.1.0 prerelease**, published under tag `v2.1.0` with userscript metadata `@version 2.1.0`. It is labeled **Pre-release**, not **Latest**.
 
-Once published, the prerelease will be publicly downloadable under tag `v2.1.0`, with userscript metadata `@version 2.1.0` and an attached `aeries-playground.user.js`. It will be labeled **Pre-release**, not **Latest**. Until publication, its release page and asset are not available; use the repository's [Releases page](https://github.com/sodium-qed/aeries-playground/releases) to check availability. The planned exact addresses are:
+Download the prerelease from its release page or use the attached userscript directly:
 
 ```text
 Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.1.0
 Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.1.0/aeries-playground.user.js
 ```
 
-The README's installation link follows `main`. It currently serves the existing script and will serve the prerelease once the new source is published there. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains a separate download choice. `/releases/latest/download/...` targets that stable release, not the prerelease. Review the particular file you intend to install and keep only one copy enabled.
+The README's installation link follows `main` and serves this prerelease. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains a separate download choice. `/releases/latest/download/...` targets that stable release, not the prerelease. Review the particular file you intend to install and keep only one copy enabled.
 
 ## What changes and what stays saved
 
 | Action or data | Behavior |
 | --- | --- |
 | Course labels, colors, periods, and grading preferences | Saved for reuse; course settings belong to the manually selected profile/year. |
-| Honors/AP selections (upcoming prerelease) | Saved per course in the selected profile/year; default unchecked. These are preferences, not saved grades or GPA results. |
+| Honors/AP selections (prerelease) | Saved per course in the selected profile/year; default unchecked. These are preferences, not saved grades or GPA results. |
 | Course grading profiles and replacement rules | Saved separately from the current hypothetical scenario. Incomplete grading-profile forms are saved as drafts. |
 | Hypothetical scores, score ranges, and added assignments | Temporary; leaving the scenario or reloading clears them. |
 | Posted grades and assignments | Read from the visible Aeries page; local controls do not submit changes to Aeries. |
@@ -39,7 +39,7 @@ Open **Aeries Playground → Courses** to edit discovered courses.
 - **Display name** changes the dashboard label. Hovering retains access to the original title, and the course link still opens its gradebook.
 - **Icon** is optional text or an emoji; new courses start without an automatically chosen icon.
 - **Class period (optional override)** connects a course to the MVHS schedule panel. Leave it blank to use an unambiguous period detected on its dashboard card. Period identifiers can include suffixes such as `2A`; matching is exact.
-- **Honors/AP — weighted GPA bonus (upcoming prerelease)** appears beside the period setting. Check only courses that should receive the bonus; no eligibility is inferred from a course name. New and previously saved courses without a selection start unchecked. Use **Save course settings** to apply it.
+- **Honors/AP — weighted GPA bonus (prerelease)** appears beside the period setting. Check only courses that should receive the bonus; no eligibility is inferred from a course name. New and previously saved courses without a selection start unchecked. Use **Save course settings** to apply it.
 - **Bar scale**, **Bar minimum**, and **Bar maximum** control the progress bar.
 - **Custom thresholds for this course** overrides the global cutoffs for its grade scale.
 
@@ -81,9 +81,9 @@ The number stays an **average**, such as 3.5. In numeric mode, only its **color*
 
 Open **Calculation & included classes** to inspect the arithmetic and choose which classes count. The summary uses courses currently visible on the dashboard, deduplicated by course identity. Ungraded or unrecognized entries are skipped. In letter mode, F counts as zero; pass/fail and numeric-only marks are skipped.
 
-The currently installable script has no AP/Honors bonus. These are unofficial equal-weight estimates, without course-credit weighting, previous years, or transcript data. The “current-year” label does not mean the script downloads a transcript.
+In letter mode, the prerelease adds the manually selected AP/Honors bonus described below. These are unofficial equal-weight estimates, without course-credit weighting, previous years, or transcript data. The “current-year” label does not mean the script downloads a transcript.
 
-### Weighted and unweighted GPA together (upcoming prerelease)
+### Weighted and unweighted GPA together (prerelease)
 
 With **Overall grade / GPA above classes** enabled and **Show 4/3/2/1 on dashboard** off, the prerelease shows **Unweighted GPA** and **Weighted GPA** together. Numeric 4/3/2/1 mode keeps its existing threshold-based overall average; selecting honors/AP courses does not change those ratings.
 
@@ -104,7 +104,7 @@ Honors/AP choices start unchecked, so both GPAs initially match. Set them here f
 
 Both averages count the same included, currently visible courses with posted A–F letters, once per course identity and with equal course weight. Blank, pass/fail, numeric-only, or other unrecognized marks do not count. F counts as a real zero. An empty set displays a dash for each GPA, not zero. Grades and computed GPA values are not saved, and hypothetical assignment edits do not replace the posted letters used here.
 
-For five included, checked courses with A, B, C, D, and F, unweighted GPA is **10 / 5 = 2.00** and weighted GPA is **13 / 5 = 2.60**. See [the formulas and examples](CALCULATIONS.md#weighted-gpa-upcoming-prerelease). These estimates do not apply transcript credit weights, institution-specific eligibility rules, or bonus caps.
+For five included, checked courses with A, B, C, D, and F, unweighted GPA is **10 / 5 = 2.00** and weighted GPA is **13 / 5 = 2.60**. See [the formulas and examples](CALCULATIONS.md#weighted-gpa-prerelease). These estimates do not apply transcript credit weights, institution-specific eligibility rules, or bonus caps.
 
 ## Assignment analysis
 
@@ -269,7 +269,7 @@ On a fresh install, **Show 4/3/2/1 on dashboard** and **What class is next (MVHS
 
 Toggles apply and save immediately. Other Settings fields require **Save settings**. Course display edits use **Save course settings**; grading-profile forms and added/removed replacement rules save automatically. These different save behaviors are independent of the temporary grade-testing scenario.
 
-In the upcoming prerelease, course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
+In the prerelease, course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
 
 Use **Clear saved settings and pause** to clear saved profiles, course settings, grading rules, and preferences. Confirm the dialog to apply the reset. This exits grade testing, turns off the next-class panel, and leaves Playground paused. Reload other Aeries tabs after clearing settings before using them again. Re-enable **Enable Playground** when you are ready to configure a fresh setup; the schedule panel requires a separate opt-in again. Clearing settings does not remove copies retained by the userscript manager's sync or backups.
 
@@ -293,7 +293,7 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | --- | --- |
 | No Playground button | Confirm the script and Tampermonkey are enabled, script permission is granted, and the page is under the supported MVLA student URL. |
 | Courses are missing | Open the dashboard to discover course cards. The feature does not fetch courses from other pages or accounts. |
-| No weighted GPA or Honors/AP controls | These are upcoming prerelease features, not part of the currently installable script. After installing the prerelease, enable **Overall grade / GPA above classes** and turn **Show 4/3/2/1 on dashboard** off. |
+| No weighted GPA or Honors/AP controls | Confirm the prerelease is installed, then enable **Overall grade / GPA above classes** and turn **Show 4/3/2/1 on dashboard** off. Check the installed metadata version if the controls are still missing. |
 | Prerelease GPAs are identical | Check the intended Honors/AP classes and save course settings if edited in Courses. No selected, counted A/B/C means no bonus; selected D/F still receive no bonus. |
 | A prerelease class does not affect GPA | Check inclusion, visibility, and the posted letter. Non-A–F marks do not count, and checking Honors/AP does not include an excluded class. |
 | Impact/map/total unavailable | Turn off Aeries' missing-only filter, wait for the selected gradebook to load, and check that visible rows reconcile with category/overall totals. |

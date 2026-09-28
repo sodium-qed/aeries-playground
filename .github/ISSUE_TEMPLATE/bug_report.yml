@@ -32,7 +32,7 @@ body:
     id: script-version
     attributes:
       label: Installed script version and source
-      description: Read @version in the installed userscript and say whether you used a stable release, prerelease, or the main-branch install link. Weighted GPA is an upcoming prerelease feature; documentation alone does not install it.
+      description: Read @version in the installed userscript and say whether you used a stable release, the weighted-GPA prerelease, or the main-branch install link.
       placeholder: Metadata version; stable release, prerelease, or main; fresh install or manual update
   - type: textarea
     id: settings

@@ -34,11 +34,11 @@ With numeric display off, use the original posted letter:
 
 A, B+, and F therefore produce `(4 + 3 + 0) / 3 = 2.3333…`, displayed as **2.33**. Threshold changes have no effect on this mode. Blank, pass/fail, and numeric-only marks do not count.
 
-Both summaries are unofficial, equal-weight averages of included visible courses, with duplicate course identities counted once. The currently installable script does not apply AP/Honors bonuses. Course-credit weighting is not applied, and neither summary is an official school GPA.
+Both summaries are unofficial, equal-weight averages of included visible courses, with duplicate course identities counted once. Letter mode also displays the manually selected AP/Honors-weighted estimate described below. Course-credit weighting is not applied, and neither summary is an official school GPA.
 
-### Weighted GPA (upcoming prerelease)
+### Weighted GPA (prerelease)
 
-This subsection describes the prepared **2.1.0 prerelease**, not the currently installable script. See [availability and installation details](FEATURES.md#upcoming-weighted-gpa-prerelease). The prerelease displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+This subsection describes the publicly downloadable **2.1.0 prerelease**. See [availability and installation details](FEATURES.md#weighted-gpa-prerelease). The prerelease displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
 
 Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
 
