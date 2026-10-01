@@ -7,7 +7,7 @@ Read the opening comment in [aeries-playground.user.js](aeries-playground.user.j
 | Area | Documented behavior and controls |
 | --- | --- |
 | Grade tools | Read the visible Aeries page and calculate locally. The script does not send grades or account details in its schedule requests, submit grade changes, or change account settings. Hypothetical scores are temporary. |
-| Public schedules | **What class is next (MVHS)** starts off and requires an explicit opt-in in Settings. Turning it off stops refreshes, requests cancellation of pending transfers, and ignores late responses. Pausing Playground also stops schedule work. |
+| Public schedules | **What class is next (MVHS)** starts off and requires an explicit opt-in in Settings. Turning it off stops refreshes, requests cancellation of pending transfers, and ignores late responses in the current tab. Pausing Playground also stops schedule work in that tab. Reload other Aeries tabs promptly; they can retain the old opt-in, continue requests, and save it again. |
 | Connection metadata | Enabling schedules contacts public services, which receive ordinary connection information such as IP address and request timing. These requests are not anonymous browsing; the clock request also has an Aeries-related identifier. The source comment describes the exact requests and manager-dependent behavior. |
 | Saved configuration | The userscript manager stores preferences, course information, and grading-rule references. Posted grades and hypothetical scores are not saved. Manager sync or backups may copy configuration elsewhere; manage those options in the manager. |
 | Pause or clear | **Enable Playground** pauses enhancements while retaining settings. **Clear saved settings and pause** clears profiles, course customizations, and grading rules, resets preferences, and pauses Playground. Reload other Aeries tabs afterward. Separate sync and backup copies are controlled by the manager. |
@@ -19,6 +19,24 @@ For the controls and their effects, see the [feature guide](docs/FEATURES.md#set
 The [prerelease](docs/FEATURES.md#weighted-gpa-prerelease) adds saved per-course **Honors/AP** selections alongside period mappings and GPA inclusion preferences, scoped to the manually selected settings profile/year. These checkboxes default to off. They are configuration: **posted grades, hypothetical scores, and calculated GPA results are not saved**. The new selections do not add network requests or permissions; GPA calculations stay in the browser.
 
 Selections can reveal course information and, like other preferences, may be copied by the userscript manager's sync or backups. Do not treat a configuration export as anonymized. **Clear saved settings and pause** also removes these selections from the script's active storage; separate backup copies remain manager-controlled.
+
+### Upcoming KBAR playback
+
+The [upcoming KBAR feature](docs/FEATURES.md#upcoming-kbar-music) is prepared for **2.2.0**; the current installation link still serves the **2.1.0 prerelease**. These playback details describe the upcoming source, not the current installed prerelease.
+
+No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
+
+The player uses a cross-origin `https://www.youtube-nocookie.com/embed/sasjlpt7zWM` iframe. Its URL contains the constant video ID, fixed player options, and the Aeries site origin. The iframe referrer policy sends the site origin rather than the full gradebook URL. Playground includes no grades, assignment data, course names, settings profiles, or Aeries account data in its player URL or command messages. Commands are sent to the exact YouTube origin; received messages are checked against that origin and the current iframe window.
+
+The iframe loads YouTube's own third-party code, media, and advertising resources. Privacy-enhanced embedding does not make it anonymous or ad-free: YouTube receives connection information and playback activity and may use cookies or other browser storage. Iframe/media requests are browser requests, not `GM_xmlhttpRequest` calls, and are not restricted by the userscript's schedule-only `@connect` list. There is no claim that the whole page makes no third-party requests. See [YouTube's terms](https://www.youtube.com/t/terms) and [Google's privacy policy](https://policies.google.com/privacy).
+
+**P pauses/resumes; Close stops and unloads.** Pausing leaves the embed loaded and can leave third-party network activity running. **Settings → Close KBAR player** removes the player without scrolling to it. Pausing Playground, clearing settings, or leaving the page also removes it in that tab. Closing cannot undo requests already made or delete YouTube-managed storage. No playback state is shared between tabs; close other tabs' players separately.
+
+The player is intentionally placed far below page content and uses YouTube's internal message transport for controls; that transport can change. Native player controls and a source link remain available.
+
+### Changes in other open tabs
+
+Ordinary settings saves use the last written settings and are not synchronized live. Turning schedules off or pausing Playground in one tab does not immediately update other open tabs: their old state can keep making schedule requests, and a later save can restore their old opt-in. Reload other Aeries tabs promptly. **Clear saved settings and pause** has a separate stale-save check when a tab detects the reset, but that is not immediate revocation in every running tab. A request already sent cannot be recalled from its recipient.
 
 ## Review the installed file
 
@@ -37,7 +55,7 @@ If **Report a vulnerability** is available on this repository's [Security tab](h
 Once a private channel is established, include:
 
 - The installed script's source and metadata version, plus browser and userscript manager.
-- The affected feature and settings, especially whether public schedules were enabled.
+- The affected feature and settings, especially whether public schedules were enabled, whether other Aeries tabs were open, and (for the upcoming KBAR version) whether its player had been started or closed.
 - Reproduction steps using fictional courses, assignments, and scores.
 - What you expected, what happened, and the suspected impact.
 
@@ -46,3 +64,4 @@ Do not include passwords, cookies, session tokens, account identifiers, copied A
 ## Ordinary bugs and suggestions
 
 For display problems, calculation discrepancies, or feature requests without sensitive security details, use the [issue forms](https://github.com/sodium-qed/aeries-playground/issues/new/choose) and follow [Contributing](CONTRIBUTING.md). Give fictional examples rather than access to an Aeries account.
+

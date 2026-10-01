@@ -17,6 +17,26 @@ Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.1.
 
 The README's installation link follows `main` and serves this prerelease. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains a separate download choice. `/releases/latest/download/...` targets that stable release, not the prerelease. Review the particular file you intend to install and keep only one copy enabled.
 
+## Upcoming KBAR music
+
+**Availability:** KBAR is prepared for **2.2.0**, scheduled for **Sunday, October 4, 2026, at 11:59 PM America/Los_Angeles (Pacific time)**. This advance documentation is scheduled for **Wednesday, September 30, 2026, at 11:59 PM Pacific time**. The installation link still serves the **2.1.0 prerelease** described above; KBAR is not available there yet. Confirm the published source and release before expecting these controls.
+
+After installing the upcoming version, KBAR starts off on every page load and saves no playback preference. It plays the English KBAR video on loop only after you request playback. **Enable Playground** must be on; enabling the schedule panel is not required.
+
+| Control | Upcoming behavior |
+| --- | --- |
+| **P** | First press creates the player and requests playback; subsequent presses request pause or resume. The shortcut ignores editable controls, repeated/composing key events, and Ctrl/Alt/Meta combinations. It is inactive while the Playground dialog is open. |
+| **Settings → Play / pause KBAR (P)** | Starts or toggles playback while Settings is open. |
+| **Settings → Close KBAR player** | Stops playback and removes the player and its added scroll space. |
+| Tampermonkey **Aeries Playground — KBAR play/pause (P)** | Starts or toggles playback through the manager menu. |
+| Player **Play KBAR / Pause KBAR**, native YouTube controls, and **Close** | Offer playback controls at the bottom of the page. **Open on YouTube** opens the source video separately. |
+
+The small **200 × 200** player is intentionally placed far below the page content. Opening it adds at least **8,000 pixels** of space above it (or ten viewport heights if larger), without moving focus or scrolling the page. Use Settings to stop or control it without scrolling that distance. Closing removes the extra space. Browser restrictions, network problems, or a video that cannot be embedded can prevent playback; a keypress requests playback rather than guaranteeing it starts.
+
+Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives ordinary connection information and playback activity, may use cookies or other browser storage, makes its own media/advertising requests, and may show ads. Playground's player URL and control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the Aeries site origin, not the full gradebook URL. See [Security and privacy](../SECURITY.md#upcoming-kbar-playback).
+
+**Pausing leaves the embed loaded; closing unloads it.** Pausing therefore does not stop all third-party network activity. Turning off **Enable Playground**, clearing saved settings, or leaving the page also removes the player in that tab. Closing cannot undo requests already sent or clear storage controlled by YouTube. YouTube's cross-origin player loads its own code; Playground does not inject that code into the Aeries page's JavaScript realm. Its internal message transport may change, so native video controls and the source link remain fallbacks.
+
 ## What changes and what stays saved
 
 | Action or data | Behavior |
@@ -26,7 +46,8 @@ The README's installation link follows `main` and serves this prerelease. The [s
 | Course grading profiles and replacement rules | Saved separately from the current hypothetical scenario. Incomplete grading-profile forms are saved as drafts. |
 | Hypothetical scores, score ranges, and added assignments | Temporary; leaving the scenario or reloading clears them. |
 | Posted grades and assignments | Read from the visible Aeries page; local controls do not submit changes to Aeries. |
-| Next-class panel | Off until enabled in Settings; turning it off stops its schedule work. |
+| Next-class panel | Off until enabled in Settings; turning it off stops schedule work in the current tab. Reload other Aeries tabs promptly. |
+| KBAR playback (upcoming) | Off on every page load; playback state is not saved. Starting creates the embed; pausing keeps it loaded; closing removes it. |
 
 The security and privacy comment in the published script is the full reference for permissions, stored fields, external requests, and manager-specific behavior. [SECURITY.md](../SECURITY.md) explains how to report a concern.
 
@@ -229,7 +250,9 @@ If a complete matching total is unavailable, the explanation says so. Extra disp
 
 The next-class panel starts off. Open **Settings**, read the explanation beside **What class is next (MVHS)**, and enable that checkbox to allow its public schedule requests. Saving other settings preserves your choice. Previously saved settings without this opt-in also leave the panel off until you enable it.
 
-Turn the checkbox off to stop refreshes and clear cached schedule results. Pausing **Enable Playground** also stops schedule work but retains your selected features; re-enabling Playground can resume a previously enabled panel. Grade tools remain available when only the next-class panel is off.
+Turn the checkbox off to stop refreshes, request cancellation of pending transfers, ignore late responses, and clear cached schedule results **in the current tab**. Pausing **Enable Playground** also stops schedule work in that tab but retains your selected features; re-enabling Playground can resume a previously enabled panel. Grade tools remain available when only the next-class panel is off.
+
+Reload other Aeries tabs promptly after disabling schedules or pausing Playground. Ordinary setting changes are not synchronized live between open tabs: another tab can retain its previous opt-in, continue requests, and save that old choice again. Ordinary saves use the last written settings. Turning a checkbox off in one tab does not immediately revoke another tab's running state.
 
 With the panel enabled, the dashboard shows:
 
@@ -271,13 +294,13 @@ Toggles apply and save immediately. Other Settings fields require **Save setting
 
 In the prerelease, course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
 
-Use **Clear saved settings and pause** to clear saved profiles, course settings, grading rules, and preferences. Confirm the dialog to apply the reset. This exits grade testing, turns off the next-class panel, and leaves Playground paused. Reload other Aeries tabs after clearing settings before using them again. Re-enable **Enable Playground** when you are ready to configure a fresh setup; the schedule panel requires a separate opt-in again. Clearing settings does not remove copies retained by the userscript manager's sync or backups.
+Use **Clear saved settings and pause** to clear saved profiles, course settings, grading rules, and preferences. Confirm the dialog to apply the reset. This exits grade testing, turns off the next-class panel, and leaves Playground paused. Reload other Aeries tabs promptly after clearing settings and before using them again. Reset detection can prevent stale saves once a tab detects the reset, but it is not immediate live synchronization; an already open tab can still run with its old state until detection or reload. Re-enable **Enable Playground** when you are ready to configure a fresh setup; the schedule panel requires a separate opt-in again. Clearing settings does not remove copies retained by the userscript manager's sync or backups.
 
 **Settings profile** and **School-year starting year** partition saved course settings. Both start blank; the year, if entered, must have four digits. Student/account and school-year separation are manual. Select the appropriate profile/year before using settings for another student or school year. Gradebook and term identifiers separate courses within that scope. Global display toggles, colors, and default thresholds remain global; course customizations and policies belong to the selected profile/year.
 
 The dialog supports keyboard tab navigation, arrow/Home/End navigation between its tabs, labeled controls, and focusable weight-map entries. It adapts its layout to the available width.
 
-Press **S** outside an editable field to open Settings. The shortcut ignores typing in inputs, text areas, selectors, and editable content, as well as modified shortcuts such as Ctrl+S. A Tampermonkey menu command also opens Settings.
+Press **S** outside an editable field to open Settings. The shortcut ignores typing in inputs, text areas, selectors, and editable content, as well as modified shortcuts such as Ctrl+S. A Tampermonkey menu command also opens Settings. The upcoming KBAR shortcut **P** is separate and inactive while this dialog is open; use its Settings buttons instead.
 
 Read the comment at the top of [aeries-playground.user.js](../aeries-playground.user.js) for the saved-data breakdown and removal instructions.
 
@@ -307,7 +330,11 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | Wrong preferences after changing students | Switch the manual settings profile/year; account identity is not detected. |
 | Display looks wrong | Disable duplicate/older Aeries scripts; pause Playground or disable it and reload to compare with the original page. |
 | Settings cannot be saved | The change applies for the current visit, and the UI reports a browser-storage error. |
-| Settings were cleared in another tab | Reload this tab before editing again. A stale tab is prevented from overwriting the cleared setup when it detects the reset. |
+| Settings were cleared or schedules disabled in another tab | Reload promptly. Ordinary saves use the last written settings; an old tab can continue schedule requests and re-save its opt-in. Clearing settings has a separate stale-save check once detected, but does not immediately synchronize every running tab. |
+| KBAR controls are missing (upcoming) | They are not in the current prerelease; install the published KBAR version when available, then reload. |
+| P does nothing or KBAR is silent (upcoming) | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, try again or use the native player controls/source link. |
+| Page gains a long blank area after starting KBAR (upcoming) | The far-down player placement is intentional. Use **Settings → Close KBAR player** to stop playback and remove the added space. |
+| Music paused but YouTube remains loaded (upcoming) | Pause leaves the embed active. Use **Close KBAR player** to unload it. |
 | Unexpected behavior after installing | Keep one copy enabled, reload Aeries, and compare with the script disabled. Check whether the supported Aeries layout has changed. |
 
 For a bug report, include your browser, userscript manager, the affected feature, steps, and fictional example values. Describe the expected result and what appeared instead. Use [Contributing](../CONTRIBUTING.md) for ordinary reports and [Security](../SECURITY.md) for sensitive concerns.
@@ -315,3 +342,4 @@ For a bug report, include your browser, userscript manager, the affected feature
 ## Limitations
 
 Aeries Playground does not provide a grade-history service, grade notifications, scenario export/import, persistent hypothetical scorebooks, automatic student-account separation, an official transcript GPA, or general support for other schools' bell schedules. Zero-point extra-credit policies, arbitrary drop-lowest rules, and hidden teacher rules are not inferred. Aeries page changes can affect parsing and display; use the posted gradebook and your teacher's policy when a local estimate differs.
+

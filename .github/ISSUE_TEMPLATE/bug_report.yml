@@ -23,6 +23,7 @@ body:
         - Gradebook details
         - Grade testing or grading rules
         - Next-class widget
+        - KBAR music (upcoming version)
         - Settings
         - Installation
         - Documentation
@@ -38,7 +39,7 @@ body:
     id: settings
     attributes:
       label: Relevant settings and installation
-      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. For GPA issues, say whether numeric 4/3/2/1 mode is on and, if using the prerelease, which fictional courses are included and checked Honors/AP. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it.
+      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. For GPA issues, say whether numeric 4/3/2/1 mode is on and, if using the prerelease, which fictional courses are included and checked Honors/AP. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it or changed it in another tab. For KBAR in the upcoming version, say whether you used P, Settings, or the menu and whether you paused or closed the player.
   - type: textarea
     id: example
     attributes:
@@ -48,7 +49,7 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Use generic course names and fictional values. Do not paste a logged-in URL.
+      description: Use generic course names and fictional values. For KBAR, describe focus, whether Settings was open, and any player error or browser playback restriction. Do not paste a logged-in URL.
     validations:
       required: true
   - type: textarea
@@ -64,3 +65,4 @@ body:
       description: Describe the wrong display or error without private data. If you already tried disabling the script and reloading, say whether the problem remained. Do not clear saved settings just to submit this report.
     validations:
       required: true
+

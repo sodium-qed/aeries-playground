@@ -10,7 +10,7 @@ Calculations use data already rendered on the current Aeries page and the rules 
 - Posted assignment analysis uses the open gradebook's assignment rows, category totals, and overall grade.
 - Grade testing starts from those posted rows, then applies your current score edits, Count choices, and saved course policies.
 
-The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
+The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The [upcoming KBAR playback](FEATURES.md#upcoming-kbar-music) also supplies no calculation inputs and changes no GPA or grade formulas. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
 
 A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals expose the calculation's precision, not additional precision from Aeries.
 
@@ -220,3 +220,4 @@ Calculations are blocked if the missing-only filter is enabled, required totals 
 Playground's own category filter only hides rows and does not remove their scores from the model. It is different from Aeries' missing-only filter. **Explain my grade** may still show category arithmetic alongside a message that a complete matching total is unavailable; that breakdown is not a reconciled overall result.
 
 A saved grading profile or replacement rules can reconcile posted rows with adjusted totals, but reconciliation uses the original posted scores. Editing hypothetical scores cannot make an incomplete posted baseline valid. Drop-lowest policies, hidden exclusions, unusual extra credit, or other teacher-specific rules may remain unsupported.
+

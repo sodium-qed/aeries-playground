@@ -34,6 +34,7 @@ Keep one copy of Aeries Playground enabled at a time. After installation, open t
 | Score planning | Find the minimum score needed for a target grade, model assessment replacements, or enter score ranges for several assignments. |
 | Grade explanations | Inspect category totals, effective weights, contributions, exclusions, and replacement effects. |
 | MVHS next class | Opt in through Settings to see the current/next period and countdown from mvhs.io, with seconds shown when fresh bell.plus schedule and clock checks agree. |
+| Upcoming KBAR music | Optional looping YouTube playback with **P**, plus play/pause and close controls in Settings. See [availability and privacy details](docs/FEATURES.md#upcoming-kbar-music); it is not in the current installation link yet. |
 | Settings profiles | Organize course settings by a manually selected profile and school year, toggle individual enhancements, or clear saved settings and pause. |
 
 ## Get started
@@ -49,7 +50,7 @@ Choose a separate settings profile/year before using another student's account o
 
 ## Pause, reset, and update
 
-- **Pause:** turn off **Enable Playground** to pause enhancements while retaining your setup. Turn off **What class is next (MVHS)** to stop only the schedule panel.
+- **Pause:** turn off **Enable Playground** to pause enhancements while retaining your setup. Turn off **What class is next (MVHS)** to stop only the schedule panel in the current tab. Reload other Aeries tabs promptly; they can retain the old choice, continue requests, and save it again.
 - **Start fresh:** choose **Clear saved settings and pause** in Settings, confirm, and reload other Aeries tabs. This clears course customizations and saved grading rules as well as general preferences.
 - **Stop:** disable the script in Tampermonkey and reload Aeries.
 - **Update manually:** review the published script's **Raw** view and confirm its replacement in Tampermonkey. A fresh Tampermonkey installation is configured for manual updates; an existing installation can retain its manager update preference.
@@ -79,3 +80,4 @@ Use the repository's [issue forms](https://github.com/sodium-qed/aeries-playgrou
 Copyright (c) 2026 sodium-qed. The [Aeries Playground Open Source License](LICENSE) is a custom copyleft license designed to meet the [Open Source Definition](https://opensource.org/osd); it has not been approved by the Open Source Initiative (OSI).
 
 You may use, modify, redistribute, and sell copies. Distributed modifications must include source access under the same license, preserve notices, and identify changes. Private changes need not be published. The license explicitly permits giving the **complete source** to AI tools, automated scanners, or human security auditors, including paid services, without asking permission. It does not grant endorsement or trademark rights, and earlier valid licenses remain unaffected.
+

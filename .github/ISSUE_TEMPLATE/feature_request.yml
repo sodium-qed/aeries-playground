@@ -24,9 +24,10 @@ body:
     id: existing
     attributes:
       label: Existing settings or alternatives
-      description: Which current controls or workarounds have you considered? Check the feature guide first and distinguish stable-release behavior from the weighted-GPA prerelease. The next-class widget requires an explicit opt-in, and fresh Tampermonkey installations use manual updates.
+      description: Which current controls or workarounds have you considered? Check the feature guide first and distinguish stable-release behavior, the weighted-GPA prerelease, and upcoming KBAR playback. The next-class widget requires an explicit opt-in, and fresh Tampermonkey installations use manual updates.
   - type: textarea
     id: information
     attributes:
       label: Information the feature would need
       description: If known, explain whether the idea needs new saved preferences, page information, or an external service. Describe the type of information only; do not attach personal data. Leave blank if unsure.
+
