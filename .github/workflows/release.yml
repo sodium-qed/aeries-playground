@@ -203,7 +203,6 @@ jobs:
                   release = api_write(
                       f'repos/{repo}/releases/{release["id"]}', 'PATCH', {
                           'tag_name': tag,
-                          'target_commitish': release_commit,
                           'name': title,
                           'body': notes.read_text(encoding='utf-8'),
                           'draft': False,
