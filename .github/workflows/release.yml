@@ -1,10 +1,11 @@
-name: Publish 2.2 stable release
+name: Publish 2.2 prerelease
 
 on:
   push:
     branches: [main]
     paths:
       - 'aeries-playground.user.js'
+      - '.github/workflows/release.yml' # One-time prerelease correction; remove after verification.
   workflow_dispatch:
 
 permissions:
@@ -26,7 +27,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Publish the prepared 2.2 stable release
+      - name: Publish the prepared 2.2 prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         shell: python
@@ -135,7 +136,7 @@ jobs:
               # documentation-only commit with identical source is acceptable.
               verify_source_at(release['target_commitish'])
           if release and not release['draft']:
-              if release['prerelease'] or release['name'] != title:
+              if release['name'] != title:
                   raise SystemExit('The existing published release has unexpected metadata.')
               if not tag_ref:
                   raise SystemExit('The published release is missing its tag.')
@@ -143,7 +144,7 @@ jobs:
           with tempfile.TemporaryDirectory() as folder:
               notes = Path(folder) / 'release-notes.md'
               notes.write_text(
-                  'Aeries Playground 2.2.0 adds optional looping KBAR music. '
+                  'Aeries Playground 2.2.0 is a prerelease that adds optional looping KBAR music. '
                   'Press P outside a text field, or use the Settings playback button, '
                   'to play or pause. Close the player to stop and unload it. '
                   'Playback starts off on every page load.\n\n'
@@ -198,27 +199,36 @@ jobs:
                   gh('release', 'upload', tag, str(source), '--repo', repo)
               verify_asset()
 
-              if release['draft']:
+              if release['draft'] or not release['prerelease']:
                   release = api_write(
                       f'repos/{repo}/releases/{release["id"]}', 'PATCH', {
                           'tag_name': tag,
                           'name': title,
                           'body': notes.read_text(encoding='utf-8'),
                           'draft': False,
-                          'prerelease': False,
-                          'make_latest': 'true',
+                          'prerelease': True,
+                          'make_latest': 'false',
                       })
 
               release = release_for_tag()
               if not release:
                   raise SystemExit('The release disappeared during publication.')
-              if release['tag_name'] != tag or release['draft'] or release['prerelease'] or release['name'] != title:
-                  raise SystemExit('The release was not published in the expected stable state.')
+              if release['tag_name'] != tag or release['draft'] or not release['prerelease'] or release['name'] != title:
+                  raise SystemExit('The release was not published in the expected prerelease state.')
               actual_commit = tagged_commit(api(tag_path))
               if actual_commit != release_commit:
                   raise SystemExit('The release tag changed unexpectedly.')
               verify_source_at(actual_commit)
               verify_asset()
-              if api(f'repos/{repo}/releases/latest')['tag_name'] != tag:
-                  raise SystemExit('Version 2.2.0 is not the Latest stable release.')
+              latest = api(f'repos/{repo}/releases/latest', absent_ok=True)
+              if latest is None or latest['tag_name'] == tag:
+                  # Restore the prior stable release only if no other stable
+                  # release has become Latest in the meantime.
+                  stable = api(f'repos/{repo}/releases/tags/v2.0.0')
+                  if stable['draft'] or stable['prerelease']:
+                      raise SystemExit('The prior stable release has unexpected metadata.')
+                  api_write(f'repos/{repo}/releases/{stable["id"]}', 'PATCH',
+                            {'make_latest': 'true'})
+              if api(f'repos/{repo}/releases/latest')['tag_name'] == tag:
+                  raise SystemExit('The prerelease must not be Latest.')
               print(release['html_url'])

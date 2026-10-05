@@ -6,7 +6,7 @@ Personalize your Aeries dashboard, understand assignment weights, and explore hy
 
 [Feature guide](docs/FEATURES.md) · [Calculation reference](docs/CALCULATIONS.md) · [Security information and reporting](SECURITY.md)
 
-The installation link above follows `main`. You can also install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest). Review the source you intend to install and keep one copy enabled.
+The installation link above follows `main` and currently installs a prerelease with weighted GPA and KBAR playback. For the stable edition, install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest); those prerelease features are not included there. See the [feature guide](docs/FEATURES.md#available-release) for release-specific downloads. Review the source you intend to install and keep one copy enabled.
 
 Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
 

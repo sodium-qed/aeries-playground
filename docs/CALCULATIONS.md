@@ -38,7 +38,7 @@ Both summaries are unofficial, equal-weight averages of included visible courses
 
 ### Weighted GPA
 
-These controls are available in the stable **2.2.0** release and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+These controls are available in the **2.2.0 prerelease** and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
 
 Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
 

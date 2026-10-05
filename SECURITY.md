@@ -22,7 +22,7 @@ Selections can reveal course information and, like other preferences, may be cop
 
 ### KBAR playback
 
-The [KBAR feature](docs/FEATURES.md#kbar-music) is available in stable **2.2.0**. The earlier **2.1.0 prerelease** does not include it.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.0 prerelease**. The earlier **2.1.0 prerelease** does not include it.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
@@ -44,7 +44,7 @@ Use the official repository's source and review the complete file you intend to 
 
 The script requests manual updates for fresh Tampermonkey installations. Existing installations may retain their previous update settings, and other managers can behave differently; check the script's update settings in your manager. Review a replacement file before installing it. Findings about one file do not automatically apply to a different copy.
 
-The README's raw-`main` installation link follows the source on `main`; the stable **Latest** release and the earlier weighted-GPA prerelease have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
+The README's raw-`main` installation link follows the source on `main`; the stable **Latest** release, the current KBAR prerelease, and the earlier weighted-GPA prerelease have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
 
 Reading grades and changing their display are necessary for these features. Display or calculation bugs, page changes, inaccurate public schedules, and manager behavior remain possible. A static review or successful check is not a certification or a guarantee of zero risk. The [calculation reference](docs/CALCULATIONS.md) explains when estimates are available and what they mean.
 
