@@ -10,7 +10,7 @@ Calculations use data already rendered on the current Aeries page and the rules 
 - Posted assignment analysis uses the open gradebook's assignment rows, category totals, and overall grade.
 - Grade testing starts from those posted rows, then applies your current score edits, Count choices, and saved course policies.
 
-The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The [upcoming KBAR playback](FEATURES.md#upcoming-kbar-music) also supplies no calculation inputs and changes no GPA or grade formulas. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
+The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The [KBAR playback](FEATURES.md#kbar-music) also supplies no calculation inputs and changes no GPA or grade formulas. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
 
 A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals expose the calculation's precision, not additional precision from Aeries.
 
@@ -36,9 +36,9 @@ A, B+, and F therefore produce `(4 + 3 + 0) / 3 = 2.3333…`, displayed as **2.3
 
 Both summaries are unofficial, equal-weight averages of included visible courses, with duplicate course identities counted once. Letter mode also displays the manually selected AP/Honors-weighted estimate described below. Course-credit weighting is not applied, and neither summary is an official school GPA.
 
-### Weighted GPA (prerelease)
+### Weighted GPA
 
-This subsection describes the publicly downloadable **2.1.0 prerelease**. See [availability and installation details](FEATURES.md#weighted-gpa-prerelease). The prerelease displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+These controls are available in the stable **2.2.0** release and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
 
 Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
 

@@ -4,26 +4,33 @@ This guide describes Aeries Playground's controls, defaults, and limitations. Se
 
 For a first session, open the Aeries dashboard to discover courses, configure display preferences in **Settings**, and then open one course's gradebook with all assignments loaded. Compare its posted totals before starting a hypothetical scenario. The optional next-class panel is configured separately; grade tools do not require it.
 
+## Available release
+
+The controls in this guide are available in the stable **2.2.0** release, including weighted/unweighted GPA and optional KBAR playback. The README installation link follows `main`. For a version-specific copy, use the attached userscript:
+
+```text
+Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.2.0
+Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.2.0/aeries-playground.user.js
+```
+
+Review the particular file you intend to install and keep only one copy enabled.
+
 ## Weighted GPA prerelease
 
-The weighted-GPA controls in this guide are available in the publicly downloadable **2.1.0 prerelease**, published under tag `v2.1.0` with userscript metadata `@version 2.1.0`. It is labeled **Pre-release**, not **Latest**.
-
-Download the prerelease from its release page or use the attached userscript directly:
+The earlier **2.1.0 prerelease** introduced the weighted-GPA controls, under tag `v2.1.0` with userscript metadata `@version 2.1.0`. It remains a historical **Pre-release** download; it does not include KBAR and is not **Latest**. Its release and asset addresses are:
 
 ```text
 Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.1.0
 Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.1.0/aeries-playground.user.js
 ```
 
-The README's installation link follows `main` and serves this prerelease. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains a separate download choice. `/releases/latest/download/...` targets that stable release, not the prerelease. Review the particular file you intend to install and keep only one copy enabled.
+The README's installation link no longer serves this earlier prerelease. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) includes the controls below. `/releases/latest/download/...` targets the stable release, not the historical prerelease.
 
-## Upcoming KBAR music
+## KBAR music
 
-**Availability:** KBAR is prepared for **2.2.0**, scheduled for **Sunday, October 4, 2026, at 11:59 PM America/Los_Angeles (Pacific time)**. This advance documentation is scheduled for **Wednesday, September 30, 2026, at 11:59 PM Pacific time**. The installation link still serves the **2.1.0 prerelease** described above; KBAR is not available there yet. Confirm the published source and release before expecting these controls.
+KBAR is available in **2.2.0**. It starts off on every page load and saves no playback preference. It plays the English KBAR video on loop only after you request playback. **Enable Playground** must be on; enabling the schedule panel is not required.
 
-After installing the upcoming version, KBAR starts off on every page load and saves no playback preference. It plays the English KBAR video on loop only after you request playback. **Enable Playground** must be on; enabling the schedule panel is not required.
-
-| Control | Upcoming behavior |
+| Control | Behavior |
 | --- | --- |
 | **P** | First press creates the player and requests playback; subsequent presses request pause or resume. The shortcut ignores editable controls, repeated/composing key events, and Ctrl/Alt/Meta combinations. It is inactive while the Playground dialog is open. |
 | **Settings → Play / pause KBAR (P)** | Starts or toggles playback while Settings is open. |
@@ -33,7 +40,7 @@ After installing the upcoming version, KBAR starts off on every page load and sa
 
 The small **200 × 200** player is intentionally placed far below the page content. Opening it adds at least **8,000 pixels** of space above it (or ten viewport heights if larger), without moving focus or scrolling the page. Use Settings to stop or control it without scrolling that distance. Closing removes the extra space. Browser restrictions, network problems, or a video that cannot be embedded can prevent playback; a keypress requests playback rather than guaranteeing it starts.
 
-Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives ordinary connection information and playback activity, may use cookies or other browser storage, makes its own media/advertising requests, and may show ads. Playground's player URL and control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the Aeries site origin, not the full gradebook URL. See [Security and privacy](../SECURITY.md#upcoming-kbar-playback).
+Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives ordinary connection information and playback activity, may use cookies or other browser storage, makes its own media/advertising requests, and may show ads. Playground's player URL and control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the Aeries site origin, not the full gradebook URL. See [Security and privacy](../SECURITY.md#kbar-playback).
 
 **Pausing leaves the embed loaded; closing unloads it.** Pausing therefore does not stop all third-party network activity. Turning off **Enable Playground**, clearing saved settings, or leaving the page also removes the player in that tab. Closing cannot undo requests already sent or clear storage controlled by YouTube. YouTube's cross-origin player loads its own code; Playground does not inject that code into the Aeries page's JavaScript realm. Its internal message transport may change, so native video controls and the source link remain fallbacks.
 
@@ -42,12 +49,12 @@ Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy
 | Action or data | Behavior |
 | --- | --- |
 | Course labels, colors, periods, and grading preferences | Saved for reuse; course settings belong to the manually selected profile/year. |
-| Honors/AP selections (prerelease) | Saved per course in the selected profile/year; default unchecked. These are preferences, not saved grades or GPA results. |
+| Honors/AP selections | Saved per course in the selected profile/year; default unchecked. These are preferences, not saved grades or GPA results. |
 | Course grading profiles and replacement rules | Saved separately from the current hypothetical scenario. Incomplete grading-profile forms are saved as drafts. |
 | Hypothetical scores, score ranges, and added assignments | Temporary; leaving the scenario or reloading clears them. |
 | Posted grades and assignments | Read from the visible Aeries page; local controls do not submit changes to Aeries. |
 | Next-class panel | Off until enabled in Settings; turning it off stops schedule work in the current tab. Reload other Aeries tabs promptly. |
-| KBAR playback (upcoming) | Off on every page load; playback state is not saved. Starting creates the embed; pausing keeps it loaded; closing removes it. |
+| KBAR playback | Off on every page load; playback state is not saved. Starting creates the embed; pausing keeps it loaded; closing removes it. |
 
 The security and privacy comment in the published script is the full reference for permissions, stored fields, external requests, and manager-specific behavior. [SECURITY.md](../SECURITY.md) explains how to report a concern.
 
@@ -60,7 +67,7 @@ Open **Aeries Playground → Courses** to edit discovered courses.
 - **Display name** changes the dashboard label. Hovering retains access to the original title, and the course link still opens its gradebook.
 - **Icon** is optional text or an emoji; new courses start without an automatically chosen icon.
 - **Class period (optional override)** connects a course to the MVHS schedule panel. Leave it blank to use an unambiguous period detected on its dashboard card. Period identifiers can include suffixes such as `2A`; matching is exact.
-- **Honors/AP — weighted GPA bonus (prerelease)** appears beside the period setting. Check only courses that should receive the bonus; no eligibility is inferred from a course name. New and previously saved courses without a selection start unchecked. Use **Save course settings** to apply it.
+- **Honors/AP — weighted GPA bonus** appears beside the period setting. Check only courses that should receive the bonus; no eligibility is inferred from a course name. New and previously saved courses without a selection start unchecked. Use **Save course settings** to apply it.
 - **Bar scale**, **Bar minimum**, and **Bar maximum** control the progress bar.
 - **Custom thresholds for this course** overrides the global cutoffs for its grade scale.
 
@@ -102,11 +109,11 @@ The number stays an **average**, such as 3.5. In numeric mode, only its **color*
 
 Open **Calculation & included classes** to inspect the arithmetic and choose which classes count. The summary uses courses currently visible on the dashboard, deduplicated by course identity. Ungraded or unrecognized entries are skipped. In letter mode, F counts as zero; pass/fail and numeric-only marks are skipped.
 
-In letter mode, the prerelease adds the manually selected AP/Honors bonus described below. These are unofficial equal-weight estimates, without course-credit weighting, previous years, or transcript data. The “current-year” label does not mean the script downloads a transcript.
+In letter mode, the manually selected AP/Honors bonus is applied as described below. These are unofficial equal-weight estimates, without course-credit weighting, previous years, or transcript data. The “current-year” label does not mean the script downloads a transcript.
 
-### Weighted and unweighted GPA together (prerelease)
+### Weighted and unweighted GPA together
 
-With **Overall grade / GPA above classes** enabled and **Show 4/3/2/1 on dashboard** off, the prerelease shows **Unweighted GPA** and **Weighted GPA** together. Numeric 4/3/2/1 mode keeps its existing threshold-based overall average; selecting honors/AP courses does not change those ratings.
+With **Overall grade / GPA above classes** enabled and **Show 4/3/2/1 on dashboard** off, Playground shows **Unweighted GPA** and **Weighted GPA** together. Numeric 4/3/2/1 mode keeps its existing threshold-based overall average; selecting honors/AP courses does not change those ratings.
 
 Open **Calculation & GPA class selection** to inspect both totals. Each class has two separate choices:
 
@@ -125,7 +132,7 @@ Honors/AP choices start unchecked, so both GPAs initially match. Set them here f
 
 Both averages count the same included, currently visible courses with posted A–F letters, once per course identity and with equal course weight. Blank, pass/fail, numeric-only, or other unrecognized marks do not count. F counts as a real zero. An empty set displays a dash for each GPA, not zero. Grades and computed GPA values are not saved, and hypothetical assignment edits do not replace the posted letters used here.
 
-For five included, checked courses with A, B, C, D, and F, unweighted GPA is **10 / 5 = 2.00** and weighted GPA is **13 / 5 = 2.60**. See [the formulas and examples](CALCULATIONS.md#weighted-gpa-prerelease). These estimates do not apply transcript credit weights, institution-specific eligibility rules, or bonus caps.
+For five included, checked courses with A, B, C, D, and F, unweighted GPA is **10 / 5 = 2.00** and weighted GPA is **13 / 5 = 2.60**. See [the formulas and examples](CALCULATIONS.md#weighted-gpa). These estimates do not apply transcript credit weights, institution-specific eligibility rules, or bonus caps.
 
 ## Assignment analysis
 
@@ -292,7 +299,7 @@ On a fresh install, **Show 4/3/2/1 on dashboard** and **What class is next (MVHS
 
 Toggles apply and save immediately. Other Settings fields require **Save settings**. Course display edits use **Save course settings**; grading-profile forms and added/removed replacement rules save automatically. These different save behaviors are independent of the temporary grade-testing scenario.
 
-In the prerelease, course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
+Course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
 
 Use **Clear saved settings and pause** to clear saved profiles, course settings, grading rules, and preferences. Confirm the dialog to apply the reset. This exits grade testing, turns off the next-class panel, and leaves Playground paused. Reload other Aeries tabs promptly after clearing settings and before using them again. Reset detection can prevent stale saves once a tab detects the reset, but it is not immediate live synchronization; an already open tab can still run with its old state until detection or reload. Re-enable **Enable Playground** when you are ready to configure a fresh setup; the schedule panel requires a separate opt-in again. Clearing settings does not remove copies retained by the userscript manager's sync or backups.
 
@@ -300,7 +307,7 @@ Use **Clear saved settings and pause** to clear saved profiles, course settings,
 
 The dialog supports keyboard tab navigation, arrow/Home/End navigation between its tabs, labeled controls, and focusable weight-map entries. It adapts its layout to the available width.
 
-Press **S** outside an editable field to open Settings. The shortcut ignores typing in inputs, text areas, selectors, and editable content, as well as modified shortcuts such as Ctrl+S. A Tampermonkey menu command also opens Settings. The upcoming KBAR shortcut **P** is separate and inactive while this dialog is open; use its Settings buttons instead.
+Press **S** outside an editable field to open Settings. The shortcut ignores typing in inputs, text areas, selectors, and editable content, as well as modified shortcuts such as Ctrl+S. A Tampermonkey menu command also opens Settings. The KBAR shortcut **P** is separate and inactive while this dialog is open; use its Settings buttons instead.
 
 Read the comment at the top of [aeries-playground.user.js](../aeries-playground.user.js) for the saved-data breakdown and removal instructions.
 
@@ -316,9 +323,9 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | --- | --- |
 | No Playground button | Confirm the script and Tampermonkey are enabled, script permission is granted, and the page is under the supported MVLA student URL. |
 | Courses are missing | Open the dashboard to discover course cards. The feature does not fetch courses from other pages or accounts. |
-| No weighted GPA or Honors/AP controls | Confirm the prerelease is installed, then enable **Overall grade / GPA above classes** and turn **Show 4/3/2/1 on dashboard** off. Check the installed metadata version if the controls are still missing. |
-| Prerelease GPAs are identical | Check the intended Honors/AP classes and save course settings if edited in Courses. No selected, counted A/B/C means no bonus; selected D/F still receive no bonus. |
-| A prerelease class does not affect GPA | Check inclusion, visibility, and the posted letter. Non-A–F marks do not count, and checking Honors/AP does not include an excluded class. |
+| No weighted GPA or Honors/AP controls | Confirm the current release is installed, then enable **Overall grade / GPA above classes** and turn **Show 4/3/2/1 on dashboard** off. Check the installed metadata version if the controls are still missing. |
+| GPAs are identical | Check the intended Honors/AP classes and save course settings if edited in Courses. No selected, counted A/B/C means no bonus; selected D/F still receive no bonus. |
+| A class does not affect GPA | Check inclusion, visibility, and the posted letter. Non-A–F marks do not count, and checking Honors/AP does not include an excluded class. |
 | Impact/map/total unavailable | Turn off Aeries' missing-only filter, wait for the selected gradebook to load, and check that visible rows reconcile with category/overall totals. |
 | Teacher uses additional rules | Inspect the posted totals and configured policies; unsupported rules can leave the baseline unmatched. |
 | “What do I need?” cannot calculate | Turn off counted ranges; complete the assignment, target, maximum, and increment; finish any half-entered replacement and resolve unmatched saved rules. |
@@ -331,10 +338,10 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | Display looks wrong | Disable duplicate/older Aeries scripts; pause Playground or disable it and reload to compare with the original page. |
 | Settings cannot be saved | The change applies for the current visit, and the UI reports a browser-storage error. |
 | Settings were cleared or schedules disabled in another tab | Reload promptly. Ordinary saves use the last written settings; an old tab can continue schedule requests and re-save its opt-in. Clearing settings has a separate stale-save check once detected, but does not immediately synchronize every running tab. |
-| KBAR controls are missing (upcoming) | They are not in the current prerelease; install the published KBAR version when available, then reload. |
-| P does nothing or KBAR is silent (upcoming) | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, try again or use the native player controls/source link. |
-| Page gains a long blank area after starting KBAR (upcoming) | The far-down player placement is intentional. Use **Settings → Close KBAR player** to stop playback and remove the added space. |
-| Music paused but YouTube remains loaded (upcoming) | Pause leaves the embed active. Use **Close KBAR player** to unload it. |
+| KBAR controls are missing | Check that the installed source is 2.2.0 or newer; the earlier weighted-GPA prerelease does not include KBAR. Reload after updating. |
+| P does nothing or KBAR is silent | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, try again or use the native player controls/source link. |
+| Page gains a long blank area after starting KBAR | The far-down player placement is intentional. Use **Settings → Close KBAR player** to stop playback and remove the added space. |
+| Music paused but YouTube remains loaded | Pause leaves the embed active. Use **Close KBAR player** to unload it. |
 | Unexpected behavior after installing | Keep one copy enabled, reload Aeries, and compare with the script disabled. Check whether the supported Aeries layout has changed. |
 
 For a bug report, include your browser, userscript manager, the affected feature, steps, and fictional example values. Describe the expected result and what appeared instead. Use [Contributing](../CONTRIBUTING.md) for ordinary reports and [Security](../SECURITY.md) for sensitive concerns.

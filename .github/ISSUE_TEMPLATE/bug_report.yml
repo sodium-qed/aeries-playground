@@ -23,7 +23,7 @@ body:
         - Gradebook details
         - Grade testing or grading rules
         - Next-class widget
-        - KBAR music (upcoming version)
+        - KBAR music
         - Settings
         - Installation
         - Documentation
@@ -39,7 +39,7 @@ body:
     id: settings
     attributes:
       label: Relevant settings and installation
-      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. For GPA issues, say whether numeric 4/3/2/1 mode is on and, if using the prerelease, which fictional courses are included and checked Honors/AP. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it or changed it in another tab. For KBAR in the upcoming version, say whether you used P, Settings, or the menu and whether you paused or closed the player.
+      description: Mention active controls, generic profile/year labels, whether other Aeries tabs were open, and whether the file was installed fresh or manually replaced. For GPA issues, say whether numeric 4/3/2/1 mode is on and, if using the prerelease, which fictional courses are included and checked Honors/AP. Do not export your saved settings. The next-class widget starts off; for schedule issues, say whether you enabled it or changed it in another tab. For KBAR, say whether you used P, Settings, or the menu and whether you paused or closed the player.
   - type: textarea
     id: example
     attributes:

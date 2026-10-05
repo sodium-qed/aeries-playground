@@ -14,7 +14,7 @@ For KBAR work, cover interaction-only iframe creation, P shortcut exclusions and
 
 Identify updated guides and any behavior that remains unsupported or unverified. If permissions, storage, updates, or requests changed, update the explanatory comment at the top of aeries-playground.user.js and identify that change here. Keep README instructions aligned with whether the script has been published.
 
-Clearly label upcoming and prerelease behavior. A published prerelease is downloadable but is not the stable Latest release; a raw-main install link follows the source on main. For documentation-only work, confirm the installable source is unchanged and no tag/release/asset is being published. The advance KBAR guide must remain labeled upcoming until its source is released. Keep explicit version labels, dates, and a changelog out of the README; do not add a CHANGELOG file.
+Clearly label upcoming and prerelease behavior. A published prerelease is downloadable but is not the stable Latest release; a raw-main install link follows the source on main. For documentation-only work, confirm the installable source is unchanged and no tag/release/asset is being published. Label future feature guides as upcoming until their source is released. Keep explicit version labels, dates, and a changelog out of the README; do not add a CHANGELOG file.
 
 - [ ] This request contains no real student data, credentials, copied account pages, or saved-settings exports.
 - [ ] Applicable license, copyright, attribution, and third-party notices are preserved.

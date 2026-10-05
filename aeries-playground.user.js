@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.1.0
-// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, and the next class from mvhs.io with seconds cross-checked against bell.plus.
+// @version      2.2.0
+// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, the next class from mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -33,7 +33,9 @@
  * - Posted grades and hypothetical scores are not saved. Saved preferences
  *   and course policies can be cleared from Settings.
  * - Updates are manual on a fresh Tampermonkey install; see the update note
- *   below. No downloaded code, analytics, or advertising is included.
+ *   below. Optional KBAR playback loads a third-party YouTube embed only
+ *   after you press P or use its playback button. YouTube may collect
+ *   playback information and show ads; see the KBAR section below.
  * These statements describe this file, not a security certification. Like
  * any userscript, it relies on your browser, manager, and installed source.
  *
@@ -79,7 +81,7 @@
  *   settings may copy stored data elsewhere; review or disable those settings
  *   if you want it kept on this device.
  *
- * EVERY AUTOMATIC NETWORK REQUEST MADE BY THIS SCRIPT
+ * OPTIONAL PUBLIC SCHEDULE NETWORK REQUESTS
  * These requests support the optional next-class widget. They are off by
  * default and require you to enable "What class is next (MVHS)" in Settings.
  * An enabled widget inherited from an older install does not grant consent:
@@ -108,11 +110,43 @@
  * Public schedules and the clock cross-check require same-date data less
  * than five minutes old. Course-to-period matching happens locally.
  * Turn off "What class is next (MVHS)" in Settings to revoke consent, stop
- * refreshes, cancel outstanding requests, and clear the schedule cache.
+ * refreshes, cancel outstanding requests, and clear the cache in this tab.
+ * Reload other open Aeries tabs promptly: they keep their previous settings
+ * in memory, can continue requests, and can save the old opt-in again if
+ * edited before reloading. Ordinary settings changes do not sync live.
  * Late responses are ignored even if the manager cannot abort a transfer.
  * Cancellation cannot undo a request that already reached a service.
  * Opening a source link visits that service normally; installing or updating
  * a script may separately contact its host through your userscript manager.
+ *
+ * OPTIONAL KBAR / YOUTUBE PLAYBACK
+ * - With Settings closed, press P outside editable controls to create a
+ *   200 by 200 pixel YouTube player far below the page and request playback.
+ *   P toggles play/pause. The footer adds at least 8,000 pixels of scroll
+ *   space. Use Settings > Close KBAR player to unload it without scrolling.
+ *   Settings also has a Play / pause KBAR button. KBAR starts off on every
+ *   page load; no playback state is saved.
+ * - The iframe uses https://www.youtube-nocookie.com/embed/sasjlpt7zWM
+ *   with looping enabled. Its URL contains the video ID, fixed player
+ *   options, and https://mvla.aeries.net as the client origin. The
+ *   referrer policy sends the site origin, not the full gradebook URL.
+ * - The embedded YouTube service makes its own media, advertising, and
+ *   other requests. Privacy-enhanced embedding does not make playback
+ *   anonymous: YouTube receives ordinary connection information and
+ *   playback activity and may use cookies or other browser storage.
+ * - No grades, assignments, course names, profiles, or Aeries account
+ *   data are included in Playground's player URL or command messages.
+ *   The remote player runs inside a cross-origin iframe; Playground
+ *   does not inject YouTube's remote scripts into the gradebook itself.
+ * - The command bridge checks the exact iframe window and origin. It
+ *   uses the embed's internal message transport, which can change;
+ *   native YouTube controls and a source link remain available.
+ * - Close removes the player and stops playback. Pausing Playground,
+ *   clearing saved settings, or leaving the page also removes it.
+ *   P pauses playback but leaves the embed loaded. Closing cannot undo
+ *   requests already sent or delete storage managed by YouTube.
+ * - YouTube terms: https://www.youtube.com/t/terms
+ *   Google privacy policy: https://policies.google.com/privacy
  *
  * WHY EACH PERMISSION IS REQUESTED
  * - GM_getValue / GM_setValue: load and save the local settings described above.
@@ -121,9 +155,12 @@
  *   domains. @connect lists the two schedule hosts, without a wildcard.
  *   The manager still grants this capability while the widget is off; opt-in
  *   is enforced by this file's code, not by a separate permission sandbox.
- * No analytics, telemetry, advertising, or remote-code loader is included.
- * The script has no @require dependencies and does not evaluate downloaded
- * scripts. Public responses are treated as data, not executable code.
+ * The script has no @require dependencies, does not evaluate downloaded
+ * scripts in Aeries, and adds no Playground analytics. Schedule responses
+ * are data, not executable code. The optional YouTube iframe loads its
+ * own third-party code and may show advertising as described above.
+ * Browser iframe/media requests do not use GM_xmlhttpRequest or its
+ * @connect allowlist. KBAR requires no additional userscript grants.
  *
  * BUILT-IN SAFEGUARDS AND HOW TO INSPECT THEM
  * - Playground controls are created with a separate, unbound form attribute;
@@ -139,7 +176,8 @@
  * - To review the implementation, search for GradeDOM, el, persist,
  *   clearSavedSettings, serializePlanningRules, saveProfile,
  *   scheduleRequestsAllowed, requestScheduleJSON, abortScheduleRequests,
- *   requestBellPlusClock, and verifiedBellSeconds in this file.
+ *   requestBellPlusClock, verifiedBellSeconds, kbar, and kbarShortcut.
+ *   KBAR is separate from the schedule request helper.
  * The accompanying custom license explicitly permits giving the complete
  * source to AI tools, automated scanners, or human security auditors,
  * including paid services, without asking permission.
@@ -160,7 +198,8 @@
  *   could misuse granted access; these safeguards describe this code only.
  *
  * STOPPING THE SCRIPT AND REMOVING SAVED DATA
- * - Turning off "Enable Playground" pauses enhancements and keeps settings.
+ * - Turning off "Enable Playground" pauses enhancements, removes the KBAR
+ *   player to stop its playback, and keeps saved settings.
  *   Exiting grade testing clears its temporary scenario, not saved policies.
  * - To stop the script completely, disable or remove it in your userscript
  *   manager and reload Aeries. Disabling it does not erase stored data.
@@ -3588,6 +3627,7 @@ window.addEventListener('pageshow',refreshSchedule);
 window.addEventListener('pagehide',abortScheduleRequests);
 
   function scan() {
+    kbar.reconcile();
     syncAeriesFont();
     const current=db.settings.enabled?GradeDOM.currentCourse():null;
     if(current){
@@ -3951,6 +3991,191 @@ window.addEventListener('pagehide',abortScheduleRequests);
     event.preventDefault();openPanel('settings');
   }
   document.addEventListener('keydown',settingsShortcut);
+  // KBAR uses the cross-origin YouTube embed. No YouTube script is loaded into
+  // the gradebook's JavaScript realm. Its postMessage transport is an internal
+  // player interface and may change; native controls remain the fallback.
+  // The footer deliberately adds scroll space; Settings also exposes playback
+  // and Close controls so unloading the iframe does not require scrolling.
+  const kbar = (() => {
+    const video = 'sasjlpt7zWM';
+    const origin = 'https://www.youtube-nocookie.com';
+    let footer = null, frame = null, toggleButton = null, message = null;
+    let ready = false, wanted = false, failed = false, listening = null, deadline = null;
+    let playbackDeadline = null, pendingPlayback = null, generation = 0;
+
+    function paint(text) {
+      if (!toggleButton) return;
+      toggleButton.textContent = wanted ? 'Pause KBAR' : 'Play KBAR';
+      toggleButton.setAttribute('aria-pressed', String(wanted));
+      if (text !== undefined) message.textContent = text;
+    }
+    function post(data) {
+      if (frame?.isConnected) frame.contentWindow?.postMessage(JSON.stringify(data), origin);
+    }
+    function command(func, args = []) {
+      if (!['playVideo','pauseVideo','addEventListener'].includes(func)) return;
+      post({event:'command', func, args, id:'ap-kbar-player', channel:'widget'});
+    }
+    function clearLoading() {
+      clearInterval(listening); clearTimeout(deadline);
+      listening = deadline = null;
+    }
+    function requestPlayback() {
+      if (!ready) return;
+      clearTimeout(playbackDeadline);
+      pendingPlayback = wanted ? 1 : 2;
+      command(wanted ? 'playVideo' : 'pauseVideo');
+      paint(wanted ? 'Starting KBAR…' : 'Paused · P to resume');
+      playbackDeadline = setTimeout(() => {
+        const wasStarting = wanted;
+        pendingPlayback = null;
+        wanted = false;
+        command('pauseVideo');
+        paint(wasStarting ? 'Playback did not start. Press P again or use the video’s Play button.' : 'Pause requested. If audio continues, close the player to stop it.');
+      }, 10000);
+    }
+    function connected() {
+      if (ready) return;
+      ready = true; failed = false; clearLoading();
+      for (const name of ['onStateChange','onError','onAutoplayBlocked']) command('addEventListener', [name]);
+      requestPlayback();
+    }
+    function receive(event) {
+      if (!frame || event.source !== frame.contentWindow || event.origin !== origin) return;
+      if (typeof event.data !== 'string' || event.data.length > 65536) return;
+      let data;
+      try { data = JSON.parse(event.data); } catch { return; }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return;
+      if (data.event === 'onReady' || data.event === 'initialDelivery') {
+        connected(); return;
+      }
+      if (data.event === 'onError') {
+        clearLoading(); clearTimeout(playbackDeadline);
+        pendingPlayback = null; wanted = false; failed = true;
+        const errors = {
+          2:'YouTube could not load this video.',
+          5:'YouTube playback is unavailable in this browser.',
+          100:'This KBAR video is unavailable.',
+          101:'This video cannot be played here.',
+          150:'This video cannot be played here.',
+          153:'YouTube could not verify this embed.'
+        };
+        paint((errors[data.info] || 'YouTube could not play KBAR.') + ' Try again or open it on YouTube.');
+        return;
+      }
+      if (data.event === 'onAutoplayBlocked') {
+        clearTimeout(playbackDeadline); pendingPlayback = null; wanted = false;
+        paint('Browser blocked playback. Press P again or use the video’s Play button.');
+        return;
+      }
+      if (data.event !== 'onStateChange' || !Number.isInteger(data.info)) return;
+      // An unstarted, ended, or cued player is also stopped. It need not
+      // emit state 2 when P cancels playback before the first play begins.
+      if (pendingPlayback === 2 && [-1,0,5].includes(data.info)) {
+        clearTimeout(playbackDeadline); pendingPlayback = null; wanted = false;
+        paint('Paused \u00b7 P to resume');
+        return;
+      }
+      // A late playing/paused notification must not reverse the user's most
+      // recent shortcut while its matching command is still being acknowledged.
+      if ([1,2].includes(data.info) && pendingPlayback !== null && data.info !== pendingPlayback) return;
+      if (data.info === 1) {
+        clearTimeout(playbackDeadline); pendingPlayback = null; failed = false; wanted = true;
+        paint('Playing · loops automatically · P to pause');
+      } else if (data.info === 2) {
+        clearTimeout(playbackDeadline); pendingPlayback = null; wanted = false;
+        paint('Paused · P to resume');
+      } else if (data.info === 3) {
+        paint('Buffering…');
+      } else if (data.info === 0) {
+        // loop=1 + playlist=<same video> handles repeats in the player itself.
+        paint(wanted ? 'Looping…' : 'Paused · P to resume');
+      }
+    }
+    function destroy() {
+      generation++; clearLoading(); clearTimeout(playbackDeadline);
+      window.removeEventListener('message', receive);
+      frame?.remove(); footer?.remove();
+      footer = frame = toggleButton = message = null;
+      pendingPlayback = null;
+      ready = wanted = failed = false;
+    }
+    function create() {
+      const instance = ++generation;
+      footer = el('section', null, {id:'ap-kbar-footer', 'data-ap-owned':'kbar', 'aria-label':'KBAR music'});
+      // Extra scroll space is created only after KBAR is opened. Never focus or
+      // auto-scroll to this footer as a side effect of the keyboard shortcut.
+      footer.style.cssText = 'display:block;clear:both;position:relative;width:100%;padding:max(1000vh, 8000px) 0 24px;margin:0;box-sizing:border-box;overflow-anchor:none;';
+      const shadow = footer.attachShadow({mode:'open'});
+      const css = el('style');
+      css.textContent = `:host{font-family:var(--ap-aeries-font,sans-serif);color:#334155;color-scheme:light}
+        *{box-sizing:border-box}section{width:226px;max-width:100%;margin:0 auto;padding:12px;background:#fff;border:1px solid #dbe4ef;border-radius:6px;font-size:11px;line-height:1.4}
+        h2{font-size:12px;margin:0 0 8px}iframe{display:block;width:200px;height:200px;max-width:none;border:0;margin:0}
+        .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}button{font:inherit;padding:4px 7px;border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:4px;cursor:pointer}
+        button:focus-visible,a:focus-visible{outline:2px solid #2563eb;outline-offset:2px}p{margin:8px 0 0}a{color:#245de8}
+        @media print{:host{display:none!important}}`;
+      const panel = el('section');
+      panel.append(el('h2','KBAR · YouTube'));
+      frame = el('iframe', null, {id:'ap-kbar-player', title:'KBAR music — YouTube', width:'200', height:'200',
+        allow:'autoplay; encrypted-media; fullscreen; picture-in-picture', allowfullscreen:'',
+        referrerpolicy:'strict-origin-when-cross-origin'});
+      const url = new URL('/embed/' + video, origin);
+      // Only a constant video ID, playback options, and the site origin leave
+      // Playground here. Never include grades or the full gradebook URL.
+      url.search = new URLSearchParams({enablejsapi:'1', origin:location.origin,
+        autoplay:'0', loop:'1', playlist:video, controls:'1', playsinline:'1', rel:'0'}).toString();
+      const listen = () => {
+        if (instance === generation && !ready) post({event:'listening', id:'ap-kbar-player', channel:'widget'});
+      };
+      frame.addEventListener('load', listen);
+      frame.addEventListener('error', () => {
+        if (instance !== generation) return;
+        clearLoading(); wanted = false; failed = true;
+        paint('YouTube could not load. Try again or open it on YouTube.');
+      });
+      toggleButton = button('Pause KBAR', toggle);
+      toggleButton.setAttribute('aria-keyshortcuts','P');
+      const close = button('Close', destroy);
+      close.setAttribute('aria-label','Stop KBAR and close the player');
+      const actions = el('div', null, {class:'actions'}); actions.append(toggleButton,close);
+      message = el('p','Loading KBAR…',{role:'status','aria-live':'polite'});
+      const link = el('a','Open on YouTube',{href:'https://www.youtube.com/watch?v='+video,
+        target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer'});
+      const source = el('p'); source.append(link);
+      panel.append(frame,actions,message,source); shadow.append(css,panel);
+      window.addEventListener('message', receive);
+      frame.src = url.href;
+      document.body.append(footer);
+      listening = setInterval(listen, 500);
+      deadline = setTimeout(() => {
+        clearLoading(); wanted = false; failed = true;
+        paint('YouTube is taking too long. Try again or use the video controls below.');
+      }, 15000);
+      paint();
+    }
+    function toggle() {
+      if (!db.settings.enabled) return;
+      if (failed || (footer && !footer.isConnected)) destroy();
+      if (!footer) { wanted = true; create(); return; }
+      wanted = !wanted;
+      if (ready) requestPlayback();
+      else paint(wanted ? 'Loading KBAR…' : 'Playback paused while loading · P to resume');
+    }
+    function reconcile() {
+      if (!db.settings.enabled || (footer && !footer.isConnected)) destroy();
+    }
+    return {toggle,destroy,reconcile};
+  })();
+  function kbarShortcut(event) {
+    if (event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.key?.toLowerCase() !== 'p') return;
+    const path = event.composedPath?.() || [event.target];
+    if ([...path,focusedElement()].some(node => node?.matches?.('input,textarea,select,[role="textbox"],[role="combobox"],[role="searchbox"],[role="spinbutton"],[role="slider"]') || node?.isContentEditable)) return;
+    if (!db.settings.enabled || dialog.open) return;
+    event.preventDefault(); kbar.toggle();
+  }
+  document.addEventListener('keydown', kbarShortcut);
+  window.addEventListener('pagehide', kbar.destroy);
+
   function renderTab(name){
     if(!Object.hasOwn(tabsByName,name))name='courses';
     activeTab=name;content.replaceChildren();
@@ -4004,7 +4229,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
       const n=input('', 'checkbox');n.checked=draft[key];toggles[key]=n;n.addEventListener('change',()=>setToggle(key,n.checked));const l=el('label',null,{class:'ap-toggle'});l.append(n,el('span',label));box.append(l);
       if(key==='nextClass'){
-        const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off cancels pending requests.');
+        const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off cancels requests in this tab. Reload other Aeries tabs promptly; they keep old settings and can continue requests or save the old opt-in again.');
         explanation.id='ap-schedule-consent';n.setAttribute('aria-describedby',explanation.id);box.append(explanation);
       }
     }
@@ -4012,6 +4237,15 @@ window.addEventListener('pagehide',abortScheduleRequests);
     box.append(note('Number grades replace only the dashboard letter: 4, 3, 2, or 1 from your thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
     box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA displays both unweighted and weighted averages of posted letters. Unweighted A/B/C/D/F = 4/3/2/1/0; honors/AP classes you check use 5/4/3/1/0 for weighted GPA. Select them in Courses or in the GPA details. Both averages ignore plus/minus signs and thresholds.'));
     box.append(note('Precise mode shows up to 8 decimals for calculated percentages and impact estimates, and keeps the precision Aeries actually displays. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
+    const musicBox=el('div',null,{class:'ap-box'});
+    musicBox.append(el('h3','KBAR music · P'),note('With Settings closed, press P outside editable controls to play or pause the English KBAR video on loop. Its small player appears far below the page content, with at least 8,000 pixels of extra scroll space. Use the buttons here to control or close it without scrolling.'));
+    musicBox.append(note('Starting KBAR connects to YouTube. It may collect playback information and show ads. Playground sends no grades or course data. Close the player to stop and unload it; P pauses it.'));
+    const musicButton=button('Play / pause KBAR (P)',()=>kbar.toggle());musicButton.disabled=!db.settings.enabled;
+    toggles.enabled.addEventListener('change',()=>{musicButton.disabled=!db.settings.enabled;});
+    musicBox.append(musicButton,button('Close KBAR player',()=>kbar.destroy()));
+    const musicLinks=note('');
+    musicLinks.append(el('a','YouTube terms',{href:'https://www.youtube.com/t/terms',target:'_blank',rel:'noopener noreferrer'}),document.createTextNode(' · '),el('a','Google privacy policy',{href:'https://policies.google.com/privacy',target:'_blank',rel:'noopener noreferrer'}));
+    musicBox.append(musicLinks);box.append(musicBox);
     const scopeBox=el('div',null,{class:'ap-box'});scopeBox.append(el('h3','Separate course settings'));
     const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('Use a separate profile for each student or account. Change this before switching students; the script does not read account identity. Use a new year to start fresh.'));
     grid.append(box,scopeBox);content.append(grid);
@@ -4051,5 +4285,6 @@ window.addEventListener('pagehide',abortScheduleRequests);
   document.addEventListener('change',()=>{clearTimeout(scanTimer);scanTimer=setTimeout(scan,160);});
   window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);if(savePending)persist();});
   try{GM_registerMenuCommand('Aeries Playground — open settings (S)',()=>openPanel('settings'));}catch{/* The S keyboard shortcut remains available. */}
+  try{GM_registerMenuCommand('Aeries Playground — KBAR play/pause (P)',()=>kbar.toggle());}catch{/* The P shortcut remains available. */}
   scan();
 })();

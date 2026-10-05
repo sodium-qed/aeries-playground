@@ -1,4 +1,4 @@
-name: Publish 2.1 prerelease
+name: Publish 2.2 stable release
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aeries-playground-2-1-prerelease
+  group: aeries-playground-2-2-release
   cancel-in-progress: false
 
 jobs:
@@ -26,13 +26,15 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Publish the prepared 2.1 prerelease
+      - name: Publish the prepared 2.2 stable release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: python
         run: |
           from datetime import datetime, timezone
           from pathlib import Path
+          from urllib.parse import quote
+          import base64
           import hashlib
           import json
           import os
@@ -41,75 +43,150 @@ jobs:
           import tempfile
 
           source = Path('aeries-playground.user.js')
-          launch_time = datetime(2026, 9, 28, 6, 59, tzinfo=timezone.utc)
-          expected_hash = '92cde5d374ed0a39efef9f946d5492fdb9cec1e01cd274175b301c4658115279'
-          if not source.is_file() or datetime.now(timezone.utc) < launch_time:
-              print('The launch source is not available yet; no release was created.')
+          # Sunday, October 4, 2026 at 11:59 PM America/Los_Angeles (PDT).
+          launch_time = datetime(2026, 10, 5, 6, 59, tzinfo=timezone.utc)
+          expected_hash = 'b9263d3f59538939779883d4974beb17409e91c8669c1b0f43251ef668b00d10'
+          if datetime.now(timezone.utc) < launch_time:
+              print('The release time has not arrived; no release was created.')
               raise SystemExit(0)
+          if not source.is_file():
+              raise SystemExit('The prepared userscript is missing.')
           if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
               raise SystemExit('The userscript does not match the prepared launch file.')
-          if not re.search(r'^//\s*@version\s+2\.1\.0\s*$', source.read_text(), re.MULTILINE):
-              raise SystemExit('The userscript metadata does not match the 2.1 prerelease.')
+          if not re.search(r'^//\s*@version\s+2\.2\.0\s*$', source.read_text(), re.MULTILINE):
+              raise SystemExit('The userscript metadata does not match version 2.2.0.')
 
+          # These checks compile the source; they do not run it against Aeries.
           subprocess.run(['node', 'scripts/check-userscripts.mjs'], check=True)
+          subprocess.run(['node', '--test', 'tests/check-userscripts.test.mjs'], check=True)
           repo = os.environ['GITHUB_REPOSITORY']
           commit = os.environ['GITHUB_SHA']
-          tag = 'v2.1.0'
-          title = 'Aeries Playground 2.1.0'
+          tag = 'v2.2.0'
+          title = 'Aeries Playground 2.2.0'
 
           def gh(*args, check=True):
               return subprocess.run(['gh', *args], check=check, text=True, capture_output=True)
 
-          # A pre-existing tag must identify this exact release commit.
-          refs = subprocess.run(
-              ['git', 'ls-remote', '--tags', 'origin', f'refs/tags/{tag}', f'refs/tags/{tag}^{{}}'],
-              check=True, text=True, capture_output=True).stdout
-          tags = {ref: sha for sha, ref in (line.split() for line in refs.splitlines())}
-          tagged_commit = tags.get(f'refs/tags/{tag}^{{}}', tags.get(f'refs/tags/{tag}'))
-          if tagged_commit and tagged_commit != commit:
-              raise SystemExit('The release tag already points to another commit.')
+          def api(path, absent_ok=False):
+              result = gh('api', path, check=False)
+              if result.returncode:
+                  # Authentication, rate-limit, and service failures must not be
+                  # mistaken for an absent release or tag.
+                  if absent_ok and '(HTTP 404)' in result.stderr:
+                      return None
+                  raise SystemExit(result.stderr.strip() or 'GitHub API request failed.')
+              return json.loads(result.stdout)
+
+          def verify_source_at(ref):
+              file = api(f'repos/{repo}/contents/{source.name}?ref={quote(ref, safe="")}')
+              if file.get('type') != 'file' or file.get('encoding') != 'base64':
+                  raise SystemExit('The tagged source is not an ordinary readable file.')
+              contents = base64.b64decode(file['content'])
+              if hashlib.sha256(contents).hexdigest() != expected_hash:
+                  raise SystemExit('The referenced commit contains a different userscript.')
+
+          def tagged_commit(ref):
+              # Peel annotated tags explicitly; a branch with the same name
+              # must never be mistaken for the release tag.
+              obj = ref['object']
+              for _ in range(8):
+                  if obj['type'] == 'commit':
+                      return obj['sha']
+                  if obj['type'] != 'tag':
+                      break
+                  obj = api(f'repos/{repo}/git/tags/{obj["sha"]}')['object']
+              raise SystemExit('The release tag does not resolve to a commit.')
+
+          # Check the repository blob too, so checkout line-ending conversion
+          # cannot conceal a difference between the tag and uploaded asset.
+          verify_source_at(commit)
+          tag_path = f'repos/{repo}/git/ref/tags/{tag}'
+          tag_ref = api(tag_path, absent_ok=True)
+          release_commit = tagged_commit(tag_ref) if tag_ref else commit
+          verify_source_at(release_commit)
+          release_path = f'repos/{repo}/releases/tags/{tag}'
+          release = api(release_path, absent_ok=True)
+          if release and release['tag_name'] != tag:
+              raise SystemExit('The existing release uses an unexpected tag.')
+          if release and release['draft']:
+              # Never repurpose a draft whose intended source differs. A
+              # documentation-only commit with identical source is acceptable.
+              verify_source_at(release['target_commitish'])
+          if release and not release['draft']:
+              if release['prerelease'] or release['name'] != title:
+                  raise SystemExit('The existing published release has unexpected metadata.')
+              if not tag_ref:
+                  raise SystemExit('The published release is missing its tag.')
 
           with tempfile.TemporaryDirectory() as folder:
               notes = Path(folder) / 'release-notes.md'
               notes.write_text(
-                  'Aeries Playground 2.1.0 is a prerelease that displays weighted and '
-                  'unweighted current-year GPA estimates together. Honors/AP bonus eligibility '
-                  'is selected manually per course and starts unchecked. A/B/C receive one '
-                  'bonus point; D/F remain 1/0.\n\n'
-                  'Install the attached `aeries-playground.user.js` with Tampermonkey. '
-                  'Read the security and privacy explanation and license at the top of the file.\n\n'
-                  '[Installation and feature guide](https://github.com/sodium-qed/aeries-playground#install)\n'
-              )
-              existing = gh('release', 'view', tag, '--repo', repo,
-                            '--json', 'isDraft,targetCommitish', check=False)
-              if existing.returncode == 0:
-                  release = json.loads(existing.stdout)
-                  if release['isDraft']:
-                      if release['targetCommitish'] != commit:
-                          raise SystemExit('An existing draft targets a different commit.')
-                      gh('release', 'upload', tag, str(source), '--repo', repo, '--clobber')
-                      gh('release', 'edit', tag, '--repo', repo, '--draft=false',
-                         '--prerelease', '--latest=false',
-                         '--title', title, '--notes-file', str(notes))
-              else:
-                  gh('release', 'create', tag, str(source), '--repo', repo,
-                     '--target', commit, '--title', title, '--notes-file', str(notes),
-                     '--prerelease', '--latest=false')
+                  'Aeries Playground 2.2.0 adds optional looping KBAR music. '
+                  'Press P outside a text field, or use the Settings playback button, '
+                  'to play or pause. Close the player to stop and unload it. '
+                  'Playback starts off on every page load.\n\n'
+                  'Starting KBAR connects to a YouTube privacy-enhanced embed. '
+                  'YouTube can receive connection and playback information and may '
+                  'show ads; privacy-enhanced embedding is not anonymous. Playground '
+                  'does not include grades, assignments, or course names in its '
+                  'player URL or playback commands.\n\n'
+                  'The weighted and unweighted current-year GPA estimates introduced '
+                  'in 2.1.0 remain available. Select eligible honors/AP courses manually; '
+                  'A/B/C receive one bonus point and D/F remain 1/0. These are local '
+                  'estimates, not official transcript GPAs.\n\n'
+                  'Install or manually update with the attached '
+                  '`aeries-playground.user.js`. Read the privacy, permission, and '
+                  'license comments at the top first. Fresh Tampermonkey installs '
+                  'disable automatic updates through `@downloadURL none`; existing '
+                  'installs and other managers may retain different update settings.\n\n'
+                  '[Installation and feature guide](https://github.com/sodium-qed/aeries-playground#install)\n',
+                  encoding='utf-8')
 
-              release = json.loads(gh('release', 'view', tag, '--repo', repo,
-                                      '--json', 'isDraft,isPrerelease,name,url').stdout)
-              if release['isDraft'] or not release['isPrerelease'] or release['name'] != title:
-                  raise SystemExit('The release was not published in the expected state.')
-              latest = json.loads(gh('api', f'repos/{repo}/releases/latest').stdout)
-              if latest['tag_name'] != 'v2.0.0':
-                  raise SystemExit('The stable Latest release was unexpectedly changed.')
-              actual_commit = gh('api', f'repos/{repo}/commits/{tag}', '--jq', '.sha').stdout.strip()
-              if actual_commit != commit:
-                  raise SystemExit('The published tag does not identify the launch commit.')
-              download = Path(folder) / 'published-asset'
-              download.mkdir()
-              gh('release', 'download', tag, '--repo', repo, '--pattern', source.name,
-                 '--dir', str(download))
-              if hashlib.sha256((download / source.name).read_bytes()).hexdigest() != expected_hash:
-                  raise SystemExit('The published asset differs from the prepared userscript.')
-              print(release['url'])
+              def verify_asset():
+                  # The asset is downloaded and hashed before any draft is
+                  # published. Never use --clobber on an existing asset.
+                  with tempfile.TemporaryDirectory(dir=folder) as download:
+                      gh('release', 'download', tag, '--repo', repo,
+                         '--pattern', source.name, '--dir', download)
+                      asset = Path(download) / source.name
+                      if not asset.is_file() or hashlib.sha256(asset.read_bytes()).hexdigest() != expected_hash:
+                          raise SystemExit('The release asset differs from the prepared userscript; nothing was overwritten.')
+
+              if release:
+                  matches = [asset for asset in release['assets'] if asset['name'] == source.name]
+                  if len(matches) > 1:
+                      raise SystemExit('The release has ambiguous userscript assets.')
+                  if matches:
+                      verify_asset()
+
+              if not tag_ref:
+                  # Create only the missing tag. Never move or delete an
+                  # existing tag, including on recovery after a partial run.
+                  gh('api', f'repos/{repo}/git/refs', '--method', 'POST',
+                     '-f', f'ref=refs/tags/{tag}', '-f', f'sha={release_commit}')
+              if not release:
+                  gh('release', 'create', tag, str(source), '--repo', repo,
+                     '--verify-tag', '--target', release_commit, '--title', title,
+                     '--notes-file', str(notes), '--draft')
+                  release = api(release_path)
+              elif not any(asset['name'] == source.name for asset in release['assets']):
+                  # Recover a missing upload while preserving all other assets.
+                  gh('release', 'upload', tag, str(source), '--repo', repo)
+              verify_asset()
+
+              if release['draft']:
+                  gh('release', 'edit', tag, '--repo', repo, '--draft=false',
+                     '--prerelease=false', '--latest=true', '--target', release_commit,
+                     '--title', title, '--notes-file', str(notes))
+
+              release = api(release_path)
+              if release['tag_name'] != tag or release['draft'] or release['prerelease'] or release['name'] != title:
+                  raise SystemExit('The release was not published in the expected stable state.')
+              actual_commit = tagged_commit(api(tag_path))
+              if actual_commit != release_commit:
+                  raise SystemExit('The release tag changed unexpectedly.')
+              verify_source_at(actual_commit)
+              verify_asset()
+              if api(f'repos/{repo}/releases/latest')['tag_name'] != tag:
+                  raise SystemExit('Version 2.2.0 is not the Latest stable release.')
+              print(release['html_url'])

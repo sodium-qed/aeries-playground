@@ -14,15 +14,15 @@ Read the opening comment in [aeries-playground.user.js](aeries-playground.user.j
 
 For the controls and their effects, see the [feature guide](docs/FEATURES.md#settings-profiles-and-saved-data). To stop the script entirely, disable it in the userscript manager and reload Aeries.
 
-### Weighted-GPA prerelease
+### Weighted GPA
 
-The [prerelease](docs/FEATURES.md#weighted-gpa-prerelease) adds saved per-course **Honors/AP** selections alongside period mappings and GPA inclusion preferences, scoped to the manually selected settings profile/year. These checkboxes default to off. They are configuration: **posted grades, hypothetical scores, and calculated GPA results are not saved**. The new selections do not add network requests or permissions; GPA calculations stay in the browser.
+The [GPA controls](docs/FEATURES.md#weighted-and-unweighted-gpa-together) save per-course **Honors/AP** selections alongside period mappings and GPA inclusion preferences, scoped to the manually selected settings profile/year. These checkboxes default to off. They are configuration: **posted grades, hypothetical scores, and calculated GPA results are not saved**. These selections do not add network requests or permissions; GPA calculations stay in the browser.
 
 Selections can reveal course information and, like other preferences, may be copied by the userscript manager's sync or backups. Do not treat a configuration export as anonymized. **Clear saved settings and pause** also removes these selections from the script's active storage; separate backup copies remain manager-controlled.
 
-### Upcoming KBAR playback
+### KBAR playback
 
-The [upcoming KBAR feature](docs/FEATURES.md#upcoming-kbar-music) is prepared for **2.2.0**; the current installation link still serves the **2.1.0 prerelease**. These playback details describe the upcoming source, not the current installed prerelease.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in stable **2.2.0**. The earlier **2.1.0 prerelease** does not include it.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
@@ -42,9 +42,9 @@ Ordinary settings saves use the last written settings and are not synchronized l
 
 Use the official repository's source and review the complete file you intend to install. The [license](LICENSE) permits submitting the complete source for AI or human review. Share the script alone; reviewing it does not require anyone's Aeries password, login session, live account access, or real gradebook data.
 
-The prepared script requests manual updates for fresh Tampermonkey installations. Existing installations may retain their previous update settings, and other managers can behave differently; check the script's update settings in your manager. Review a replacement file before installing it. Findings about one file do not automatically apply to a different copy.
+The script requests manual updates for fresh Tampermonkey installations. Existing installations may retain their previous update settings, and other managers can behave differently; check the script's update settings in your manager. Review a replacement file before installing it. Findings about one file do not automatically apply to a different copy.
 
-The prerelease is publicly downloadable but does not replace the stable **Latest** release. The README's raw-`main` installation link serves the prerelease, while the stable release remains separately available. Check the release label and installed file's metadata version; a prerelease label is not a security certification. See the feature guide for the exact release and asset addresses.
+The README's raw-`main` installation link follows the source on `main`; the stable **Latest** release and the earlier weighted-GPA prerelease have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
 
 Reading grades and changing their display are necessary for these features. Display or calculation bugs, page changes, inaccurate public schedules, and manager behavior remain possible. A static review or successful check is not a certification or a guarantee of zero risk. The [calculation reference](docs/CALCULATIONS.md) explains when estimates are available and what they mean.
 
@@ -55,7 +55,7 @@ If **Report a vulnerability** is available on this repository's [Security tab](h
 Once a private channel is established, include:
 
 - The installed script's source and metadata version, plus browser and userscript manager.
-- The affected feature and settings, especially whether public schedules were enabled, whether other Aeries tabs were open, and (for the upcoming KBAR version) whether its player had been started or closed.
+- The affected feature and settings, especially whether public schedules were enabled, whether other Aeries tabs were open, and whether the KBAR player had been started or closed.
 - Reproduction steps using fictional courses, assignments, and scores.
 - What you expected, what happened, and the suspected impact.
 

@@ -6,7 +6,7 @@ Personalize your Aeries dashboard, understand assignment weights, and explore hy
 
 [Feature guide](docs/FEATURES.md) · [Calculation reference](docs/CALCULATIONS.md) · [Security information and reporting](SECURITY.md)
 
-**Prerelease available:** the installation link above follows `main` and installs the prerelease with weighted and unweighted GPA displayed together plus manual honors/AP checkboxes. The stable **Latest** GitHub release remains a separate choice. See [prerelease availability and downloads](docs/FEATURES.md#weighted-gpa-prerelease).
+The installation link above follows `main`. You can also install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest). Review the source you intend to install and keep one copy enabled.
 
 Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
 
@@ -27,14 +27,14 @@ Keep one copy of Aeries Playground enabled at a time. After installation, open t
 | --- | --- |
 | Dashboard customization | Set course names, icons, periods, progress-bar scales, grade colors, and per-course thresholds. |
 | Grade summaries | Choose posted letters or custom 4/3/2/1 ratings, and view an overall average or both weighted and unweighted GPA estimates from visible classes. |
-| Weighted GPA prerelease | Manually select honors/AP courses; A/B/C receive one bonus point, while D/F remain 1/0. |
+| Weighted GPA | Manually select honors/AP courses; A/B/C receive one bonus point, while D/F remain 1/0. |
 | Assignment analysis | Filter by category, inspect grade impacts, and compare assignment weights in assignment-number order. Circle area shows each assignment's weight. |
 | Grade testing lab | Change points or number correct, include/exclude work, and add hypothetical assignments with live grade calculations. |
 | Course grading profiles | Configure total-points or weighted-category grading, score limits, average scales, and final-grade rounding. |
 | Score planning | Find the minimum score needed for a target grade, model assessment replacements, or enter score ranges for several assignments. |
 | Grade explanations | Inspect category totals, effective weights, contributions, exclusions, and replacement effects. |
 | MVHS next class | Opt in through Settings to see the current/next period and countdown from mvhs.io, with seconds shown when fresh bell.plus schedule and clock checks agree. |
-| Upcoming KBAR music | Optional looping YouTube playback with **P**, plus play/pause and close controls in Settings. See [availability and privacy details](docs/FEATURES.md#upcoming-kbar-music); it is not in the current installation link yet. |
+| KBAR music | Optional looping YouTube playback with **P**, plus play/pause and close controls in Settings. See [controls and privacy details](docs/FEATURES.md#kbar-music). |
 | Settings profiles | Organize course settings by a manually selected profile and school year, toggle individual enhancements, or clear saved settings and pause. |
 
 ## Get started
@@ -42,8 +42,9 @@ Keep one copy of Aeries Playground enabled at a time. After installation, open t
 Press **S** outside a text field to open Settings, or use Tampermonkey's **Aeries Playground — open settings (S)** menu command.
 
 - **Courses:** edit display names, icons, periods, progress bars, and course cutoffs; use **Save course settings**.
-- **GPA controls:** the prerelease includes an **Honors/AP — weighted GPA bonus** checkbox beside each course's period setting, plus **Honors/AP** checkboxes in GPA details. Selections start unchecked; Courses uses **Save course settings**, while GPA-detail changes save immediately.
+- **GPA controls:** use the **Honors/AP — weighted GPA bonus** checkbox beside each course's period setting, or the **Honors/AP** checkboxes in GPA details. Selections start unchecked; Courses uses **Save course settings**, while GPA-detail changes save immediately.
 - **Settings:** toggle features, set colors and default cutoffs, or choose a profile/year. Toggles save immediately; other fields use **Save settings**. Both custom 4/3/2/1 ratings and the MVHS next-class panel start off. Read the explanation beside **What class is next (MVHS)** before enabling it.
+- **KBAR:** press **P** outside editable controls with the Playground dialog closed, or use **Settings → Play / pause KBAR (P)**. Playback connects to YouTube and may show ads. **P** pauses the loaded embed; **Close KBAR player** stops and unloads it.
 - **Gradebook details:** open **Grade testing lab**, **Category**, or **Assignment weight map**. Start with all assignments loaded and Aeries' missing-only filter off. Grading-profile edits and replacement-rule changes save automatically. Hypothetical scores reset when you exit or reload.
 
 Choose a separate settings profile/year before using another student's account or starting a new school year. Profiles are selected manually.
