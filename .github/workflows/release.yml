@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'aeries-playground.user.js'
+      - '.github/workflows/release.yml' # Temporary recovery trigger; remove after the draft is published.
   workflow_dispatch:
 
 permissions:
@@ -105,7 +106,21 @@ jobs:
           release_commit = tagged_commit(tag_ref) if tag_ref else commit
           verify_source_at(release_commit)
           release_path = f'repos/{repo}/releases/tags/{tag}'
-          release = api(release_path, absent_ok=True)
+
+          def release_for_tag():
+              release = api(release_path, absent_ok=True)
+              if release:
+                  return release
+              # GitHub's release-by-tag endpoint intentionally omits drafts.
+              # Search the authenticated release list so a partially completed
+              # run can validate and finish its existing draft safely.
+              matches = [item for item in api(f'repos/{repo}/releases?per_page=100')
+                         if item.get('tag_name') == tag]
+              if len(matches) > 1:
+                  raise SystemExit('Multiple releases use the expected tag.')
+              return matches[0] if matches else None
+
+          release = release_for_tag()
           if release and release['tag_name'] != tag:
               raise SystemExit('The existing release uses an unexpected tag.')
           if release and release['draft']:
@@ -168,7 +183,9 @@ jobs:
                   gh('release', 'create', tag, str(source), '--repo', repo,
                      '--verify-tag', '--target', release_commit, '--title', title,
                      '--notes-file', str(notes), '--draft')
-                  release = api(release_path)
+                  release = release_for_tag()
+                  if not release:
+                      raise SystemExit('The draft release could not be found after creation.')
               elif not any(asset['name'] == source.name for asset in release['assets']):
                   # Recover a missing upload while preserving all other assets.
                   gh('release', 'upload', tag, str(source), '--repo', repo)
@@ -179,7 +196,9 @@ jobs:
                      '--prerelease=false', '--latest=true', '--target', release_commit,
                      '--title', title, '--notes-file', str(notes))
 
-              release = api(release_path)
+              release = release_for_tag()
+              if not release:
+                  raise SystemExit('The release disappeared during publication.')
               if release['tag_name'] != tag or release['draft'] or release['prerelease'] or release['name'] != title:
                   raise SystemExit('The release was not published in the expected stable state.')
               actual_commit = tagged_commit(api(tag_path))
