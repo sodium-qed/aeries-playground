@@ -78,6 +78,14 @@ jobs:
                   raise SystemExit(result.stderr.strip() or 'GitHub API request failed.')
               return json.loads(result.stdout)
 
+          def api_write(path, method, payload):
+              result = subprocess.run(
+                  ['gh', 'api', path, '--method', method, '--input', '-'],
+                  input=json.dumps(payload), text=True, capture_output=True)
+              if result.returncode:
+                  raise SystemExit(result.stderr.strip() or 'GitHub API write failed.')
+              return json.loads(result.stdout)
+
           def verify_source_at(ref):
               file = api(f'repos/{repo}/contents/{source.name}?ref={quote(ref, safe="")}')
               if file.get('type') != 'file' or file.get('encoding') != 'base64':
@@ -192,9 +200,16 @@ jobs:
               verify_asset()
 
               if release['draft']:
-                  gh('release', 'edit', tag, '--repo', repo, '--draft=false',
-                     '--prerelease=false', '--latest=true', '--target', release_commit,
-                     '--title', title, '--notes-file', str(notes))
+                  release = api_write(
+                      f'repos/{repo}/releases/{release["id"]}', 'PATCH', {
+                          'tag_name': tag,
+                          'target_commitish': release_commit,
+                          'name': title,
+                          'body': notes.read_text(encoding='utf-8'),
+                          'draft': False,
+                          'prerelease': False,
+                          'make_latest': 'true',
+                      })
 
               release = release_for_tag()
               if not release:
