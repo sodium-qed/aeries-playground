@@ -121,10 +121,10 @@
  *
  * OPTIONAL KBAR / YOUTUBE PLAYBACK
  * - With Settings closed, press P outside editable controls to create a
- *   200 by 200 pixel YouTube player far below the page and request playback.
- *   P toggles play/pause. The footer adds at least 8,000 pixels of scroll
- *   space. Use Settings > Close KBAR player to unload it without scrolling.
- *   Settings also has a Play / pause KBAR button. KBAR starts off on every
+ *   hidden YouTube player and request playback. P toggles play/pause. The
+ *   player is kept outside the visible layout and adds no page scroll space.
+ *   Use Settings > Close KBAR player to unload it. Settings also has a
+ *   Play / pause KBAR button. KBAR starts off on every
  *   page load; no playback state is saved.
  * - The iframe uses https://www.youtube-nocookie.com/embed/sasjlpt7zWM
  *   with looping enabled. Its URL contains the video ID, fixed player
@@ -4031,7 +4031,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
         pendingPlayback = null;
         wanted = false;
         command('pauseVideo');
-        paint(wasStarting ? 'Playback did not start. Press P again or use the video’s Play button.' : 'Pause requested. If audio continues, close the player to stop it.');
+        paint(wasStarting ? 'Playback did not start. Press P again or use Settings to retry.' : 'Pause requested. If audio continues, close the player from Settings to stop it.');
       }, 10000);
     }
     function connected() {
@@ -4065,7 +4065,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       }
       if (data.event === 'onAutoplayBlocked') {
         clearTimeout(playbackDeadline); pendingPlayback = null; wanted = false;
-        paint('Browser blocked playback. Press P again or use the video’s Play button.');
+        paint('Browser blocked playback. Press P again or use Settings to retry.');
         return;
       }
       if (data.event !== 'onStateChange' || !Number.isInteger(data.info)) return;
@@ -4103,9 +4103,11 @@ window.addEventListener('pagehide',abortScheduleRequests);
     function create() {
       const instance = ++generation;
       footer = el('section', null, {id:'ap-kbar-footer', 'data-ap-owned':'kbar', 'aria-label':'KBAR music'});
-      // Extra scroll space is created only after KBAR is opened. Never focus or
-      // auto-scroll to this footer as a side effect of the keyboard shortcut.
-      footer.style.cssText = 'display:block;clear:both;position:relative;width:100%;padding:max(1000vh, 8000px) 0 24px;margin:0;box-sizing:border-box;overflow-anchor:none;';
+      // Keep the embed rendered for playback without adding visible UI or
+      // changing the document's layout/scroll height.
+      footer.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;opacity:0;pointer-events:none;';
+      footer.inert = true;
+      footer.setAttribute('aria-hidden','true');
       const shadow = footer.attachShadow({mode:'open'});
       const css = el('style');
       css.textContent = `:host{font-family:var(--ap-aeries-font,sans-serif);color:#334155;color-scheme:light}
@@ -4149,7 +4151,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       listening = setInterval(listen, 500);
       deadline = setTimeout(() => {
         clearLoading(); wanted = false; failed = true;
-        paint('YouTube is taking too long. Try again or use the video controls below.');
+        paint('YouTube is taking too long. Try again with P or the Settings playback control.');
       }, 15000);
       paint();
     }
@@ -4238,7 +4240,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA displays both unweighted and weighted averages of posted letters. Unweighted A/B/C/D/F = 4/3/2/1/0; honors/AP classes you check use 5/4/3/1/0 for weighted GPA. Select them in Courses or in the GPA details. Both averages ignore plus/minus signs and thresholds.'));
     box.append(note('Precise mode shows up to 8 decimals for calculated percentages and impact estimates, and keeps the precision Aeries actually displays. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const musicBox=el('div',null,{class:'ap-box'});
-    musicBox.append(el('h3','KBAR music · P'),note('With Settings closed, press P outside editable controls to play or pause the English KBAR video on loop. Its small player appears far below the page content, with at least 8,000 pixels of extra scroll space. Use the buttons here to control or close it without scrolling.'));
+    musicBox.append(el('h3','KBAR music · P'),note('With Settings closed, press P outside editable controls to play or pause the English KBAR video on loop. The YouTube player stays hidden outside the visible layout and does not add page scroll space. Use the buttons here to control or close it.'));
     musicBox.append(note('Starting KBAR connects to YouTube. It may collect playback information and show ads. Playground sends no grades or course data. Close the player to stop and unload it; P pauses it.'));
     const musicButton=button('Play / pause KBAR (P)',()=>kbar.toggle());musicButton.disabled=!db.settings.enabled;
     toggles.enabled.addEventListener('change',()=>{musicButton.disabled=!db.settings.enabled;});

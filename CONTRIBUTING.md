@@ -14,7 +14,7 @@ For schedule problems, include the displayed school date, approximate time, expe
 
 For GPA problems, include the installed userscript's metadata version and whether it came from a stable release, the [weighted-GPA prerelease](docs/FEATURES.md#weighted-gpa-prerelease), or `main`. Use a few fictional courses with posted letters, inclusion choices, and Honors/AP selections; say whether numeric 4/3/2/1 display is on. Report both expected averages rather than real student grades or storage exports.
 
-For KBAR problems, include the installed metadata version, how playback was requested, whether the Playground dialog or an editable control had focus, and whether you paused or closed the player. Describe any displayed player error, browser playback restriction, or extra page space. Use no live account data; the intentionally far-down player can be controlled or closed from Settings.
+For KBAR problems, include the installed metadata version, how playback was requested, whether the Playground dialog or an editable control had focus, and whether you paused or closed the player. Describe any playback restriction or unexpected page-layout change. Use no live account data; the hidden player can be controlled or closed from Settings.
 
 ## Source and documentation
 
