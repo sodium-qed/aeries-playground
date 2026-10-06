@@ -34,11 +34,10 @@ KBAR is available in the **2.2.0 prerelease**. It starts off on every page load 
 | --- | --- |
 | **P** | First press creates the player and requests playback; subsequent presses request pause or resume. The shortcut ignores editable controls, repeated/composing key events, and Ctrl/Alt/Meta combinations. It is inactive while the Playground dialog is open. |
 | **Settings → Play / pause KBAR (P)** | Starts or toggles playback while Settings is open. |
-| **Settings → Close KBAR player** | Stops playback and removes the player and its added scroll space. |
+| **Settings → Close KBAR player** | Stops playback and removes the hidden player. |
 | Tampermonkey **Aeries Playground — KBAR play/pause (P)** | Starts or toggles playback through the manager menu. |
-| Player **Play KBAR / Pause KBAR**, native YouTube controls, and **Close** | Offer playback controls at the bottom of the page. **Open on YouTube** opens the source video separately. |
 
-The small **200 × 200** player is intentionally placed far below the page content. Opening it adds at least **8,000 pixels** of space above it (or ten viewport heights if larger), without moving focus or scrolling the page. Use Settings to stop or control it without scrolling that distance. Closing removes the extra space. Browser restrictions, network problems, or a video that cannot be embedded can prevent playback; a keypress requests playback rather than guaranteeing it starts.
+The YouTube player is kept hidden outside the visible layout, so starting KBAR does not add blank space or increase the page's scroll height. Playback is controlled through **P**, Settings, or the userscript manager menu. Closing removes the hidden embed entirely. Browser restrictions, network problems, or a video that cannot be embedded can prevent playback; a keypress requests playback rather than guaranteeing it starts.
 
 Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives ordinary connection information and playback activity, may use cookies or other browser storage, makes its own media/advertising requests, and may show ads. Playground's player URL and control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the Aeries site origin, not the full gradebook URL. See [Security and privacy](../SECURITY.md#kbar-playback).
 
@@ -340,7 +339,7 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | Settings were cleared or schedules disabled in another tab | Reload promptly. Ordinary saves use the last written settings; an old tab can continue schedule requests and re-save its opt-in. Clearing settings has a separate stale-save check once detected, but does not immediately synchronize every running tab. |
 | KBAR controls are missing | Check that the installed source is 2.2.0 or newer; the earlier weighted-GPA prerelease does not include KBAR. Reload after updating. |
 | P does nothing or KBAR is silent | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, try again or use the native player controls/source link. |
-| Page gains a long blank area after starting KBAR | The far-down player placement is intentional. Use **Settings → Close KBAR player** to stop playback and remove the added space. |
+| Page gains a long blank area after starting KBAR | This should not happen: the KBAR player is hidden outside the document layout and should add no scroll space. Reload after updating, and report the layout if the blank area remains. |
 | Music paused but YouTube remains loaded | Pause leaves the embed active. Use **Close KBAR player** to unload it. |
 | Unexpected behavior after installing | Keep one copy enabled, reload Aeries, and compare with the script disabled. Check whether the supported Aeries layout has changed. |
 
