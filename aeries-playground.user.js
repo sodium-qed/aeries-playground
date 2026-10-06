@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.2.0
+// @version      2.2.1
 // @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, the next class from mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
