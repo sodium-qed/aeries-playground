@@ -6,11 +6,11 @@ For a first session, open the Aeries dashboard to discover courses, configure di
 
 ## Available release
 
-The controls in this guide are available in the **2.2.0 prerelease**, including weighted/unweighted GPA and optional KBAR playback. The README installation link follows `main`. For a version-specific copy, use the attached userscript:
+The controls in this guide are available in the **2.2.1 prerelease**, including weighted/unweighted GPA and optional KBAR playback. The README installation link follows `main`. For a version-specific copy, use the attached userscript:
 
 ```text
-Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.2.0
-Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.2.0/aeries-playground.user.js
+Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.2.1
+Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.2.1/aeries-playground.user.js
 ```
 
 Review the particular file you intend to install and keep only one copy enabled.
@@ -24,11 +24,11 @@ Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.1.0
 Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.1.0/aeries-playground.user.js
 ```
 
-The README's installation link serves the newer **2.2.0 prerelease**, which includes the controls below and KBAR playback. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains **2.0.0** and does not include weighted GPA or KBAR. `/releases/latest/download/...` targets the stable release, not either prerelease.
+The README's installation link serves the newer **2.2.1 prerelease**, which includes the controls below and KBAR playback. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains **2.0.0** and does not include weighted GPA or KBAR. `/releases/latest/download/...` targets the stable release, not either prerelease.
 
 ## KBAR music
 
-KBAR is available in the **2.2.0 prerelease**. It starts off on every page load and saves no playback preference. It plays the English KBAR video on loop only after you request playback. **Enable Playground** must be on; enabling the schedule panel is not required.
+KBAR is available in the **2.2.1 prerelease**. It starts off on every page load and saves no playback preference. It plays the English KBAR video on loop only after you request playback. **Enable Playground** must be on; enabling the schedule panel is not required.
 
 | Control | Behavior |
 | --- | --- |
