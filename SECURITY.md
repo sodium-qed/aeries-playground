@@ -22,7 +22,7 @@ Selections can reveal course information and, like other preferences, may be cop
 
 ### KBAR playback
 
-The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.0 prerelease**. The earlier **2.1.0 prerelease** does not include it.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.1 prerelease**. The earlier **2.1.0 prerelease** does not include it.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
