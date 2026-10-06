@@ -45,7 +45,7 @@ jobs:
           source = Path('aeries-playground.user.js')
           # Sunday, October 4, 2026 at 11:59 PM America/Los_Angeles (PDT).
           launch_time = datetime(2026, 10, 5, 6, 59, tzinfo=timezone.utc)
-          expected_hash = 'b9263d3f59538939779883d4974beb17409e91c8669c1b0f43251ef668b00d10'
+          expected_hash = '0b3ec547caafa5df519504a1966d0cae382963dfad637fc74f73009a9d684bb4'
           if datetime.now(timezone.utc) < launch_time:
               print('The release time has not arrived; no release was created.')
               raise SystemExit(0)
@@ -53,16 +53,16 @@ jobs:
               raise SystemExit('The prepared userscript is missing.')
           if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
               raise SystemExit('The userscript does not match the prepared launch file.')
-          if not re.search(r'^//\s*@version\s+2\.2\.0\s*$', source.read_text(), re.MULTILINE):
-              raise SystemExit('The userscript metadata does not match version 2.2.0.')
+          if not re.search(r'^//\s*@version\s+2\.2\.1\s*$', source.read_text(), re.MULTILINE):
+              raise SystemExit('The userscript metadata does not match version 2.2.1.')
 
           # These checks compile the source; they do not run it against Aeries.
           subprocess.run(['node', 'scripts/check-userscripts.mjs'], check=True)
           subprocess.run(['node', '--test', 'tests/check-userscripts.test.mjs'], check=True)
           repo = os.environ['GITHUB_REPOSITORY']
           commit = os.environ['GITHUB_SHA']
-          tag = 'v2.2.0'
-          title = 'Aeries Playground 2.2.0'
+          tag = 'v2.2.1'
+          title = 'Aeries Playground 2.2.1'
 
           def gh(*args, check=True):
               return subprocess.run(['gh', *args], check=check, text=True, capture_output=True)
@@ -143,10 +143,11 @@ jobs:
           with tempfile.TemporaryDirectory() as folder:
               notes = Path(folder) / 'release-notes.md'
               notes.write_text(
-                  'Aeries Playground 2.2.0 is a prerelease that adds optional looping KBAR music. '
-                  'Press P outside a text field, or use the Settings playback button, '
-                  'to play or pause. Close the player to stop and unload it. '
-                  'Playback starts off on every page load.\n\n'
+                  'Aeries Playground 2.2.1 is a prerelease maintenance update for KBAR playback. '
+                  'The YouTube player now stays hidden outside the visible layout instead of '
+                  'adding thousands of pixels of blank scroll space to the page. Press P outside '
+                  'a text field, or use the Settings playback button, to play or pause. '
+                  'Close the player to stop and unload it. Playback starts off on every page load.\n\n'
                   'Starting KBAR connects to a YouTube privacy-enhanced embed. '
                   'YouTube can receive connection and playback information and may '
                   'show ads; privacy-enhanced embedding is not anonymous. Playground '
