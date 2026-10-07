@@ -1,5 +1,10 @@
 # Aeries Playground
 
+<!-- temporary-maintenance-pause-start -->
+> [!IMPORTANT]
+> **Temporary contributor commit pause through October 25, 2026.** Please hold new commits, pushes, merges, and releases until the scheduled code audit and release starting **Sunday, October 25 at 11:59 PM Pacific** have finished. Already scheduled maintenance will continue. Ideas and bug reports are welcome in issues.
+<!-- temporary-maintenance-pause-end -->
+
 Personalize your Aeries dashboard, understand assignment weights, and explore hypothetical grades. Built for the MVLA Aeries student portal, with an optional next-class panel for Mountain View High School.
 
 **[Install Aeries Playground](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js)**
