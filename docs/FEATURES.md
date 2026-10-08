@@ -35,13 +35,14 @@ KBAR is available in the **2.2.1 prerelease**. It starts off on every page load 
 | **P** | First press creates the player and requests playback; subsequent presses request pause or resume. The shortcut ignores editable controls, repeated/composing key events, and Ctrl/Alt/Meta combinations. It is inactive while the Playground dialog is open. |
 | **Settings → Play / pause KBAR (P)** | Starts or toggles playback while Settings is open. |
 | **Settings → Close KBAR player** | Stops playback and removes the hidden player. |
+| **Settings → Open on YouTube** | Opens the original video in a new tab, including when the hidden embed fails. Does not start or close the embed. |
 | Tampermonkey **Aeries Playground — KBAR play/pause (P)** | Starts or toggles playback through the manager menu. |
 
 The YouTube player is kept hidden outside the visible layout, so starting KBAR does not add blank space or increase the page's scroll height. Playback is controlled through **P**, Settings, or the userscript manager menu. Closing removes the hidden embed entirely. Browser restrictions, network problems, or a video that cannot be embedded can prevent playback; a keypress requests playback rather than guaranteeing it starts.
 
 Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives ordinary connection information and playback activity, may use cookies or other browser storage, makes its own media/advertising requests, and may show ads. Playground's player URL and control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the Aeries site origin, not the full gradebook URL. See [Security and privacy](../SECURITY.md#kbar-playback).
 
-**Pausing leaves the embed loaded; closing unloads it.** Pausing therefore does not stop all third-party network activity. Turning off **Enable Playground**, clearing saved settings, or leaving the page also removes the player in that tab. Closing cannot undo requests already sent or clear storage controlled by YouTube. YouTube's cross-origin player loads its own code; Playground does not inject that code into the Aeries page's JavaScript realm. Its internal message transport may change, so native video controls and the source link remain fallbacks.
+**Pausing leaves the embed loaded; closing unloads it.** Pausing therefore does not stop all third-party network activity. Turning off **Enable Playground**, clearing saved settings, or leaving the page also removes the player in that tab. Closing cannot undo requests already sent or clear storage controlled by YouTube. YouTube's cross-origin player loads its own code; Playground does not inject that code into the Aeries page's JavaScript realm. Its internal message transport may change, so use the visible **Settings → Open on YouTube** link if embedded playback fails. This user-initiated link sends no referrer and allows no opener access; it works even with Playground paused or the embed closed. Close the embed separately to avoid simultaneous playback.
 
 ## What changes and what stays saved
 
@@ -338,7 +339,7 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | Settings cannot be saved | The change applies for the current visit, and the UI reports a browser-storage error. |
 | Settings were cleared or schedules disabled in another tab | Reload promptly. Ordinary saves use the last written settings; an old tab can continue schedule requests and re-save its opt-in. Clearing settings has a separate stale-save check once detected, but does not immediately synchronize every running tab. |
 | KBAR controls are missing | Check that the installed source is 2.2.0 or newer; the earlier weighted-GPA prerelease does not include KBAR. Reload after updating. |
-| P does nothing or KBAR is silent | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, try again or use the native player controls/source link. |
+| P does nothing or KBAR is silent | Enable Playground, close its dialog, and move focus outside editable controls; otherwise use Settings or the menu command. If playback is blocked, retry or use **Settings → Open on YouTube** to open the original video in a new tab. |
 | Page gains a long blank area after starting KBAR | This should not happen: the KBAR player is hidden outside the document layout and should add no scroll space. Reload after updating, and report the layout if the blank area remains. |
 | Music paused but YouTube remains loaded | Pause leaves the embed active. Use **Close KBAR player** to unload it. |
 | Unexpected behavior after installing | Keep one copy enabled, reload Aeries, and compare with the script disabled. Check whether the supported Aeries layout has changed. |

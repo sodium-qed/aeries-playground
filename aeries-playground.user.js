@@ -124,7 +124,9 @@
  *   hidden YouTube player and request playback. P toggles play/pause. The
  *   player is kept outside the visible layout and adds no page scroll space.
  *   Use Settings > Close KBAR player to unload it. Settings also has a
- *   Play / pause KBAR button. KBAR starts off on every
+ *   Play / pause KBAR button and an Open on YouTube fallback link.
+ *   Opening the link visits YouTube normally without sending a referrer.
+ *   KBAR starts off on every
  *   page load; no playback state is saved.
  * - The iframe uses https://www.youtube-nocookie.com/embed/sasjlpt7zWM
  *   with looping enabled. Its URL contains the video ID, fixed player
@@ -3993,9 +3995,8 @@ window.addEventListener('pagehide',abortScheduleRequests);
   document.addEventListener('keydown',settingsShortcut);
   // KBAR uses the cross-origin YouTube embed. No YouTube script is loaded into
   // the gradebook's JavaScript realm. Its postMessage transport is an internal
-  // player interface and may change; native controls remain the fallback.
-  // The footer deliberately adds scroll space; Settings also exposes playback
-  // and Close controls so unloading the iframe does not require scrolling.
+  // player interface and may change. Settings exposes the source-video fallback
+  // alongside playback and Close controls; the hidden embed adds no scroll space.
   const kbar = (() => {
     const video = 'sasjlpt7zWM';
     const origin = 'https://www.youtube-nocookie.com';
@@ -4245,6 +4246,10 @@ window.addEventListener('pagehide',abortScheduleRequests);
     const musicButton=button('Play / pause KBAR (P)',()=>kbar.toggle());musicButton.disabled=!db.settings.enabled;
     toggles.enabled.addEventListener('change',()=>{musicButton.disabled=!db.settings.enabled;});
     musicBox.append(musicButton,button('Close KBAR player',()=>kbar.destroy()));
+    const musicSource=note('If playback is blocked or unavailable, open the original video on YouTube (opens a new tab): ');
+    musicSource.append(el('a','Open on YouTube',{href:'https://www.youtube.com/watch?v=sasjlpt7zWM',
+      target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer'}));
+    musicBox.append(musicSource);
     const musicLinks=note('');
     musicLinks.append(el('a','YouTube terms',{href:'https://www.youtube.com/t/terms',target:'_blank',rel:'noopener noreferrer'}),document.createTextNode(' · '),el('a','Google privacy policy',{href:'https://policies.google.com/privacy',target:'_blank',rel:'noopener noreferrer'}));
     musicBox.append(musicLinks);box.append(musicBox);

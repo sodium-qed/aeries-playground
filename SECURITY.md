@@ -32,7 +32,7 @@ The iframe loads YouTube's own third-party code, media, and advertising resource
 
 **P pauses/resumes; Close stops and unloads.** Pausing leaves the embed loaded and can leave third-party network activity running. **Settings → Close KBAR player** removes the player without scrolling to it. Pausing Playground, clearing settings, or leaving the page also removes it in that tab. Closing cannot undo requests already made or delete YouTube-managed storage. No playback state is shared between tabs; close other tabs' players separately.
 
-The player is intentionally placed far below page content and uses YouTube's internal message transport for controls; that transport can change. Native player controls and a source link remain available.
+The player is hidden outside the visible layout, is inert and excluded from accessibility navigation, and adds no page scroll space. It uses YouTube's internal message transport for controls; that transport can change. **Settings → Open on YouTube** is a visible, keyboard-accessible fallback even when playback is blocked or the embed never becomes ready. Opening it is a user-initiated normal YouTube visit in a new tab, with no referrer or opener access; it neither starts nor closes the hidden embed. Close the embed separately to avoid simultaneous playback.
 
 ### Changes in other open tabs
 
