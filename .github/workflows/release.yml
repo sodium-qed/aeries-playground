@@ -1,10 +1,9 @@
 name: Publish 2.2 prerelease
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'aeries-playground.user.js'
+  # This fixed v2.2.1 publisher has completed its prepared release.
+  # Ordinary source changes are validated by checks.yml, not republished here.
+  # Manual runs still enforce the prepared source hash and version below.
   workflow_dispatch:
 
 permissions:
