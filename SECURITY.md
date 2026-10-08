@@ -2,6 +2,8 @@
 
 Read the opening comment in [aeries-playground.user.js](aeries-playground.user.js) for the full security and privacy explanation: page access, every requested permission and schedule endpoint, saved data, update behavior, safeguards, and remaining limitations. See the [README](README.md) for installation. This page summarizes the available controls and explains how to report a concern.
 
+Unless explicitly marked upcoming, this page describes the current source on `main`. The [planned prerelease](docs/FEATURES.md#upcoming-prerelease) is documented separately below and has not been published by this documentation update.
+
 ## Privacy controls
 
 | Area | Documented behavior and controls |
@@ -14,6 +16,16 @@ Read the opening comment in [aeries-playground.user.js](aeries-playground.user.j
 
 For the controls and their effects, see the [feature guide](docs/FEATURES.md#settings-profiles-and-saved-data). To stop the script entirely, disable it in the userscript manager and reload Aeries.
 
+### Upcoming on-page score matching
+
+The prepared **2.3.0 prerelease** can use a more precise numeric score already embedded in the current Aeries page when it matches the displayed assignment. It temporarily reads school, student, and person identifiers, along with course/gradebook/term information and assignment details, to reject unrelated or ambiguous matches. Those matching identifiers and embedded score records remain in page memory; this feature does not write them to userscript storage or include them in external requests. Existing saved course identifiers and replacement-rule references remain as documented above.
+
+Embedded data is parsed as JSON, not executed as page JavaScript. The feature does not read login cookies, request credentials, fetch hidden records, or add userscript permissions or network endpoints. Missing or inconsistent data retains the displayed score. These checks reduce mistaken matches but do not certify the accuracy of Aeries data or account for every page layout.
+
+The matching checks do **not** switch settings profiles. Continue selecting a separate profile/year manually for each account or school year. Do not share copied Aeries page source or embedded data in a bug report; describe the problem using fictional examples.
+
+The accompanying after-school countdown uses the existing public schedule and clock services under the existing opt-in. It adds no grades or identity fields to those requests. Current-tab cancellation and the need to reload other open tabs remain unchanged.
+
 ### Weighted GPA
 
 The [GPA controls](docs/FEATURES.md#weighted-and-unweighted-gpa-together) save per-course **Honors/AP** selections alongside period mappings and GPA inclusion preferences, scoped to the manually selected settings profile/year. These checkboxes default to off. They are configuration: **posted grades, hypothetical scores, and calculated GPA results are not saved**. These selections do not add network requests or permissions; GPA calculations stay in the browser.
@@ -22,7 +34,7 @@ Selections can reveal course information and, like other preferences, may be cop
 
 ### KBAR playback
 
-The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.1 prerelease**. The earlier **2.1.0 prerelease** does not include it.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.1 prerelease**. The earlier **2.1.0 prerelease** does not include it. The visible Settings fallback described below is a newer `main` change; the tagged prerelease asset does not contain that addition.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
@@ -32,7 +44,7 @@ The iframe loads YouTube's own third-party code, media, and advertising resource
 
 **P pauses/resumes; Close stops and unloads.** Pausing leaves the embed loaded and can leave third-party network activity running. **Settings → Close KBAR player** removes the player without scrolling to it. Pausing Playground, clearing settings, or leaving the page also removes it in that tab. Closing cannot undo requests already made or delete YouTube-managed storage. No playback state is shared between tabs; close other tabs' players separately.
 
-The player is hidden outside the visible layout, is inert and excluded from accessibility navigation, and adds no page scroll space. It uses YouTube's internal message transport for controls; that transport can change. **Settings → Open on YouTube** is a visible, keyboard-accessible fallback even when playback is blocked or the embed never becomes ready. Opening it is a user-initiated normal YouTube visit in a new tab, with no referrer or opener access; it neither starts nor closes the hidden embed. Close the embed separately to avoid simultaneous playback.
+The player is hidden outside the visible layout, is inert and excluded from accessibility navigation, and adds no page scroll space. It uses YouTube's internal message transport for controls; that transport can change. The current `main` source also provides **Settings → Open on YouTube**, a visible, keyboard-accessible fallback even when playback is blocked or the embed never becomes ready. Opening it is a user-initiated normal YouTube visit in a new tab, with no referrer or opener access; it neither starts nor closes the hidden embed. Close the embed separately to avoid simultaneous playback.
 
 ### Changes in other open tabs
 

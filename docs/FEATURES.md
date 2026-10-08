@@ -6,7 +6,7 @@ For a first session, open the Aeries dashboard to discover courses, configure di
 
 ## Available release
 
-The controls in this guide are available in the **2.2.1 prerelease**, including weighted/unweighted GPA and optional KBAR playback. The README installation link follows `main`. For a version-specific copy, use the attached userscript:
+Unless marked **upcoming**, this guide describes the current source on `main`, including weighted/unweighted GPA and optional KBAR playback. The latest published prerelease is **2.2.1**. The README installation link follows `main`, which also includes a newer visible **Settings → Open on YouTube** fallback; that addition is not in the tagged prerelease asset. For the version-specific copy, use the attached userscript:
 
 ```text
 Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.2.1
@@ -14,6 +14,22 @@ Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.2.
 ```
 
 Review the particular file you intend to install and keep only one copy enabled.
+
+## Upcoming prerelease
+
+**2.3.0 is planned as a prerelease for Sunday, October 11, 2026 at 11:59 PM Pacific time (America/Los_Angeles).** This documentation update does not publish its code, tag, or download asset. The installation above still serves the current source. The planned prerelease will not replace the stable **Latest** release; use its explicit tagged download once publication is confirmed.
+
+### Fractional-score precision (upcoming)
+
+Aeries can display **14.67 / 15** while already including **14.66666666666667 / 15** in the page's embedded assignment data. The prepared update uses that more precise earned score for reconstruction and grade testing only when it matches the current student, course, assignment, dates, denominator, and displayed percentages. This can resolve a mismatch caused by summing rounded rows.
+
+This runs automatically for eligible percentage-based gradebooks; **Ridiculously precise mode** only changes formatting. It does not fetch additional records or recover precision for every assignment. Missing, ambiguous, excluded, or inconsistent records retain their displayed values, and four-point gradebooks are unchanged. Native Aeries labels can still show the rounded score while the local model and score editor use the validated value. See [the precision rules](CALCULATIONS.md#upcoming-on-page-score-precision) and [data handling](../SECURITY.md#upcoming-on-page-score-matching).
+
+### Countdown after school (upcoming)
+
+The current panel lists the next school day's first student slot after today's classes end. The prepared update adds a live countdown to that start, including weekends and dates marked as no school in the public calendar. It searches up to fourteen days ahead and converts the target's Pacific wall time with daylight-saving changes accounted for.
+
+The countdown shows days, hours, and minutes as appropriate. Seconds require fresh bell.plus clock verification and agreement for the upcoming date as well as the current day's applicable schedule checks. If those checks fail, it uses minutes. Missing or invalid schedule data can still make the panel unavailable. This does not add schedule services or change the existing opt-in, current-tab cancellation, or manual course-to-period matching.
 
 ## Weighted GPA prerelease
 
@@ -24,7 +40,7 @@ Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.1.0
 Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.1.0/aeries-playground.user.js
 ```
 
-The README's installation link serves the newer **2.2.1 prerelease**, which includes the controls below and KBAR playback. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains **2.0.0** and does not include weighted GPA or KBAR. `/releases/latest/download/...` targets the stable release, not either prerelease.
+The README's installation link follows `main`, based on the newer **2.2.1 prerelease** with the additional fallback described above. The [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) remains **2.0.0** and does not include weighted GPA or KBAR. `/releases/latest/download/...` targets the stable release, not either prerelease.
 
 ## KBAR music
 
@@ -94,7 +110,7 @@ Cutoffs must be nonnegative and strictly descending. Course-specific cutoffs tak
 
 Percentage-course bars normally span **50–100**; recognized four-point-course bars span **1–4**. Each course can use another valid minimum/maximum. Threshold markers appear when they fall within that span. Values outside the span stop at the bar edge while the posted number remains visible.
 
-**Ridiculously precise mode** shows up to eight decimal places for supported calculated values, including impacts; turning it off generally uses two. It preserves the precision Aeries actually displays and does not reveal hidden official decimals. Some compact displays, including the overall summary and weight labels, use their own shorter formatting.
+**Ridiculously precise mode** shows up to eight decimal places for supported calculated values, including impacts; turning it off generally uses two. It preserves the precision Aeries actually displays and does not reveal hidden official decimals. Some compact displays, including the overall summary and weight labels, use their own shorter formatting. The [upcoming fractional-score fix](#fractional-score-precision-upcoming) changes eligible input scores independently of this display setting.
 
 ### Overall grade and current-year GPA
 
@@ -136,7 +152,7 @@ For five included, checked courses with A, B, C, D, and F, unweighted GPA is **1
 
 ## Assignment analysis
 
-These tools use the currently open course's gradebook details. They read the rendered assignment rows and Aeries totals; they do not download hidden gradebook data.
+These tools use the currently open course's gradebook details. The current source reads rendered assignment rows and Aeries totals. The upcoming precision fix can also use validated matching scores already embedded in that page; neither version downloads hidden gradebook records.
 
 ### Category filter
 
@@ -276,6 +292,8 @@ Course names come from the currently visible Aeries dashboard cards and optional
 
 The widget uses public mvhs.io schedules and checks public bell.plus schedule and time-sync data before displaying seconds. It requires fresh, same-date data and successful schedule/clock checks. Stale, unavailable, or disagreeing bell.plus data leaves the mvhs.io countdown in minutes. The relevant freshness limit is five minutes and the visible clock updates about once per second; hidden tabs pause refresh work. These ticks use in-memory data, rather than requesting the network every second.
 
+The [upcoming after-school countdown](#countdown-after-school-upcoming) extends this display to the next school day; the current source lists that day's first slot without a live multi-day countdown.
+
 An unavailable or invalid mvhs.io schedule produces **Schedule unavailable** and a retry option. Public source links are provided. Use the school's announced schedule if public feeds disagree with it; a valid feed is not a guarantee that a last-minute change has been recorded. Request details can be read in the comment at the top of [aeries-playground.user.js](../aeries-playground.user.js).
 
 ## Settings, profiles, and saved data
@@ -327,6 +345,7 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | GPAs are identical | Check the intended Honors/AP classes and save course settings if edited in Courses. No selected, counted A/B/C means no bonus; selected D/F still receive no bonus. |
 | A class does not affect GPA | Check inclusion, visibility, and the posted letter. Non-A–F marks do not count, and checking Honors/AP does not include an excluded class. |
 | Impact/map/total unavailable | Turn off Aeries' missing-only filter, wait for the selected gradebook to load, and check that visible rows reconcile with category/overall totals. |
+| Rounded scores differ across views | The upcoming precision fix uses only validated matching on-page values. It does not guarantee extra decimals for every row. Compare the posted totals and installed version; report fictional examples rather than copied page source. |
 | Teacher uses additional rules | Inspect the posted totals and configured policies; unsupported rules can leave the baseline unmatched. |
 | “What do I need?” cannot calculate | Turn off counted ranges; complete the assignment, target, maximum, and increment; finish any half-entered replacement and resolve unmatched saved rules. |
 | Range total unavailable | Check positive totals and nonnegative ordered bounds; resolve unmatched or unfinished replacement rules and any posted-baseline mismatch. |
@@ -334,7 +353,7 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | Next-class panel is missing | Enable **What class is next (MVHS)** in Settings; it starts off and requires your opt-in. |
 | Schedule unavailable | Use Retry schedule and check the linked public source. The panel needs schedule-request permission and a working source. |
 | Changes disappear after reload | Hypothetical scores and ranges are temporary. Grading-profile edits and added/removed replacement rules save automatically; general Settings fields and course display changes use their Save buttons. Check for a storage-error message. |
-| Wrong preferences after changing students | Switch the manual settings profile/year; account identity is not detected. |
+| Wrong preferences after changing students | Switch the manual settings profile/year. The upcoming score-matching checks do not select or separate settings profiles automatically. |
 | Display looks wrong | Disable duplicate/older Aeries scripts; pause Playground or disable it and reload to compare with the original page. |
 | Settings cannot be saved | The change applies for the current visit, and the UI reports a browser-storage error. |
 | Settings were cleared or schedules disabled in another tab | Reload promptly. Ordinary saves use the last written settings; an old tab can continue schedule requests and re-save its opt-in. Clearing settings has a separate stale-save check once detected, but does not immediately synchronize every running tab. |

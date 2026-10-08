@@ -12,7 +12,26 @@ Calculations use data already rendered on the current Aeries page and the rules 
 
 The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The [KBAR playback](FEATURES.md#kbar-music) also supplies no calculation inputs and changes no GPA or grade formulas. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
 
-A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals expose the calculation's precision, not additional precision from Aeries.
+A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals alone expose the calculation's precision; they do not create more precise inputs. The upcoming exception for validated values already embedded by Aeries is described below.
+
+## Upcoming on-page score precision
+
+**Planned for the 2.3.0 prerelease; not active in the currently installed source.** See [availability](FEATURES.md#upcoming-prerelease). This changes eligible earned-score inputs, not the weighting, replacement, score-limit, reconciliation, or GPA formulas.
+
+The prepared adapter reads a single JSON array named `RecentData` already present in the page. It parses the JSON literal without executing the surrounding JavaScript. An embedded score is accepted only when:
+
+- The page's school, student, and person identifiers match, and an unambiguous course record connects the exact course title to the selected gradebook, term, and school.
+- Assignment number, title, category, assigned date, and due date match the loaded row, with no duplicate assignment number or model ID.
+- The assignment is included and graded in a percentage-based gradebook, with positive possible points.
+- The embedded earned score rounds to the displayed point score at its displayed precision (at least two decimals), and its percentage using the displayed denominator agrees with both the row's percentage and the embedded percentage at their respective displayed precision.
+
+For example, an embedded **14.66666666666667 / 15** is consistent with a point label of **14.67 / 15**, a row percentage of **97.78%**, and an embedded percentage of **97.8%**. The model uses the embedded earned score rather than 14.67. The denominator remains 15. This avoids a rounding discrepancy without changing the official grade or guessing missing digits. Values still use ordinary JavaScript numeric precision, not unlimited decimal arithmetic.
+
+Records that are absent, duplicated, mismatched, malformed, or inconsistent do not replace the visible score. Excluded/ungraded rows and four-point gradebooks are not adjusted. Embedded recent-assignment data may cover only part of the gradebook, so different rows may retain different source precision. This is not a guarantee that every gradebook will reconcile.
+
+The restored points remain authoritative when initializing the score editor. Displayed raw-count metadata stays unchanged; when it disagrees with the precise points, the lab keeps points mode and derives an approximate raw equivalent. Re-entering the same numeric point value preserves it. Deliberately editing raw marks still applies the existing [round-down conversion](#raw-marks-and-gradebook-points); changing display precision does not change the underlying earned points.
+
+Identity checks are temporary and do not select settings profiles. See [the privacy explanation](../SECURITY.md#upcoming-on-page-score-matching).
 
 ## Display ratings and GPA
 
@@ -213,7 +232,7 @@ Ranges update the current hypothetical scenario without changing Aeries. They gi
 
 ## Reconciliation and incomplete data
 
-Before displaying posted impacts or the weight map, the adapter checks reconstructed category and overall totals against Aeries. Percentage/point comparisons allow a small display tolerance; average-gradebook comparisons also account for the number of displayed decimals. This is a consistency check, not proof of hidden official precision.
+Before displaying posted impacts or the weight map, the adapter checks reconstructed category and overall totals against Aeries. Percentage/point comparisons allow a small display tolerance; average-gradebook comparisons also account for the number of displayed decimals. This is a consistency check, not proof of hidden official precision. In the upcoming prerelease it runs after eligible on-page score restoration; all other reconciliation requirements remain in place.
 
 Calculations are blocked if the missing-only filter is enabled, required totals are absent, categories cannot be matched, or the reconstructed grade disagrees with Aeries. The lab can model a first assignment in an otherwise entirely ungraded course when its visible category totals support that baseline.
 

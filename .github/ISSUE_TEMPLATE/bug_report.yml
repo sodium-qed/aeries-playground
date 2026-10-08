@@ -33,7 +33,7 @@ body:
     id: script-version
     attributes:
       label: Installed script version and source
-      description: Read @version in the installed userscript and say whether you used a stable release, the weighted-GPA prerelease, or the main-branch install link.
+      description: Read @version in the installed userscript and say whether you used a stable release, a specific prerelease tag, or the main-branch install link. A main-branch fix can be newer than the tagged asset.
       placeholder: Metadata version; stable release, prerelease, or main; fresh install or manual update
   - type: textarea
     id: settings
@@ -44,7 +44,7 @@ body:
     id: example
     attributes:
       label: Small invented example
-      description: For calculations, give fictional scores, possible points, category weights, and the expected calculation. For GPA, give fictional posted letters and expected unweighted/weighted results, not real grades. For schedules, give the school date, approximate time, and expected period, without your class names.
+      description: For calculations, give fictional scores, possible points, category weights, and the expected calculation. For a precision issue, describe the differing displayed values and whether it affects the baseline or a hypothetical edit; do not attach Aeries page source. For GPA, give fictional posted letters and expected unweighted/weighted results, not real grades. For schedules, give the school date, approximate time, and expected period, without your class names.
   - type: textarea
     id: steps
     attributes:

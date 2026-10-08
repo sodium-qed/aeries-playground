@@ -15,6 +15,8 @@ The installation link above follows `main` and currently installs a prerelease w
 
 Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
 
+**Upcoming:** the next prerelease is planned to preserve matching on-page fractional scores in grade calculations and keep the next-school-day countdown running after school. These changes are not yet in the installation above. See [planned prerelease features](docs/FEATURES.md#upcoming-prerelease) for availability and limits.
+
 ## Install
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) for your browser.

@@ -24,6 +24,8 @@ Keep the [README](README.md) as the installation guide and overview, the [featur
 
 Keep upcoming, prerelease, and stable-release behavior clearly identified. Weighted GPA and KBAR are available in the 2.2.1 prerelease; the older weighted-GPA-only 2.1.0 prerelease remains a historical download. The raw-`main` installation link follows the source on `main`. Use explicit version-tagged release/asset addresses when referring to a particular version, rather than a Latest-download shortcut. Documentation-only commits must not replace the installable source or publish release tags/assets. Label future features as upcoming until their corresponding source is published. Keep the README as an overview without explicit version labels, dates, or a changelog; put availability details in the feature guide. Do not add a CHANGELOG file. Check that release automation does not publish code from an ordinary documentation-only push.
 
+The upcoming 2.3.0 precision/countdown documentation does not authorize publishing its code early. Preserve later fixes on `main`, including the visible KBAR fallback, when preparing a release; do not replace them silently with an older prepared file.
+
 Keep security, permissions, data-handling, and review information in the explanatory comment at the top of the userscript. Update that comment whenever the corresponding behavior changes, and mention the change in the pull request. `SECURITY.md` points readers there and explains the reporting process.
 
 ## Checking a proposed change
@@ -38,6 +40,8 @@ node scripts/check-userscripts.mjs
 This checker parses JavaScript and basic userscript metadata; it does not run the browser features or certify their security.
 
 Validate the behavior your change affects using invented data. For a calculation change, show the inputs, policy, expected result, and observed result. For controls or persistence changes, check the relevant toggle, reload behavior, and any affected saved rules. Keep schedule-off behavior and explicit opt-in intact when changing the optional widget. Check documentation links and control names for a documentation-only change.
+
+For the upcoming fractional-score adapter, use invented page fixtures to check rounding-consistent restoration, mismatched identities/course/term/dates, duplicate records, malformed JSON, missing recent records, exclusions, and unchanged four-point behavior. Check that restored points survive score-editor initialization and unchanged edits, that intentional raw-mark edits retain the documented conversion, and that incomplete baselines remain blocked. Never commit a real Aeries page export as a fixture. For the upcoming countdown, check after-school, weekend/no-school, two-week search limits, Pacific daylight-saving transitions, and minutes-only fallback when the future date or clock cannot be verified.
 
 For changes to the weighted-GPA feature, check A/B/C/D/F against both scales, plus/minus handling, selected D/F without bonuses, mixed and unchecked courses, exclusions, duplicate course identities, F as zero, and empty/non-A–F inputs. Five included, selected A/B/C/D/F courses must give unweighted **2.00** and weighted **2.60**. Confirm that numeric-rating mode is unchanged; selection defaults, both editing locations, save/reload, profile/year isolation, and clear-settings behavior should also be covered. Formula checks do not establish that controls work in a live Aeries session.
 
