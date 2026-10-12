@@ -2,13 +2,13 @@
 
 Read the opening comment in [aeries-playground.user.js](aeries-playground.user.js) for the full security and privacy explanation: page access, every requested permission and schedule endpoint, saved data, update behavior, safeguards, and remaining limitations. See the [README](README.md) for installation. This page summarizes the available controls and explains how to report a concern.
 
-Unless explicitly marked upcoming, this page describes the current source on `main`. The [planned prerelease](docs/FEATURES.md#upcoming-prerelease) is documented separately below and has not been published by this documentation update.
+This page describes the current **2.3.0 prerelease** source on `main`, including the on-page score matching, after-school countdown, and visible KBAR fallback. See [release-specific downloads](docs/FEATURES.md#available-release) to distinguish it from the stable edition.
 
 ## Privacy controls
 
 | Area | Documented behavior and controls |
 | --- | --- |
-| Grade tools | Read the visible Aeries page and calculate locally. The script does not send grades or account details in its schedule requests, submit grade changes, or change account settings. Hypothetical scores are temporary. |
+| Grade tools | Read the current Aeries page, including validated matching embedded scores, and calculate locally. The script does not send grades or account details in its schedule requests, submit grade changes, or change account settings. Hypothetical scores are temporary. |
 | Public schedules | **What class is next (MVHS)** starts off and requires an explicit opt-in in Settings. Turning it off stops refreshes, requests cancellation of pending transfers, and ignores late responses in the current tab. Pausing Playground also stops schedule work in that tab. Reload other Aeries tabs promptly; they can retain the old opt-in, continue requests, and save it again. |
 | Connection metadata | Enabling schedules contacts public services, which receive ordinary connection information such as IP address and request timing. These requests are not anonymous browsing; the clock request also has an Aeries-related identifier. The source comment describes the exact requests and manager-dependent behavior. |
 | Saved configuration | The userscript manager stores preferences, course information, and grading-rule references. Posted grades and hypothetical scores are not saved. Manager sync or backups may copy configuration elsewhere; manage those options in the manager. |
@@ -16,9 +16,9 @@ Unless explicitly marked upcoming, this page describes the current source on `ma
 
 For the controls and their effects, see the [feature guide](docs/FEATURES.md#settings-profiles-and-saved-data). To stop the script entirely, disable it in the userscript manager and reload Aeries.
 
-### Upcoming on-page score matching
+### On-page score matching
 
-The prepared **2.3.0 prerelease** can use a more precise numeric score already embedded in the current Aeries page when it matches the displayed assignment. It temporarily reads school, student, and person identifiers, along with course/gradebook/term information and assignment details, to reject unrelated or ambiguous matches. Those matching identifiers and embedded score records remain in page memory; this feature does not write them to userscript storage or include them in external requests. Existing saved course identifiers and replacement-rule references remain as documented above.
+The **2.3.0 prerelease** can use a more precise numeric score already embedded in the current Aeries page when it matches the displayed assignment. It temporarily reads school, student, and person identifiers, along with course/gradebook/term information and assignment details, to reject unrelated or ambiguous matches. Those matching identifiers and embedded score records remain in page memory; this feature does not write them to userscript storage or include them in external requests. Existing saved course identifiers and replacement-rule references remain as documented above.
 
 Embedded data is parsed as JSON, not executed as page JavaScript. The feature does not read login cookies, request credentials, fetch hidden records, or add userscript permissions or network endpoints. Missing or inconsistent data retains the displayed score. These checks reduce mistaken matches but do not certify the accuracy of Aeries data or account for every page layout.
 
@@ -34,7 +34,7 @@ Selections can reveal course information and, like other preferences, may be cop
 
 ### KBAR playback
 
-The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.2.1 prerelease**. The earlier **2.1.0 prerelease** does not include it. The visible Settings fallback described below is a newer `main` change; the tagged prerelease asset does not contain that addition.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.3.0 prerelease**, including the visible Settings fallback described below. The earlier **2.1.0 prerelease** does not include KBAR, and the **2.2.1 prerelease** does not include that fallback.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
@@ -56,7 +56,7 @@ Use the official repository's source and review the complete file you intend to 
 
 The script requests manual updates for fresh Tampermonkey installations. Existing installations may retain their previous update settings, and other managers can behave differently; check the script's update settings in your manager. Review a replacement file before installing it. Findings about one file do not automatically apply to a different copy.
 
-The README's raw-`main` installation link follows the source on `main`; the stable **Latest** release, the current KBAR prerelease, and the earlier weighted-GPA prerelease have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
+The README's raw-`main` installation link currently serves the **2.3.0 prerelease**; the stable **Latest** release remains **2.0.0**. They and earlier prereleases have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
 
 Reading grades and changing their display are necessary for these features. Display or calculation bugs, page changes, inaccurate public schedules, and manager behavior remain possible. A static review or successful check is not a certification or a guarantee of zero risk. The [calculation reference](docs/CALCULATIONS.md) explains when estimates are available and what they mean.
 

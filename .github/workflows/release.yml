@@ -1,4 +1,4 @@
-name: Publish 2.2 prerelease
+name: Publish 2.3 prerelease
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aeries-playground-2-2-release
+  group: aeries-playground-2-3-release
   cancel-in-progress: false
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Publish the prepared 2.2 prerelease
+      - name: Publish the prepared 2.3 prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         shell: python
@@ -43,26 +43,27 @@ jobs:
           import tempfile
 
           source = Path('aeries-playground.user.js')
-          # Sunday, October 4, 2026 at 11:59 PM America/Los_Angeles (PDT).
-          launch_time = datetime(2026, 10, 5, 6, 59, tzinfo=timezone.utc)
-          expected_hash = '0b3ec547caafa5df519504a1966d0cae382963dfad637fc74f73009a9d684bb4'
+          # Sunday, October 11, 2026 at 11:59 PM America/Los_Angeles (PDT).
+          launch_time = datetime(2026, 10, 12, 6, 59, tzinfo=timezone.utc)
+          expected_hash = '878871c35d493d83ad1dd70f33ebfe2b3244e099916e9e9bb9bc737bb1d0758b'
+          expected_size = 321581
           if datetime.now(timezone.utc) < launch_time:
               print('The release time has not arrived; no release was created.')
               raise SystemExit(0)
           if not source.is_file():
               raise SystemExit('The prepared userscript is missing.')
-          if hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
+          if source.stat().st_size != expected_size or hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
               raise SystemExit('The userscript does not match the prepared launch file.')
-          if not re.search(r'^//\s*@version\s+2\.2\.1\s*$', source.read_text(), re.MULTILINE):
-              raise SystemExit('The userscript metadata does not match version 2.2.1.')
+          if not re.search(r'^//\s*@version\s+2\.3\.0\s*$', source.read_text(), re.MULTILINE):
+              raise SystemExit('The userscript metadata does not match version 2.3.0.')
 
           # These checks compile the source; they do not run it against Aeries.
           subprocess.run(['node', 'scripts/check-userscripts.mjs'], check=True)
           subprocess.run(['node', '--test', 'tests/check-userscripts.test.mjs'], check=True)
           repo = os.environ['GITHUB_REPOSITORY']
           commit = os.environ['GITHUB_SHA']
-          tag = 'v2.2.1'
-          title = 'Aeries Playground 2.2.1'
+          tag = 'v2.3.0'
+          title = 'Aeries Playground 2.3.0'
 
           def gh(*args, check=True):
               return subprocess.run(['gh', *args], check=check, text=True, capture_output=True)
@@ -105,6 +106,16 @@ jobs:
                   obj = api(f'repos/{repo}/git/tags/{obj["sha"]}')['object']
               raise SystemExit('The release tag does not resolve to a commit.')
 
+          # Snapshot Latest before writes and preserve it through publication.
+          # A prior partial run may have made this prerelease Latest; only that
+          # specific case (or a missing Latest) permits restoring the stable tag.
+          stable = api(f'repos/{repo}/releases/tags/v2.0.0')
+          if stable['draft'] or stable['prerelease']:
+              raise SystemExit('The stable release has unexpected metadata.')
+          latest_before = api(f'repos/{repo}/releases/latest', absent_ok=True)
+          if latest_before and latest_before['id'] != stable['id'] and latest_before['tag_name'] != tag:
+              raise SystemExit('Latest has changed to another stable release; nothing was published.')
+
           # Check the repository blob too, so checkout line-ending conversion
           # cannot conceal a difference between the tag and uploaded asset.
           verify_source_at(commit)
@@ -135,7 +146,7 @@ jobs:
               # documentation-only commit with identical source is acceptable.
               verify_source_at(release['target_commitish'])
           if release and not release['draft']:
-              if release['name'] != title:
+              if release['name'] != title or not release['prerelease']:
                   raise SystemExit('The existing published release has unexpected metadata.')
               if not tag_ref:
                   raise SystemExit('The published release is missing its tag.')
@@ -143,18 +154,31 @@ jobs:
           with tempfile.TemporaryDirectory() as folder:
               notes = Path(folder) / 'release-notes.md'
               notes.write_text(
-                  'Aeries Playground 2.2.1 is a prerelease maintenance update for KBAR playback. '
-                  'The YouTube player now stays hidden outside the visible layout instead of '
-                  'adding thousands of pixels of blank scroll space to the page. Press P outside '
-                  'a text field, or use the Settings playback button, to play or pause. '
-                  'Close the player to stop and unload it. Playback starts off on every page load.\n\n'
+                  'Aeries Playground 2.3.0 is a prerelease combining fractional-score precision, '
+                  'the next-school-day countdown, and the existing KBAR playback fixes.\n\n'
+                  'When validated data already embedded in the open Aeries page matches the '
+                  'visible student, course, assignment, dates, and rounded score, grade '
+                  'reconstruction and hypothetical testing preserve values such as '
+                  '`14.66666666666667 / 15` instead of using the desktop-rounded `14.67 / 15`. '
+                  'Matching identifiers stay in memory: the adapter does not save identity '
+                  'data or fetch additional or hidden records. Missing, ambiguous, excluded, '
+                  'inconsistent, or four-point records retain the visible-data behavior.\n\n'
+                  'The opt-in MVHS schedule countdown can continue after school and across '
+                  'weekends or no-school days, searching up to 14 days ahead. Pacific '
+                  'daylight-saving changes are accounted for; minutes-only fallback remains '
+                  'when the future date or clock cannot be verified.\n\n'
+                  'KBAR retains its hidden player and pause handling. Press P outside a text '
+                  'field or the Playground dialog, or use the Settings playback button, to '
+                  'play or pause. Close the player to stop and unload it. Playback starts '
+                  'off on every page load. The visible Settings → Open on YouTube fallback '
+                  'is preserved and remains available when the embed is blocked or closed.\n\n'
                   'Starting KBAR connects to a YouTube privacy-enhanced embed. '
                   'YouTube can receive connection and playback information and may '
                   'show ads; privacy-enhanced embedding is not anonymous. Playground '
                   'does not include grades, assignments, or course names in its '
                   'player URL or playback commands.\n\n'
-                  'The weighted and unweighted current-year GPA estimates introduced '
-                  'in 2.1.0 remain available. Select eligible honors/AP courses manually; '
+                  'Weighted and unweighted current-year GPA estimates remain available. '
+                  'Select eligible honors/AP courses manually; '
                   'A/B/C receive one bonus point and D/F remain 1/0. These are local '
                   'estimates, not official transcript GPAs.\n\n'
                   'Install or manually update with the attached '
@@ -162,6 +186,13 @@ jobs:
                   'license comments at the top first. Fresh Tampermonkey installs '
                   'disable automatic updates through `@downloadURL none`; existing '
                   'installs and other managers may retain different update settings.\n\n'
+                  'The raw-main installation link now serves this prerelease; use a '
+                  'version-tagged release download when choosing a fixed version. '
+                  'The stable Latest release remains unchanged.\n\n'
+                  'The workflow checks JavaScript syntax, userscript metadata, and the '
+                  'repository checker tests before publication. These checks do not run '
+                  'features in a live Aeries browser session. Browser integration has not '
+                  'been tested for this combined prerelease.\n\n'
                   '[Installation and feature guide](https://github.com/sodium-qed/aeries-playground#install)\n',
                   encoding='utf-8')
 
@@ -190,7 +221,7 @@ jobs:
               if not release:
                   gh('release', 'create', tag, str(source), '--repo', repo,
                      '--verify-tag', '--target', release_commit, '--title', title,
-                     '--notes-file', str(notes), '--draft')
+                     '--notes-file', str(notes), '--draft', '--prerelease', '--latest=false')
                   release = release_for_tag()
                   if not release:
                       raise SystemExit('The draft release could not be found after creation.')
@@ -199,7 +230,7 @@ jobs:
                   gh('release', 'upload', tag, str(source), '--repo', repo)
               verify_asset()
 
-              if release['draft'] or not release['prerelease']:
+              if release['draft']:
                   release = api_write(
                       f'repos/{repo}/releases/{release["id"]}', 'PATCH', {
                           'tag_name': tag,
@@ -224,11 +255,8 @@ jobs:
               if latest is None or latest['tag_name'] == tag:
                   # Restore the prior stable release only if no other stable
                   # release has become Latest in the meantime.
-                  stable = api(f'repos/{repo}/releases/tags/v2.0.0')
-                  if stable['draft'] or stable['prerelease']:
-                      raise SystemExit('The prior stable release has unexpected metadata.')
                   api_write(f'repos/{repo}/releases/{stable["id"]}', 'PATCH',
                             {'make_latest': 'true'})
-              if api(f'repos/{repo}/releases/latest')['tag_name'] == tag:
-                  raise SystemExit('The prerelease must not be Latest.')
+              if api(f'repos/{repo}/releases/latest')['id'] != stable['id']:
+                  raise SystemExit('Latest changed during publication; the newer selection was preserved.')
               print(release['html_url'])

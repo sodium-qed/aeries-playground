@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.2.1
-// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, the next class from mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
+// @version      2.3.0
+// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -19,6 +19,12 @@
 // ==/UserScript==
 
 /*
+ * 2.3.0: Preserve the full on-page Aeries score (for example,
+ * 14.66666666666667 / 15) when the desktop table displays 14.67 / 15.
+ * Use the validated value in grade reconstruction and hypothetical testing.
+ * Includes the latest 2.2.1 KBAR playback updates and the next-school-day
+ * countdown, with weekend, no-school-day, and Pacific daylight-saving support.
+ *
  * PRIVACY, PERMISSIONS, AND SECURITY NOTES
  *
  * Aeries Playground changes the page you see and calculates hypothetical
@@ -44,9 +50,11 @@
  *   The userscript metadata and an additional hostname/path check limit it
  *   to those pages.
  * - Reads the course cards, assignments, grades, categories, and grading
- *   information already displayed on the page to build its local tools.
- * - Does not request your password, read login cookies, identify the signed-in
- *   account, or fetch hidden Aeries records.
+ *   information on the page, including embedded numeric scores when they
+ *   match the displayed assignment and current student/course identifiers.
+ *   These identifiers are used only in memory to verify the match, not saved.
+ * - Does not request your password, read login cookies, or fetch hidden
+ *   Aeries records. Embedded page data is parsed as JSON, never executed.
  * - Hypothetical scores, added assignments, and calculated results stay in
  *   page memory. They reset when you exit grade testing, reload, switch
  *   gradebooks/settings scope, or a gradebook refresh is detected. Course
@@ -1154,6 +1162,134 @@ const GradeDOM = (() => {
     const rawScoreCells=uniqueLocations.filter(node=>!uniqueLocations.some(other=>other!==node && node.contains(other)));
     return {rawEarned:earnedValues.size===1?[...earnedValues][0]:null,rawPossible:[...totals][0],rawScoreCells};
   }
+  function parseRecentData(scriptText) {
+    // Read only the JSON literal Aeries embeds for its recent-items search.
+    // Never evaluate page JavaScript, including a non-JSON initializer.
+    const declarations=[...String(scriptText).matchAll(/^\s*(?:var|let|const)\s+RecentData\s*=\s*/gm)];
+    if(declarations.length!==1)return null;
+    const start=declarations[0].index+declarations[0][0].length;
+    if(scriptText[start]!=='[')return null;
+    let depth=0,quoted=false,escaped=false;
+    for(let i=start;i<scriptText.length && i-start<2000000;i++){
+      const ch=scriptText[i];
+      if(quoted){
+        if(escaped)escaped=false;
+        else if(ch==='\\')escaped=true;
+        else if(ch==='"')quoted=false;
+        continue;
+      }
+      if(ch==='"'){quoted=true;continue;}
+      if(ch==='[')depth++;
+      if(ch===']')depth--;
+      if(depth===0){
+        if(!/^\s*;/.test(scriptText.slice(i+1)))return null;
+        try {
+          const data=JSON.parse(scriptText.slice(start,i+1));
+          return Array.isArray(data) && data.length<=10000?data:null;
+        } catch { return null; }
+      }
+    }
+    return null;
+  }
+  function embeddedScoreKey(number,name,category,assigned,due) {
+    return JSON.stringify([number,cleanText(name),cleanText(category),assigned,due]);
+  }
+  function readEmbeddedScores(root = document) {
+    const scores=new Map(),course=currentCourse(root);
+    if(!course || isFourPointCourse(course.title))return scores;
+    const identity=['SC','SN','PID'].map(key=>{
+      const fields=root.querySelectorAll(`input[id="ctl00_${key}"]`);
+      return fields.length===1?String(fields[0].value).trim():'';
+    });
+    const [school,student,person]=identity;
+    if(identity.some(value=>!/^\d+$/.test(value)) || school!==course.school)return scores;
+    const sources=[...root.querySelectorAll('script:not([src])')].filter(script=>
+      !script.closest(OWNED) && /^\s*(?:var|let|const)\s+RecentData\s*=/m.test(script.textContent||''));
+    if(sources.length!==1)return scores;
+    const records=parseRecentData(sources[0].textContent||'');
+    if(!records)return scores;
+    const belongs=record=>record && typeof record==='object' && !Array.isArray(record)
+      && String(record.STUSC)===school && String(record.STUSN)===student
+      && typeof record.Details==='string' && record.Details.split('^')[0]===person;
+    // Assignment records have no gradebook ID. Require an unambiguous Classes
+    // record connecting this exact course title to the selected gradebook.
+    // Abbreviated or duplicated course names deliberately keep visible scores.
+    const classes=records.filter(record=>belongs(record) && record.Section==='Classes' && cleanText(record.Title)===course.title);
+    if(classes.length!==1 || typeof classes[0].PageURL!=='string')return scores;
+    try {
+      const page=new URL(classes[0].PageURL.replace(/&amp;/g,'&'),'https://aeries.invalid/');
+      const one=(url,key,value)=>url.searchParams.getAll(key).length===1 && url.searchParams.get(key)===value;
+      if(!one(page,'SC',school) || !one(page,'SN',student) || page.searchParams.getAll('ReturnPage').length!==1)return scores;
+      const target=new URL(page.searchParams.get('ReturnPage').replace(/&amp;/g,'&'),'https://aeries.invalid/');
+      if(!/\/Widgets\/ClassSummary\/RedirectToGradebook$/i.test(target.pathname)
+        || !one(target,'GradebookNumber',course.gradebook) || !one(target,'Term',course.term) || !one(target,'SC',school))return scores;
+    } catch { return scores; }
+    const numbers=new Map();
+    for(const record of records){
+      if(!belongs(record) || record.Section!=='RecentAssignments' || typeof record.Title!=='string')continue;
+      const fields=record.Details.split('^'),title=cleanText(record.Title).match(/^(\d+)\s+(.+)$/);
+      if(fields.length!==7 || !title || cleanText(fields[3])!==course.title)continue;
+      const number=title[1],assigned=parseDueDate(fields[1]),due=parseDueDate(fields[2]);
+      numbers.set(number,(numbers.get(number)||0)+1);
+      if(!assigned || !due || !cleanText(fields[4]))continue;
+      const key=embeddedScoreKey(number,title[2],fields[4],assigned,due);
+      const earned=parseScalar(fields[5]),percent=parseScalar(fields[6]);
+      const value=earned!==null && earned>=0 && percent!==null && percent>=0?{number,earned,percent,percentText:cleanText(fields[6])}:null;
+      scores.set(key,scores.has(key)?null:value);
+    }
+    for(const [key,value] of scores)if(!value || numbers.get(value.number)!==1)scores.delete(key);
+    return scores;
+  }
+  function readAssignedDate(row,cardRow) {
+    const dates=new Set();
+    for(const source of [row,cardRow].filter(Boolean)){
+      for(const label of source.querySelectorAll('.details-title,.TextSubSection')){
+        if(label.closest(OWNED) || !/^Date Assigned:$/i.test(cleanText(label)))continue;
+        let text='';
+        for(let node=label.nextSibling;node && node.nodeType===3;node=node.nextSibling)text+=node.textContent;
+        const match=cleanText(text).match(/^(\d{1,2}\/\d{1,2}\/\d{4})(?:\s|$)/);
+        const date=match?parseDueDate(match[1]):'';
+        if(!date)return '';
+        dates.add(date);
+      }
+    }
+    return dates.size===1?[...dates][0]:'';
+  }
+  function roundsToPosted(value,text,minimumDecimals=0) {
+    const posted=parseScalar(text);
+    if(posted===null || !Number.isFinite(value))return false;
+    const decimals=Math.max(minimumDecimals,(cleanText(text).split('.')[1]||'').length);
+    return decimals<=15 && Number(value.toFixed(decimals))===posted;
+  }
+  function restoreEmbeddedPrecision(assignments,scores,rules) {
+    if(rules.averageMaximum || !scores.size)return 0;
+    const ids=new Map();
+    for(const assignment of assignments)ids.set(assignment.id,(ids.get(assignment.id)||0)+1);
+    let restored=0;
+    for(const assignment of assignments){
+      if(!assignment.included || assignment.status!=='graded' || !(assignment.possible>0) || ids.get(assignment.id)!==1)continue;
+      const number=assignment.id.slice('aeries:'.length);
+      const assigned=readAssignedDate(assignment.sourceRow,assignment.sourceRows[1]);
+      if(!assigned || !assignment.dueDate)continue;
+      const precise=scores.get(embeddedScoreKey(number,assignment.name,assignment.category,assigned,assignment.dueDate));
+      if(!precise || precise.earned===assignment.earned)continue;
+      // Aeries strips trailing zeros but renders ordinary point scores to at
+      // least two-place precision. Only accept a numeric score on that scale.
+      const scoreText=cleanText(assignment.sourceCell).split('/')[0].trim();
+      if(!roundsToPosted(precise.earned,scoreText,2))continue;
+      const percent=precise.earned/assignment.possible*100;
+      const posted=parseGrade(cleanText(assignment.sourceRow.querySelector('[id$="_tdPerc"]')));
+      if(posted.unit!=='percent' || posted.value===null || posted.decimals>15
+        || Number(percent.toFixed(posted.decimals))!==posted.value
+        || !roundsToPosted(percent,precise.percentText))continue;
+      assignment.earned=precise.earned;
+      // Raw-count metadata stays as displayed: the refresh guard uses it to
+      // recognize old rows during a course switch. labDraft preserves these
+      // precise points and derives a raw equivalent when the two disagree.
+      restored++;
+    }
+    return restored;
+  }
   function readAeriesTable(info) {
     const assignments=[],issues=[],doc=info.element.ownerDocument;
     const rules=readAeriesRules(doc);
@@ -1182,13 +1318,15 @@ const GradeDOM = (() => {
         sourceCells:[score,cardScore].filter(Boolean),sourceRows:[row,cardRow].filter(Boolean),
         sourceNameCells:[cells[1],cardRow?.querySelector('.TextHeading')].filter(Boolean)});
     }
+    const restored=restoreEmbeddedPrecision(assignments,readEmbeddedScores(doc),rules);
+    if(restored)issues.push(`More precise scores were read from matching on-page Aeries data for ${restored} assignment(s). Other scores retain their displayed precision.`);
     if(assignments.some(a=>!a.included))issues.push('Blank or excluded scores do not count. A numeric score can count even when Grading Complete says No, as in Aeries Totals.');
     if(Object.keys(rules.weights).length)issues.push('Category weights were read from Aeries Totals and will be imported with these rows.');
     if(rules.scoreFloor!==null || rules.scoreCeiling!==null)issues.push(`Aeries assignment score limits detected: ${rules.scoreFloor??'no minimum'}% to ${rules.scoreCeiling??'no maximum'}%. These will apply to hypothetical scores.`);
     if(doc.querySelector('input[id$="_chkMissingAssignmentOnly"]')?.checked)issues.push('Show only missing assignments is enabled. Turn it off and reimport to calculate the full gradebook.');
     return {assignments,issues,rules};
   }
-  return { readCards, listTables, readTable, parseGrade, courseKey, cleanText, currentCourse, readAeriesRules, parseDueDate, isFourPointCourse, assignmentGrade, parseCourseGrade, readRawScoreMetadata };
+  return { readCards, listTables, readTable, parseGrade, courseKey, cleanText, currentCourse, readAeriesRules, parseDueDate, isFourPointCourse, assignmentGrade, parseCourseGrade, readRawScoreMetadata, parseRecentData, readEmbeddedScores, restoreEmbeddedPrecision };
 })();
   // Period-to-course matching stays local; no class names go to either schedule service.
   const CourseSchedule = (() => {
@@ -2223,7 +2361,7 @@ const GradeDOM = (() => {
     if(error){box.append(note('Hypothetical total unavailable: '+error,'ap-plan-message'));return;}
     if(blocked)box.append(note('A complete matching total is unavailable: '+blocked,'ap-plan-message'));
     else if(ranged)box.append(note(`Hypothetical overall grade — lower bound: ${planningFormat(result.value,rules,true)}; upper bound: ${planningFormat(upper.value,rules,true)}. All counted ranges vary together; single scores stay fixed.`));
-    else box.append(note((active?'Hypothetical calculated grade: ':'Reconstructed from visible Aeries scores: ')+planningFormat(result.value,rules,true)));
+    else box.append(note((active?'Hypothetical calculated grade: ':'Reconstructed from Aeries scores: ')+planningFormat(result.value,rules,true)));
     if(active&&planningCourse().gradingRules)box.append(note('Uses your saved course grading profile.'));
     else box.append(note('Uses category weights and score limits read from Aeries.'));
     if(!active&&!postedCheck.error&&result.appliedReplacements.length)box.append(note('Your configured replacement rules reconcile the visible scores with Aeries’ posted totals.'));
@@ -3239,12 +3377,26 @@ const MVHSSchedule = (() => {
     if (!Array.isArray(periods)) throw new Error('MVHS has not supplied this schedule.');
     return {...selected,dateKey,periods};
   }
+  function schoolTimestamp(dateKey,minutes) {
+    // Convert a Pacific wall time to an instant without assuming a fixed UTC
+    // offset or a 24-hour day across daylight-saving changes.
+    const target=dateValue(dateKey).getTime()+(minutes-12*60)*60000;
+    let instant=target;
+    for (let attempt=0;attempt<4;attempt++) {
+      const clock=schoolClock(new Date(instant));
+      const wall=dateValue(clock.dateKey).getTime()+(clock.minutes-12*60)*60000;
+      const adjustment=Math.round(target-wall);
+      if (!adjustment) return instant;
+      instant+=adjustment;
+    }
+    throw new Error('Could not resolve the next class time in Pacific time.');
+  }
   function nextSchoolDay(data,dateKey) {
     const date = dateValue(dateKey);
     for (let offset=1;offset<=14;offset++) {
       date.setUTCDate(date.getUTCDate()+1);
       const day = dayFor(data,date.toISOString().slice(0,10)), first = day.periods.find(isStudentSlot);
-      if (first) return {...day,first};
+      if (first) return {...day,first,startsAt:schoolTimestamp(day.dateKey,first.start)};
     }
     return null;
   }
@@ -3493,24 +3645,28 @@ function bellPlusIsFresh(now,dateKey) {
     && now>=bellPlusClock.wallAt && now-bellPlusClock.wallAt<scheduleTTL
     && Math.abs((now-bellPlusClock.wallAt)-(performance.now()-bellPlusClock.monoAt))<1000);
 }
-function verifiedBellSeconds(day,state,now) {
+function verifiedBellSeconds(day,state,now,upcoming) {
   const unavailable={verified:false,status:bellPlusPending?'Checking bell.plus for seconds…':bellPlusError?'Seconds unavailable; using mvhs.io minutes.':'Seconds awaiting bell.plus verification.'};
   if (!bellPlusIsFresh(now,day.dateKey)) return unavailable;
   try {
     const bellDay=BellPlusSchedule.dayFor(bellPlusData,day.dateKey);
-    if (day.noSchool && bellDay.noSchool) return {verified:false,status:'Schedule: mvhs.io. No school today.'};
-    if (!BellPlusSchedule.agrees(bellDay,day)) return {verified:false,status:'Schedules differ; using mvhs.io minutes.'};
-    if (!day.periods.length) return {verified:false,status:'Schedule: mvhs.io. No school today.'};
+    const noSchool=day.noSchool && bellDay.noSchool;
+    if (!noSchool && !BellPlusSchedule.agrees(bellDay,day)) return {verified:false,status:'Schedules differ; using mvhs.io minutes.'};
+    // Tomorrow's countdown needs tomorrow's schedule checked too. Today's
+    // matching bells alone do not verify a future class start.
+    if (upcoming && !BellPlusSchedule.agrees(BellPlusSchedule.dayFor(bellPlusData,upcoming.dateKey),upcoming))
+      return {verified:false,status:'Next-day schedules differ; using mvhs.io minutes.'};
+    if (!day.periods.length && !upcoming) return {verified:false,status:'Schedule: mvhs.io. No school today.'};
     const correctedNow=new Date(now+bellPlusClock.offsetMs+bellPlusData.correctionMs),clock=MVHSSchedule.schoolClock(correctedNow);
     const bellState=MVHSSchedule.stateFor(day.periods,clock.minutes);
     // Even a small clock correction must never switch the authoritative current
     // period or next class. Fall back to minutes across a disputed bell boundary.
     if (clock.dateKey!==day.dateKey || state.phase!==bellState.phase || state.current!==bellState.current || state.nextClass!==bellState.nextClass)
       return {verified:false,status:'Bell timing differs; using mvhs.io minutes.'};
-    return {verified:true,minutes:clock.minutes+correctedNow.getUTCMilliseconds()/60000,status:'Schedule: mvhs.io · Seconds verified with bell.plus.'};
+    return {verified:true,minutes:clock.minutes+correctedNow.getUTCMilliseconds()/60000,nowMs:correctedNow.getTime(),status:'Schedule: mvhs.io · Seconds verified with bell.plus.'};
   } catch {return {verified:false,status:'bell.plus could not be checked; using mvhs.io minutes.'};}
 }
-function updateBellCountdowns(state,verification) {
+function updateBellCountdowns(state,verification,upcoming,now) {
   const duration=(target,minutes)=>{
     if (!verification.verified) return `${minutes} min`;
     const seconds=Math.max(0,Math.ceil(target*60-verification.minutes*60-1e-7));
@@ -3519,6 +3675,19 @@ function updateBellCountdowns(state,verification) {
   const current=scheduleRoot?.querySelector('[data-ap-countdown="current"]'),next=scheduleRoot?.querySelector('[data-ap-countdown="next"]');
   if (current && state.current) {const value=duration(state.current.end,state.remainingMinutes)+' remaining';if(current.textContent!==value)current.textContent=value;}
   if (next && state.nextClass) {const value='in '+duration(state.nextClass.start,state.untilNextMinutes);if(next.textContent!==value)next.textContent=value;}
+  const nextDay=scheduleRoot?.querySelector('[data-ap-countdown="upcoming"]');
+  if (nextDay && upcoming) {
+    const seconds=Math.max(0,Math.ceil((upcoming.startsAt-(verification.verified?verification.nowMs:now))/1000));
+    const totalMinutes=verification.verified?Math.floor(seconds/60):Math.ceil(seconds/60);
+    const days=Math.floor(totalMinutes/1440),hours=Math.floor(totalMinutes%1440/60),minutes=totalMinutes%60;
+    const parts=[];
+    if (days) parts.push(`${days} ${days===1?'day':'days'}`);
+    if (days || hours) parts.push(`${hours} hr`);
+    parts.push(`${minutes} min`);
+    if (verification.verified) parts.push(`${String(seconds%60).padStart(2,'0')} sec`);
+    const value='in '+parts.join(' ');
+    if (nextDay.textContent!==value) nextDay.textContent=value;
+  }
 }
 function requestMVHSPublic(path) {
   if (!scheduleRequestsAllowed()) return Promise.reject(new Error('Public schedule access is off.'));
@@ -3574,11 +3743,11 @@ function refreshSchedule() {
       if (!state.nextClass) upcoming=MVHSSchedule.nextSchoolDay(scheduleData,clock.dateKey);
     } catch(error) {problem=error.message;}
   }
-  const verification=day && state && !problem?verifiedBellSeconds(day,state,now):{verified:false,status:''};
+  const verification=day && state && !problem?verifiedBellSeconds(day,state,now,upcoming):{verified:false,status:''};
   const roster=visibleCards.map(card=>{const c=courseFor(card);return {key:card.key,title:card.title,nickname:c.nickname,period:c.schedulePeriod || card.schedulePeriod};});
   const signature=JSON.stringify([profileKey(),clock?.dateKey,day,state && [state.phase,state.current,state.next,state.nextClass],upcoming,problem,Boolean(fresh),schedulePending,scheduleError,verification.verified,verification.status,db.settings.nicknames,
     roster]);
-  if (signature===scheduleSignature) {if(state)updateBellCountdowns(state,verification);return;}scheduleSignature=signature;
+  if (signature===scheduleSignature) {if(state)updateBellCountdowns(state,verification,upcoming,now);return;}scheduleSignature=signature;
   const wasOpen=Boolean(scheduleRoot.querySelector('details')?.open);
   scheduleRoot.replaceChildren();
   const style=el('style');style.textContent=`:host{font:inherit;color:#243449;overflow-wrap:anywhere}*{box-sizing:border-box}.box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:12px 14px}details{max-height:min(220px,35vh);overflow:auto;overscroll-behavior:contain}.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}.title{font-size:15px;font-weight:700}.meta{font-size:11px;color:#64748b}.current{font-size:19px;font-weight:700;margin:10px 0 4px}.next{font-size:13px;line-height:1.5}.status{font-size:12px;color:#64748b;line-height:1.5;margin-top:6px}a{color:#2454a0}button{font:inherit;font-size:12px;padding:5px 9px;cursor:pointer;background:white;border:1px solid #94a3b8;border-radius:6px;color:#243449}button:disabled{opacity:.6;cursor:default}summary{font-size:12px;cursor:pointer;margin-top:10px}table{font-size:12px;width:100%;border-collapse:collapse;margin-top:8px}td{padding:5px 6px;border-top:1px solid #e2e8f0}td:first-child{white-space:nowrap;width:1%}tr.active{background:#dbeafe} @media print{:host{display:none}}`;
@@ -3605,7 +3774,8 @@ function refreshSchedule() {
   }
   else if (upcoming) {
     const dateLabel=new Intl.DateTimeFormat('en-US',{timeZone:'UTC',weekday:'short',month:'short',day:'numeric'}).format(new Date(upcoming.dateKey+'T12:00:00Z'));
-    box.append(el('div',`Next school day: ${dateLabel} · ${titleFor(upcoming.first)} · ${MVHSSchedule.formatTime(upcoming.first.start)}`,{class:'next'}));
+    const line=el('div',`Next school day: ${dateLabel} · ${titleFor(upcoming.first)} · ${MVHSSchedule.formatTime(upcoming.first.start)} · `,{class:'next'});
+    line.append(el('span',null,{'data-ap-countdown':'upcoming',style:'font-variant-numeric:tabular-nums'}));box.append(line);
   } else if (!state.current)box.append(el('div','No upcoming class listed in the next two weeks.',{class:'next'}));
   else box.append(el('div','No later class listed today.',{class:'next'}));
   if (day.periods.length) {
@@ -3622,7 +3792,7 @@ function refreshSchedule() {
   const status=el('div',verification.verified?'Schedule: mvhs.io · Seconds verified with ':verification.status,{class:'status'});
   if (verification.verified) status.append(el('a','bell.plus',{href:'https://bell.plus/mvhs',target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer'}));
   box.append(status);
-  updateBellCountdowns(state,verification);
+  updateBellCountdowns(state,verification,upcoming,now);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSchedule();});
 window.addEventListener('pageshow',refreshSchedule);
@@ -4254,7 +4424,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     musicLinks.append(el('a','YouTube terms',{href:'https://www.youtube.com/t/terms',target:'_blank',rel:'noopener noreferrer'}),document.createTextNode(' · '),el('a','Google privacy policy',{href:'https://policies.google.com/privacy',target:'_blank',rel:'noopener noreferrer'}));
     musicBox.append(musicLinks);box.append(musicBox);
     const scopeBox=el('div',null,{class:'ap-box'});scopeBox.append(el('h3','Separate course settings'));
-    const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('Use a separate profile for each student or account. Change this before switching students; the script does not read account identity. Use a new year to start fresh.'));
+    const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('Use a separate profile for each student or account. Switch profiles manually when switching students; on-page identifiers verify score matches only and do not select a settings profile. Use a new year to start fresh.'));
     grid.append(box,scopeBox);content.append(grid);
     const colorBox=el('div',null,{class:'ap-box'});colorBox.append(el('h3','Grade colors & thresholds'),note('These settings control dashboard colors and number grades, progress bars, and grade-details colors. Course-specific thresholds override these defaults.'));
     const colorRows=[];for(let i=0;i<4;i++){const r=el('div',null,{class:'ap-row'});const color=input(draft.colors[i],'color');color.setAttribute('aria-label','Band '+(i+1)+' color');r.append(field(['4 · top band','3 · second band','2 · third band','1 · below all cutoffs'][i],color));let percent=null,avg=null;if(i<3){percent=input(draft.cutoffs[i],'number');avg=input(draft.averageCutoffs[i],'number');percent.step=avg.step='any';r.append(field('Percentage ≥',percent),field('Average ≥',avg));}colorRows.push({color,percent,avg});colorBox.append(r);}content.append(colorBox);

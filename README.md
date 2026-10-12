@@ -11,11 +11,11 @@ Personalize your Aeries dashboard, understand assignment weights, and explore hy
 
 [Feature guide](docs/FEATURES.md) · [Calculation reference](docs/CALCULATIONS.md) · [Security information and reporting](SECURITY.md)
 
-The installation link above follows `main` and currently installs a prerelease with weighted GPA and KBAR playback. For the stable edition, install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest); those prerelease features are not included there. See the [feature guide](docs/FEATURES.md#available-release) for release-specific downloads. Review the source you intend to install and keep one copy enabled.
+The installation link above follows `main` and currently installs a prerelease with weighted GPA, KBAR playback, validated on-page fractional-score precision, and an after-school countdown. For the stable edition, install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest); those prerelease features are not included there. See the [feature guide](docs/FEATURES.md#available-release) for release-specific downloads. Review the source you intend to install and keep one copy enabled.
 
 Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
 
-**Upcoming:** the next prerelease is planned to preserve matching on-page fractional scores in grade calculations and keep the next-school-day countdown running after school. These changes are not yet in the installation above. See [planned prerelease features](docs/FEATURES.md#upcoming-prerelease) for availability and limits.
+Grade calculations preserve more precise fractional scores already embedded in the page when they pass the [matching checks](docs/FEATURES.md#fractional-score-precision). The optional next-class panel keeps a [countdown to the next school day](docs/FEATURES.md#countdown-after-school) running after school.
 
 ## Install
 

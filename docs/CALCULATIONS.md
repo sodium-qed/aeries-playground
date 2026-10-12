@@ -4,21 +4,21 @@ This reference explains Aeries Playground's calculations. Examples use fictional
 
 ## Inputs and interpretation
 
-Calculations use data already rendered on the current Aeries page and the rules or hypothetical values you enter:
+Calculations use data already present on the current Aeries page and the rules or hypothetical values you enter:
 
 - Dashboard summaries use the posted marks on visible course cards.
-- Posted assignment analysis uses the open gradebook's assignment rows, category totals, and overall grade.
+- Posted assignment analysis uses the open gradebook's assignment rows, validated matching embedded scores, category totals, and overall grade.
 - Grade testing starts from those posted rows, then applies your current score edits, Count choices, and saved course policies.
 
 The optional next-class panel supplies no input to these calculations. Leaving it off does not reduce grade-tool functionality. The [KBAR playback](FEATURES.md#kbar-music) also supplies no calculation inputs and changes no GPA or grade formulas. The script does not retrieve hidden assignments or a transcript to complete an incomplete calculation.
 
-A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals alone expose the calculation's precision; they do not create more precise inputs. The upcoming exception for validated values already embedded by Aeries is described below.
+A numerical result describes the supported model; it does not establish an unknown teacher policy. **Unavailable** or **—** means no usable result or comparison is available, not a grade of zero. Extra displayed decimals alone expose the calculation's precision; they do not create more precise inputs. Restoration of validated values already embedded by Aeries is described below.
 
-## Upcoming on-page score precision
+## On-page score precision
 
-**Planned for the 2.3.0 prerelease; not active in the currently installed source.** See [availability](FEATURES.md#upcoming-prerelease). This changes eligible earned-score inputs, not the weighting, replacement, score-limit, reconciliation, or GPA formulas.
+**Available in the 2.3.0 prerelease.** See [availability](FEATURES.md#available-release). This changes eligible earned-score inputs, not the weighting, replacement, score-limit, reconciliation, or GPA formulas.
 
-The prepared adapter reads a single JSON array named `RecentData` already present in the page. It parses the JSON literal without executing the surrounding JavaScript. An embedded score is accepted only when:
+The adapter reads a single JSON array named `RecentData` already present in the page. It parses the JSON literal without executing the surrounding JavaScript. An embedded score is accepted only when:
 
 - The page's school, student, and person identifiers match, and an unambiguous course record connects the exact course title to the selected gradebook, term, and school.
 - Assignment number, title, category, assigned date, and due date match the loaded row, with no duplicate assignment number or model ID.
@@ -31,7 +31,7 @@ Records that are absent, duplicated, mismatched, malformed, or inconsistent do n
 
 The restored points remain authoritative when initializing the score editor. Displayed raw-count metadata stays unchanged; when it disagrees with the precise points, the lab keeps points mode and derives an approximate raw equivalent. Re-entering the same numeric point value preserves it. Deliberately editing raw marks still applies the existing [round-down conversion](#raw-marks-and-gradebook-points); changing display precision does not change the underlying earned points.
 
-Identity checks are temporary and do not select settings profiles. See [the privacy explanation](../SECURITY.md#upcoming-on-page-score-matching).
+Identity checks are temporary and do not select settings profiles. See [the privacy explanation](../SECURITY.md#on-page-score-matching).
 
 ## Display ratings and GPA
 
@@ -57,7 +57,7 @@ Both summaries are unofficial, equal-weight averages of included visible courses
 
 ### Weighted GPA
 
-These controls are available in the **2.2.1 prerelease** and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+These controls are available in the **2.3.0 prerelease** and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
 
 Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
 
@@ -232,7 +232,7 @@ Ranges update the current hypothetical scenario without changing Aeries. They gi
 
 ## Reconciliation and incomplete data
 
-Before displaying posted impacts or the weight map, the adapter checks reconstructed category and overall totals against Aeries. Percentage/point comparisons allow a small display tolerance; average-gradebook comparisons also account for the number of displayed decimals. This is a consistency check, not proof of hidden official precision. In the upcoming prerelease it runs after eligible on-page score restoration; all other reconciliation requirements remain in place.
+Before displaying posted impacts or the weight map, the adapter checks reconstructed category and overall totals against Aeries. Percentage/point comparisons allow a small display tolerance; average-gradebook comparisons also account for the number of displayed decimals. This is a consistency check, not proof of hidden official precision. It runs after eligible on-page score restoration; all other reconciliation requirements remain in place.
 
 Calculations are blocked if the missing-only filter is enabled, required totals are absent, categories cannot be matched, or the reconstructed grade disagrees with Aeries. The lab can model a first assignment in an otherwise entirely ungraded course when its visible category totals support that baseline.
 
