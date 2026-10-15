@@ -17,6 +17,8 @@ Aeries Playground is unofficial and is not affiliated with Aeries or a school di
 
 Grade calculations preserve more precise fractional scores already embedded in the page when they pass the [matching checks](docs/FEATURES.md#fractional-score-precision). The optional next-class panel keeps a [countdown to the next school day](docs/FEATURES.md#countdown-after-school) running after school.
 
+**Upcoming:** the [ungraded-assignment weight preview](docs/FEATURES.md#upcoming-show-ungraded-assignments) will add a saved checkbox inside the weight map, defaulting off. It will show ungraded work with known positive weights as gray circles without changing the current grade. This feature is not in the currently installable script; see the [prerelease plan](docs/FEATURES.md#upcoming-weight-map-prerelease) for availability.
+
 ## Install
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) for your browser.

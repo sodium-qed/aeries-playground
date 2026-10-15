@@ -6,7 +6,7 @@ For a first session, open the Aeries dashboard to discover courses, configure di
 
 ## Available release
 
-This guide describes the **2.3.0 prerelease**, combining validated on-page fractional-score precision, the after-school countdown, weighted/unweighted GPA, and optional KBAR playback with the visible **Settings → Open on YouTube** fallback. The README installation link follows `main` and currently installs this prerelease. For the version-specific copy, use the attached userscript:
+Except for sections explicitly marked **upcoming**, this guide describes the **2.3.0 prerelease**, combining validated on-page fractional-score precision, the after-school countdown, weighted/unweighted GPA, and optional KBAR playback with the visible **Settings → Open on YouTube** fallback. The README installation link follows `main` and currently installs this prerelease. For the version-specific copy, use the attached userscript:
 
 ```text
 Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.3.0
@@ -26,6 +26,19 @@ This runs automatically for eligible percentage-based gradebooks; **Ridiculously
 After today's classes end, the panel lists the next school day's first student slot with a live countdown to its start, including weekends and dates marked as no school in the public calendar. It searches up to fourteen days ahead and converts the target's Pacific wall time with daylight-saving changes accounted for.
 
 The countdown shows days, hours, and minutes as appropriate. Seconds require fresh bell.plus clock verification and agreement for the upcoming date as well as the current day's applicable schedule checks. If those checks fail, it uses minutes. Missing or invalid schedule data can still make the panel unavailable. This does not add schedule services or change the existing opt-in, current-tab cancellation, or manual course-to-period matching.
+
+## Upcoming weight-map prerelease
+
+The **2.4.0 prerelease** is planned for **Sunday, October 18, 2026 at 11:59 PM America/Los_Angeles (Pacific time)**. It adds [Show ungraded assignments](#upcoming-show-ungraded-assignments) inside the weight map. This documentation update does not publish that source: `main` still installs the current prerelease described above, and the new checkbox is not available there yet.
+
+When published, the new userscript will be publicly downloadable under tag `v2.4.0`, with metadata `@version 2.4.0`, as a published **Pre-release**, not a draft or the stable **Latest** release. The existing stable release will retain **Latest**. The raw-`main` installation link will then serve the new prerelease. The intended version-specific addresses below are publication targets, not currently available downloads:
+
+```text
+Release: https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0
+Asset:   https://github.com/sodium-qed/aeries-playground/releases/download/v2.4.0/aeries-playground.user.js
+```
+
+Use those explicit tagged addresses once published. `/releases/latest/download/...` continues to target the stable edition and must not be used as the prerelease download. Review the particular source before manually updating. Syntax and numerical checks on the prepared weight-map change passed; live Aeries/Tampermonkey/browser integration has not been verified.
 
 ## Weighted GPA prerelease
 
@@ -62,6 +75,7 @@ Starting KBAR loads a third-party embed from `www.youtube-nocookie.com`. Privacy
 | --- | --- |
 | Course labels, colors, periods, and grading preferences | Saved for reuse; course settings belong to the manually selected profile/year. |
 | Honors/AP selections | Saved per course in the selected profile/year; default unchecked. These are preferences, not saved grades or GPA results. |
+| Upcoming: Show ungraded assignments | Defaults off; saves immediately as one global weight-map display preference, shared across courses and settings profiles/years. Assignment scores and calculated preview weights are not saved. |
 | Course grading profiles and replacement rules | Saved separately from the current hypothetical scenario. Incomplete grading-profile forms are saved as drafts. |
 | Hypothetical scores, score ranges, and added assignments | Temporary; leaving the scenario or reloading clears them. |
 | Posted grades and assignments | Read from the current Aeries page, including validated matching embedded scores; local controls do not submit changes to Aeries. |
@@ -166,7 +180,7 @@ Impacts are not the assignment's weight, its historical posting effect, or value
 
 ### Assignment weight map
 
-Open **Assignment weight map** above the gradebook or the **Weight map** tab.
+Open **Assignment weight map** above the gradebook or the **Weight map** tab. The current release, and the upcoming checkbox-off view, work as follows:
 
 - Circle **area** is proportional to an assignment's share of the current counted grade, with one size scale across categories.
 - Color follows the assignment's posted numeric grade and your thresholds.
@@ -177,6 +191,29 @@ Open **Assignment weight map** above the gradebook or the **Weight map** tab.
 - During grade testing, the button becomes **Posted assignment weight map**: the map continues to describe posted data.
 
 Circles and list entries are ordered by assignment number, using numeric-aware ordering. Their labels use the assignment number; circle area and the displayed weight still describe grade weight.
+
+#### Upcoming: Show ungraded assignments
+
+**Planned for the [2.4.0 prerelease](#upcoming-weight-map-prerelease); not in the current installed source.**
+
+1. Open a course's full gradebook, with Aeries' missing-only filter off, then open **Assignment weight map** or the **Weight map** tab.
+2. Turn on **Show ungraded assignments**, directly beneath the map heading. It starts **off**, including on upgrade when no choice has been saved. The choice applies and saves immediately; no separate Save button is needed.
+3. Turn it off to return to the current counted-grade view. This does not hide rows in the native Aeries gradebook or change the lab's **Count** choices.
+
+| Checkbox | Map behavior |
+| --- | --- |
+| Off | Shows graded, included work using its current counted shares. Ungraded work is hidden. |
+| On, with ungraded work present | Shows **Weight preview · includes ungraded assignments**. Circle sizes use known possible points and category weights for the shown work, assuming that work will count. Graded shares can change because the preview denominators change. |
+
+Ungraded assignments with a positive known weight use **neutral gray circles** and an **Ungraded** label; graded assignments retain their score-threshold colors. Blank scores are never treated as zeros. A posted numeric zero remains a graded score, even when **Grading Complete** says **No**. Explicitly excused, excluded, or dropped assignments remain omitted, including when their score is blank.
+
+An ungraded assignment without known positive possible points, or without a valid category weight in a weighted class, stays in the list with an unavailable-weight explanation and no circle. It does not enter the preview denominators. Work in a known 0% category has zero weight and no circle, but remains in the list. If all known categories have zero weight, no positive-weight circles appear. The map does not guess missing values or fetch future assignments.
+
+Number ordering, assignment details, and **Show in gradebook** remain available for shown entries. During grade testing the map still uses posted assignment data, not hypothetical scores or replacement rules. The preview does not change the posted grade, current grade reconstruction, impacts, or GPA, and it does not predict the grade that an unscored assignment will earn. See the [preview formulas and examples](CALCULATIONS.md#upcoming-ungraded-assignment-weight-preview).
+
+A course with no counted grade can show preview entries when its visible category totals reconcile and Aeries' overall grade is absent or zero; unknown weights still have no circle. Missing totals, a filtered/incomplete gradebook, or conflicting posted totals can still block the map. Turning on this checkbox does not bypass those checks.
+
+The choice is a **global display preference**, shared across courses and manually selected settings profiles/years. It persists after reload when storage succeeds. Other open tabs keep their own loaded preferences until reloaded; a later save can overwrite an earlier choice. **Clear saved settings and pause** resets it to off. See [saved-data details](../SECURITY.md#upcoming-weight-map-preference).
 
 ## Grade testing lab
 
@@ -311,6 +348,8 @@ On a fresh install, **Show 4/3/2/1 on dashboard** and **What class is next (MVHS
 | Category filter on gradebook pages | Local category buttons. |
 | Assignment weight map | Weight-map entry point and view. |
 
+The upcoming **Show ungraded assignments** checkbox lives inside **Weight map**, separately from the Settings toggles above. It defaults off, saves immediately, and is global across courses and profiles/years. Resetting saved settings restores it to off. See [its controls and preview behavior](#upcoming-show-ungraded-assignments).
+
 Toggles apply and save immediately. Other Settings fields require **Save settings**. Course display edits use **Save course settings**; grading-profile forms and added/removed replacement rules save automatically. These different save behaviors are independent of the temporary grade-testing scenario.
 
 Course-level honors/AP selections use **Save course settings** when edited in Courses, but save immediately when changed in **Calculation & GPA class selection**. Inclusion choices affect both GPAs. These preferences belong to the selected profile/year and are removed by **Clear saved settings and pause**. Posted grades and calculated GPAs are not saved; manager sync or backups may copy saved configuration, including these selections, elsewhere.
@@ -341,6 +380,9 @@ Turning off **Enable Playground** pauses enhancements without deleting your setu
 | GPAs are identical | Check the intended Honors/AP classes and save course settings if edited in Courses. No selected, counted A/B/C means no bonus; selected D/F still receive no bonus. |
 | A class does not affect GPA | Check inclusion, visibility, and the posted letter. Non-A–F marks do not count, and checking Honors/AP does not include an excluded class. |
 | Impact/map/total unavailable | Turn off Aeries' missing-only filter, wait for the selected gradebook to load, and check that visible rows reconcile with category/overall totals. |
+| Upcoming ungraded checkbox is missing | It is planned for the 2.4.0 prerelease and is not in the current source. After publication, update manually and look inside **Weight map**, not the Settings toggle list. |
+| Upcoming preview lists an assignment without a circle | Check its unavailable-weight explanation. A positive possible-point value and, in a weighted class, a known nonnegative category weight are required. A known 0% category has no circle. Explicitly excluded work remains omitted. |
+| Upcoming preview changes the displayed weight percentages | Including ungraded work changes preview denominators and can activate categories with no graded work. Turn the checkbox off for current counted-grade shares; the course grade itself is unchanged. |
 | Rounded scores differ across views | The fractional-score adapter uses only validated matching on-page values. It does not guarantee extra decimals for every row. Compare the posted totals and installed version; report fictional examples rather than copied page source. |
 | Teacher uses additional rules | Inspect the posted totals and configured policies; unsupported rules can leave the baseline unmatched. |
 | “What do I need?” cannot calculate | Turn off counted ranges; complete the assignment, target, maximum, and increment; finish any half-entered replacement and resolve unmatched saved rules. |

@@ -172,6 +172,41 @@ The weight map uses the posted gradebook, including during grade testing. Its ci
 
 During single-score grade testing, on-page **Grade impact** labels use the current hypothetical scores, Count choices, and grading rules. When score ranges are active, counted assignments instead say **Grade impact varies with ranges**. Subtracting two endpoint grades would not establish the minimum and maximum impact of an individual assignment. Return ranged assignments to single scores to see exact impacts under that scenario.
 
+### Upcoming ungraded-assignment weight preview
+
+**Planned for the [2.4.0 prerelease](FEATURES.md#upcoming-weight-map-prerelease); not in the current source.** The formulas above remain the checkbox-off view. Turning on **Show ungraded assignments** expands the weight map to include ungraded work, without assigning it an earned score or changing the actual grade calculation.
+
+For this preview, use only non-excluded assignments with known positive possible points. In a weighted class, each also needs a known nonnegative category weight. Rows whose weight cannot be determined stay in the list without a circle and contribute to neither preview denominator. A category can enter the preview with only ungraded work, even though it is inactive in the current grade.
+
+```text
+points-based preview share = assignment possible points / all preview possible points
+
+preview category share = category weight / sum of weights for preview categories
+weighted preview share = preview category share
+                         × assignment possible points / preview category possible points
+
+displayed preview weight = preview share × 100%
+```
+
+A preview category has at least one assignment with the required known values. Zero-weight categories contribute zero; if all preview-category weights are zero, all determined shares are zero rather than dividing by zero. Unknown weight is distinct from a known zero weight. Positive shares sum to 100%, subject to display rounding, whenever a positive-weight preview can be formed. Circle area remains proportional to share on one scale across categories; gray means ungraded, not a zero score.
+
+**Points example:** a graded assignment worth 90/100 and an ungraded assignment worth 50 possible points produce a current grade of **90%**. With the checkbox off, the graded assignment has 100% of the counted weight. With it on, the preview shares are `100 / 150 = 66.6666…%` and `50 / 150 = 33.3333…%`. The current grade stays **90%**; no 0/50 score is inserted.
+
+**Weighted example:** Tests has configured weight 80 and Homework 20. The posted scores are 18/20 in Tests and 9/10 in Homework; the current grade is **90%**. Add an ungraded 40-point test and an ungraded 30-point homework assignment:
+
+| Assignment | Posted score | Current counted weight | Preview weight |
+| --- | --- | --- | --- |
+| Graded test | 18/20 | 80% | `80% × 20/60 = 26.6666…%` |
+| Ungraded test | Blank / 40 | Not counted | `80% × 40/60 = 53.3333…%` |
+| Graded homework | 9/10 | 20% | `20% × 10/40 = 5%` |
+| Ungraded homework | Blank / 30 | Not counted | `20% × 30/40 = 15%` |
+
+The current grade remains **90%** in both views. If a previously inactive category gains known ungraded work in the preview, category shares are also renormalized using that category's weight. Excused/excluded work remains omitted regardless of score. A numeric zero is a graded score; **Grading Complete: No** alone does not make it ungraded.
+
+Only the map's shares and displayed entries change. Posted impacts, GPA, score limits, and grade-testing calculations retain their existing rules. The map still reads posted assignments while a hypothetical scenario is active and does not apply future replacement rules. This is a preview of relative weights if the shown known-weight work counts, not a score forecast or a complete future syllabus.
+
+The preview still requires posted-data reconciliation. When no counted grade exists, it can proceed after category totals reconcile if Aeries' overall value is absent or zero; that empty baseline does not assign zero scores to ungraded work. Required totals must still be present, and the missing-only filter or mismatched totals still blocks the view. With no positive known weights, entries may remain in the list without circles. Turning the checkbox off restores the ordinary current-grade requirements.
+
 ## Replacement rules
 
 A replacement copies the source's entered **percentage**, scaled to the target's possible points.

@@ -4,6 +4,8 @@ Read the opening comment in [aeries-playground.user.js](aeries-playground.user.j
 
 This page describes the current **2.3.0 prerelease** source on `main`, including the on-page score matching, after-school countdown, and visible KBAR fallback. See [release-specific downloads](docs/FEATURES.md#available-release) to distinguish it from the stable edition.
 
+The explicitly marked [upcoming weight-map preference](#upcoming-weight-map-preference) below describes the planned 2.4.0 prerelease; it is not present in the current installable source.
+
 ## Privacy controls
 
 | Area | Documented behavior and controls |
@@ -31,6 +33,14 @@ The accompanying after-school countdown uses the existing public schedule and cl
 The [GPA controls](docs/FEATURES.md#weighted-and-unweighted-gpa-together) save per-course **Honors/AP** selections alongside period mappings and GPA inclusion preferences, scoped to the manually selected settings profile/year. These checkboxes default to off. They are configuration: **posted grades, hypothetical scores, and calculated GPA results are not saved**. These selections do not add network requests or permissions; GPA calculations stay in the browser.
 
 Selections can reveal course information and, like other preferences, may be copied by the userscript manager's sync or backups. Do not treat a configuration export as anonymized. **Clear saved settings and pause** also removes these selections from the script's active storage; separate backup copies remain manager-controlled.
+
+### Upcoming weight-map preference
+
+**Planned for the [2.4.0 prerelease](docs/FEATURES.md#upcoming-weight-map-prerelease).** **Show ungraded assignments** starts off and saves one Boolean display preference through the existing userscript-manager storage. It is global across courses and manually selected profiles/years, rather than a per-course policy. A successful save persists after reload; ordinary cross-tab saves remain last-write-wins, with no live preference synchronization.
+
+The preview reads the same loaded assignment data and category weights used by the map. It adds no requests, userscript permissions, or external services. It saves no posted scores, ungraded assignment list, calculated weights, or preview results. Gray circles do not assign zero grades, and the checkbox does not change official grades or the current grade calculation.
+
+Manager sync or backups may copy the saved preference along with other configuration. **Clear saved settings and pause** resets the choice to off in active storage; manager-held backups remain separate. Other open tabs should be reloaded after a reset. These are descriptions of the prepared change, not a security certification or a claim of live browser verification.
 
 ### KBAR playback
 
