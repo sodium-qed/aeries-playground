@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.3.0
-// @description  Aeries grade tools, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
+// @version      2.4.0
+// @description  Aeries grade tools, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -19,6 +19,13 @@
 // ==/UserScript==
 
 /*
+ * 2.4.0 (prerelease): Add a saved Show ungraded assignments
+ * toggle inside the weight map. Ungraded work uses neutral gray circles in
+ * a points-based weight preview; missing scores never become counted zeros.
+ * Assignments without known positive points or category weights stay in the
+ * list without a circle. The toggle starts off and affects only the map.
+ * Preserve the visible Settings > Open on YouTube KBAR fallback.
+ *
  * 2.3.0: Preserve the full on-page Aeries score (for example,
  * 14.66666666666667 / 15) when the desktop table displays 14.67 / 15.
  * Use the validated value in grade reconstruction and hypothetical testing.
@@ -751,7 +758,7 @@ const GradeMath = (() => {
       confirmed:true,source:'aeries',updatedAt:null};
     const result=calculate(model.assignments,model.rules);
     if(result.error)return fail(result.error);
-    if(result.value===null)return fail(result.usedCount>0&&model.rules.mode==='weighted'
+    if(result.value===null&&!options.allowEmpty)return fail(result.usedCount>0&&model.rules.mode==='weighted'
       ?'Only 0% categories have graded assignments. There is no counted grade yet.'
       :'No graded assignments yet; impacts appear when scores are posted.');
     const actual=new Map(result.categories.map(c=>[c.name,c]));
@@ -759,6 +766,7 @@ const GradeMath = (() => {
     for(const reported of rules.categories){
       const seen=actual.get(reported.name);
       if(rules.averageMaximum && reported.unit==='average'){
+        if(options.allowEmpty && result.value===null && !seen && reported.grade===null)continue;
         // Average gradebooks may publish 0 as the points denominator. Check
         // their displayed category averages in the same units instead.
         const average=seen?seen.percent*rules.averageMaximum/100:0;
@@ -769,6 +777,9 @@ const GradeMath = (() => {
       actual.delete(reported.name);
     }
     if(actual.size)return fail('Some assignment categories are missing from the Aeries totals.');
+    // The weight map can preview ungraded work after empty totals reconcile.
+    // All ordinary grade and impact callers still require a counted grade.
+    if(options.allowEmpty && result.value===null && (rules.official===null || rules.official===0))return {model,result,error:null};
     const displayedValue=rules.averageMaximum && rules.officialUnit==='average'?result.value*rules.averageMaximum/100:result.value;
     const officialTolerance=rules.officialUnit==='average'?Math.max(0.011,0.5*10**-(rules.officialDecimals??2)+1e-9):0.011;
     if(!Number.isFinite(rules.official) || Math.abs(displayedValue-rules.official)>officialTolerance)return fail('The calculated grade does not match the displayed Aeries grade. This class may use additional grading rules.');
@@ -1389,7 +1400,7 @@ const GradeDOM = (() => {
   const clone = x => JSON.parse(JSON.stringify(x));
   const defaults = {
     enabled: true, nicknames: true, bars: true, impacts: true,
-    categorySpotlight: true, weightMap: true, dashboardColors: true, numericGrades: false, overallGrade: true, nextClass: false,
+    categorySpotlight: true, weightMap: true, weightMapUngraded: false, dashboardColors: true, numericGrades: false, overallGrade: true, nextClass: false,
     scheduleNetworkConsent: false,
     precise: true, detailsColors: true, profile: '', year: '',
     cutoffs: [95,85,75], averageCutoffs: [3.7,3.1,2.5], colors: ['#1f1f7f','#1f7f1f','#c05600','#7f1f1f']
@@ -3904,35 +3915,53 @@ window.addEventListener('pagehide',abortScheduleRequests);
     }
     applyCategorySelection();
   }
-  // Assignment circle areas share one scale across all active categories.
-  // This describes the currently counted points, not leave-one-out grade impact.
-  function buildWeightEntries(assignments,rules={}){
+  // Circle areas share one scale. Preview denominators use possible points
+  // separately from GradeMath: an ungraded assignment never receives a score.
+  function buildWeightEntries(assignments,rules={},showUngraded=false){
     const fail=error=>({entries:[],error,result:null,ungradedCount:0,excludedCount:0});
     const result=GradeMath.calculate(assignments,rules);
     if(result.error)return fail(result.error);
-    if(result.value===null)return fail(result.usedCount>0&&rules.mode==='weighted'
+    if(result.value===null&&!showUngraded)return fail(result.usedCount>0&&rules.mode==='weighted'
       ?'Only 0% categories have graded assignments. There is no counted grade yet.'
       :'No graded assignments yet. Circles appear when scores are posted.');
-    const categories=new Map(result.categories.map(c=>[c.name,c]));
-    const activeWeight=result.categories.reduce((sum,c)=>sum+(c.weight||0),0);
+    const categories=new Map();
     const entries=[];let ungradedCount=0,excludedCount=0;
     for(const a of assignments){
-      if(a.earned===null){ungradedCount++;continue;}
-      if(a.included===false){excludedCount++;continue;}
+      const ungraded=a.status==='ungraded'||a.earned===null;
+      // Aeries marks both blank and explicitly excluded rows included:false.
+      // Explicit exclusions take precedence, even when their score is blank.
+      if(a.status==='excluded'||a.included===false&&!ungraded){excludedCount++;continue;}
+      if(ungraded){ungradedCount++;if(!showUngraded)continue;}
       const category=typeof a.category==='string'&&a.category.trim()?a.category.trim():'Uncategorized';
-      const subtotal=categories.get(category),possible=GradeMath.parseNumber(a.possible),earned=GradeMath.parseNumber(a.earned);
-      const categoryShare=rules.mode==='weighted'?subtotal.weight/activeWeight:subtotal.possible/result.totalPossible;
-      const share=categoryShare*possible/subtotal.possible;
-      if(share<0||!Number.isFinite(share))return fail('The counted assignment weights could not be determined.');
-      const percent=earned/possible*100;
-      if(!Number.isFinite(percent))return fail('An assignment score is too large to display reliably in the weight map.');
+      const possible=GradeMath.parseNumber(a.possible),earned=ungraded?null:GradeMath.parseNumber(a.earned);
+      const weight=rules.mode==='weighted'?(Object.hasOwn(rules.weights||{},category)?GradeMath.parseNumber(rules.weights[category]):null):0;
+      const weightUnavailable=possible===null||possible<=0?'Positive possible points unavailable':
+        rules.mode==='weighted'&&(weight===null||weight<0)?'Category weight unavailable':'';
+      if(!weightUnavailable){
+        const subtotal=categories.get(category)||{possible:0,weight};
+        subtotal.possible+=possible;categories.set(category,subtotal);
+      }
+      const percent=ungraded?null:earned/possible*100;
+      if(!ungraded&&!Number.isFinite(percent))return fail('An assignment score is too large to display reliably in the weight map.');
       const id=String(a.id).trim();
       entries.push({id,name:typeof a.name==='string'&&a.name.trim()?a.name.trim():id,
-        number:id.replace(/^aeries:/,''),category,earned,possible,share,weight:share*100,
-        percent,categoryShare,categoryPossible:subtotal.possible});
+        number:id.replace(/^aeries:/,''),category,earned,possible,ungraded,weightUnavailable,
+        share:null,weight:null,percent,categoryShare:null,categoryPossible:null});
+    }
+    if(!entries.length)return fail('No assignments to show. Explicitly excluded assignments stay out of the weight map.');
+    const totals=[...categories.values()];
+    const activeWeight=totals.reduce((sum,c)=>sum+c.weight,0),totalPossible=totals.reduce((sum,c)=>sum+c.possible,0);
+    if(!Number.isFinite(activeWeight)||!Number.isFinite(totalPossible))return fail('These assignment weights are too large to display reliably.');
+    for(const entry of entries){
+      if(entry.weightUnavailable)continue;
+      const subtotal=categories.get(entry.category);
+      const categoryShare=rules.mode==='weighted'?(activeWeight>0?subtotal.weight/activeWeight:0):subtotal.possible/totalPossible;
+      const share=categoryShare*(entry.possible/subtotal.possible);
+      if(share<0||!Number.isFinite(share))return fail('The assignment weights could not be determined.');
+      Object.assign(entry,{share,weight:share*100,categoryShare,categoryPossible:subtotal.possible});
     }
     entries.sort((a,b)=>a.number.localeCompare(b.number,undefined,{numeric:true}));
-    return {entries,error:null,result,ungradedCount,excludedCount};
+    return {entries,error:null,result,totalPossible,ungradedCount,excludedCount,preview:showUngraded&&ungradedCount>0};
   }
   function layoutWeightCircles(entries){
     const maximum=entries.reduce((largest,e)=>Number.isFinite(e.share)&&e.share>largest?e.share:largest,0);
@@ -4001,11 +4030,13 @@ window.addEventListener('pagehide',abortScheduleRequests);
   }
   function refreshWeightMap(key,current,parsed,options={}){
     if(!db.settings.enabled||!db.settings.weightMap){clearWeightMapPage();return;}
-    const checked=GradeMath.fromAeries(parsed.assignments,parsed.rules,options);
+    const showUngraded=db.settings.weightMapUngraded;
+    const checked=GradeMath.fromAeries(parsed.assignments,parsed.rules,{...options,allowEmpty:showUngraded});
     const built=checked.error?{entries:[],error:weightMapError(checked.error),result:null,ungradedCount:0,excludedCount:0}:
-      buildWeightEntries(parsed.assignments,checked.model.rules);
+      buildWeightEntries(parsed.assignments,checked.model.rules,showUngraded);
     const c=profile().courses[key];
     for(const entry of built.entries){
+      if(entry.ungraded){entry.scoreValue=null;entry.scoreUnit=checked.model.rules.averageMaximum?'average':'percent';entry.color='#64748b';continue;}
       const source=parsed.assignments.find(a=>String(a.id)===entry.id);
       const posted=GradeDOM.assignmentGrade(source);
       entry.scoreValue=posted.value;entry.scoreUnit=posted.unit;
@@ -4013,8 +4044,8 @@ window.addEventListener('pagehide',abortScheduleRequests);
       const band=limits.findIndex(n=>entry.scoreValue>=n);entry.color=db.settings.colors[band<0?3:band];
     }
     const scope=profileKey()+'|'+key;
-    const state={scope,key,title:current.title,...built,rules:checked.model?.rules||parsed.rules};
-    const signature=JSON.stringify([scope,state.title,state.error,state.entries,state.ungradedCount,state.excludedCount,state.rules]);
+    const state={scope,key,title:current.title,...built,showUngraded,rules:checked.model?.rules||parsed.rules};
+    const signature=JSON.stringify([scope,state.title,state.error,state.entries,state.ungradedCount,state.excludedCount,state.rules,showUngraded]);
     const changed=signature!==weightMapState?.signature;
     if(scope!==weightMapState?.scope){weightMapSelection='';weightMapJump=null;clearWeightMapHighlight();}
     weightMapState={...state,signature};
@@ -4030,16 +4061,27 @@ window.addEventListener('pagehide',abortScheduleRequests);
   }
   function renderWeightMap(){
     content.append(el('h2','Assignment weight map'));
+    const showUngraded=input('','checkbox');showUngraded.id='ap-weight-show-ungraded';showUngraded.checked=db.settings.weightMapUngraded;
+    showUngraded.setAttribute('aria-describedby','ap-weight-ungraded-help');
+    const toggle=el('label',null,{class:'ap-toggle'});toggle.append(showUngraded,el('span','Show ungraded assignments'));
+    const toggleHelp=note('Include ungraded work in a weight preview using its possible points. Gray circles mean ungraded; your current grade does not change. This choice saves automatically.');
+    toggleHelp.id='ap-weight-ungraded-help';content.append(toggle,toggleHelp);
+    showUngraded.addEventListener('change',()=>{
+      setToggle('weightMapUngraded',showUngraded.checked);renderTab('weights');
+      content.querySelector('#ap-weight-show-ungraded')?.focus({preventScroll:true});
+    });
     if(!weightMapState||weightMapState.scope!==profileKey()+'|'+detectedCourseKey){
       content.append(note('Open a course’s gradebook details to see its assignment circles.','ap-empty'));return;
     }
     const state=weightMapState;
     content.append(el('h3',state.title));
     if(state.error){content.append(note(state.error,'ap-banner'));return;}
-    content.append(note('Circle area shows each assignment’s share of the current counted grade. All categories use the same size scale. Colors follow your grade thresholds. Hover, click, or focus an assignment for details.'));
+    if(state.preview)content.append(note('Weight preview · includes ungraded assignments','ap-banner'));
+    content.append(note((state.preview?'Circle area previews each assignment’s share if all shown work with known weights counts. Gray circles are ungraded; this is not a grade forecast.':'Circle area shows each assignment’s share of the current counted grade.')+' All categories use the same size scale. Graded colors follow your grade thresholds. Hover, click, or focus an assignment for details.'));
     const style=el('style');style.textContent=`
       .ap-weight-circles{display:flex;flex-wrap:wrap;align-items:center;gap:22px;padding:20px 8px;margin:10px 0;border:1px solid #dbe4ef;border-radius:12px;background:#fafcfe}
       .ap-weight-circle{flex:0 0 auto;min-width:0;min-height:0;padding:0;border:0;border-radius:50%;box-sizing:border-box;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;line-height:1}
+      .ap-weight-circle-ungraded{box-shadow:inset 0 0 0 2px #cbd5e1}
       .ap-weight-circle:hover{filter:brightness(1.13)}.ap-weight-circle[aria-pressed=true]{outline:3px solid #8b9cb1;outline-offset:4px}
       .ap-weight-circle:focus-visible{outline:3px solid #2563eb;outline-offset:5px}
       .ap-weight-detail{padding:14px 16px;border:1px solid #c7d8ee;border-radius:10px;background:#f3f7fd;margin:12px 0;min-height:110px}
@@ -4050,7 +4092,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       .ap-weight-label{min-width:0;overflow-wrap:anywhere}.ap-weight-label strong{display:block}.ap-weight-label small{display:block;color:#536981}
     `;
     content.append(style);
-    const circleBox=el('div',null,{class:'ap-weight-circles',role:'group','aria-label':'Assignments sized by current counted weight'});
+    const circleBox=el('div',null,{class:'ap-weight-circles',role:'group','aria-label':state.preview?'Assignments sized by preview weight, including ungraded work':'Assignments sized by current counted weight'});
     const detail=el('div',null,{class:'ap-weight-detail','aria-live':'polite','aria-atomic':'true'});
     const list=el('div',null,{class:'ap-weight-list',role:'group','aria-label':'Assignment names and weights'});
     const items=[],detailText=el('div');
@@ -4066,36 +4108,40 @@ window.addEventListener('pagehide',abortScheduleRequests);
       }
     });
     detail.append(detailText,jumpButton);
-    const scoreText=e=>GradeMath.format(e.earned,4)+' / '+GradeMath.format(e.possible,4)+' · '+GradeMath.format(e.scoreValue,2)+(e.scoreUnit==='percent'?'%':' average points');
+    const scoreText=e=>e.ungraded?'Ungraded · '+(e.possible!==null&&e.possible>=0?GradeMath.format(e.possible,4)+' possible points':'possible points unavailable'):
+      GradeMath.format(e.earned,4)+' / '+GradeMath.format(e.possible,4)+' · '+GradeMath.format(e.scoreValue,2)+(e.scoreUnit==='percent'?'%':' average points');
+    const weightText=e=>e.weightUnavailable|| (e.share===0?'0% — category does not count':weightPercent(e.weight)+(state.preview?' of preview weight':' of grade'));
     const show=e=>{
       shownAssignment=e;
       jumpButton.setAttribute('aria-label','Show assignment '+e.number+': '+e.name+' in gradebook');
       detail.querySelector('.ap-weight-jump-error')?.remove();
       detailText.replaceChildren(el('strong',e.name),el('div',e.category+' · '+scoreText(e)));
-      detailText.append(el('p',e.share===0?'0% — category does not count':weightPercent(e.weight)+' of the current counted grade'));
-      if(state.rules.mode==='weighted')detailText.append(note(weightPercent(e.categoryShare*100)+' active category share × '+GradeMath.format(e.possible,4)+' / '+GradeMath.format(e.categoryPossible,4)+' counted category points'));
-      else detailText.append(note(GradeMath.format(e.possible,4)+' / '+GradeMath.format(state.result.totalPossible,4)+' counted points'));
+      detailText.append(el('p',weightText(e)));
+      if(e.weightUnavailable)detailText.append(note('A circle can be sized when Aeries provides positive possible points and, in a weighted class, a category weight.'));
+      else if(state.rules.mode==='weighted')detailText.append(note(weightPercent(e.categoryShare*100)+(state.preview?' preview':' active')+' category share × '+GradeMath.format(e.possible,4)+' / '+GradeMath.format(e.categoryPossible,4)+(state.preview?' preview':' counted')+' category points'));
+      else detailText.append(note(GradeMath.format(e.possible,4)+' / '+GradeMath.format(state.totalPossible,4)+(state.preview?' preview':' counted')+' points'));
+      if(e.ungraded)detailText.append(note('No grade is assigned to this work in the map. It is not counted as a zero.'));
     };
     const select=e=>{
       weightMapSelection=e.id;show(e);
       for(const item of items){const chosen=item.entry.id===e.id;item.circle?.setAttribute('aria-pressed',String(chosen));item.label.setAttribute('aria-pressed',String(chosen));}
     };
     for(const e of layoutWeightCircles(state.entries).circles){
-      const diameter=e.radius*2,number=e.number,weightText=e.share===0?'0% — category does not count':weightPercent(e.weight)+' of grade';
-      const description=e.name+'; '+e.category+'; '+scoreText(e)+'; '+weightText;
+      const diameter=e.radius*2,number=e.number,labelWeight=weightText(e);
+      const description=e.name+'; '+e.category+'; '+scoreText(e)+'; '+labelWeight;
       // Zero-area assignments remain reachable by their list button. A
       // minimum-sized circle would incorrectly imply a positive weight.
       let circle=null;
       if(e.share>0){
-        circle=button(diameter>=34?number:'',()=>select(e),'ap-weight-circle');
+        circle=button(diameter>=34?number:'',()=>select(e),'ap-weight-circle'+(e.ungraded?' ap-weight-circle-ungraded':''));
         circle.style.width=diameter+'px';circle.style.height=diameter+'px';circle.style.backgroundColor=e.color;
         circle.style.fontSize=Math.min(26,Math.max(12,diameter/5))+'px';circle.title=description;
         circle.setAttribute('aria-label',description);circle.setAttribute('data-assignment-id',e.id);circle.setAttribute('data-radius',String(e.radius));
       }
       const label=button('',()=>select(e),'ap-weight-item');label.setAttribute('data-assignment-id',e.id);
       label.setAttribute('aria-label',description);
-      const swatch=el('span',number,{class:'ap-weight-number'+(e.share===0?' ap-weight-number-zero':''),'aria-hidden':'true'});if(e.share>0)swatch.style.backgroundColor=e.color;
-      const labelText=el('span',null,{class:'ap-weight-label'});labelText.append(el('strong',e.name),el('small',e.category+' · '+weightText));
+      const swatch=el('span',number,{class:'ap-weight-number'+(!(e.share>0)?' ap-weight-number-zero':''),'aria-hidden':'true'});if(e.share>0)swatch.style.backgroundColor=e.color;
+      const labelText=el('span',null,{class:'ap-weight-label'});labelText.append(el('strong',e.name),el('small',e.category+' · '+(e.ungraded?'Ungraded · ':'')+labelWeight));
       label.append(swatch,labelText);
       for(const node of [circle,label].filter(Boolean)){
         node.addEventListener('focus',()=>select(e));
@@ -4106,13 +4152,19 @@ window.addEventListener('pagehide',abortScheduleRequests);
     }
     content.append(circleBox,detail,list);
     select(state.entries.find(e=>e.id===weightMapSelection)||state.entries[0]);
-    const omitted=state.ungradedCount+state.excludedCount;
-    const explanation=state.rules.mode==='weighted'?'Positive category weights are shared among categories with counted scores. Assignments in 0% categories stay in the list and have no circle. As more work is graded, these shares can change.':'Shares use each assignment’s possible points divided by all counted possible points.';
-    content.append(note(explanation+(omitted?' '+omitted+' ungraded or excluded assignment'+(omitted===1?' has':'s have')+' no circle.':'')));
+    const explanation=state.rules.mode==='weighted'?
+      (state.preview?'Positive category weights are shared among categories with known possible points in this preview.':'Positive category weights are shared among categories with counted scores.')+' Assignments in 0% categories stay in the list and have no circle. As more work is graded, these shares can change.':
+      'Shares use each assignment’s possible points divided by all '+(state.preview?'known possible points in this preview.':'counted possible points.');
+    const omitted=[];
+    if(!state.showUngraded&&state.ungradedCount)omitted.push(state.ungradedCount+' ungraded assignment'+(state.ungradedCount===1?' is':'s are')+' hidden.');
+    if(state.excludedCount)omitted.push(state.excludedCount+' excluded assignment'+(state.excludedCount===1?' is':'s are')+' hidden.');
+    const unknown=state.entries.filter(e=>e.weightUnavailable).length;
+    if(unknown)omitted.push(unknown+' assignment'+(unknown===1?' has':'s have')+' unknown weight and stay'+(unknown===1?'s':'')+' in the list without a circle.');
+    content.append(note([explanation,...omitted].join(' ')));
     if(state.rules.scoreFloor!==null&&state.rules.scoreFloor!==undefined||state.rules.scoreCeiling!==null&&state.rules.scoreCeiling!==undefined){
-      content.append(note('Aeries score limits are included when checking the totals. Circle colors use posted scores; circle sizes use counted possible points.'));
+      content.append(note('Aeries score limits are included when checking the totals. Graded circle colors use posted scores; circle sizes use '+(state.preview?'preview':'counted')+' possible points.'));
     }
-    content.append(note(state.rules.averageMaximum?'Weights are checked against the displayed Aeries category averages and overall grade. Each assignment uses a four-point scale.':'Weights are checked against the displayed Aeries totals. They describe the current grade, not historical changes or future replacement rules.'));
+    content.append(note(state.preview?'Posted totals are checked against Aeries. Preview shares include ungraded work with known weights and do not change your current grade or apply future replacement rules.':state.rules.averageMaximum?'Weights are checked against the displayed Aeries category averages and overall grade. Each assignment uses a four-point scale.':'Weights are checked against the displayed Aeries totals. They describe the current grade, not historical changes or future replacement rules.'));
   }
   const host=el('div',null,{id:'ap-playground-host','data-ap-owned':'panel'});
   const root=host.attachShadow({mode:'open'});

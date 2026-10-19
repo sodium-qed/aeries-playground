@@ -16,7 +16,7 @@ A numerical result describes the supported model; it does not establish an unkno
 
 ## On-page score precision
 
-**Available in the 2.3.0 prerelease.** See [availability](FEATURES.md#available-release). This changes eligible earned-score inputs, not the weighting, replacement, score-limit, reconciliation, or GPA formulas.
+**Available in the 2.4.0 prerelease.** See [availability](FEATURES.md#available-release). This changes eligible earned-score inputs, not the weighting, replacement, score-limit, reconciliation, or GPA formulas.
 
 The adapter reads a single JSON array named `RecentData` already present in the page. It parses the JSON literal without executing the surrounding JavaScript. An embedded score is accepted only when:
 
@@ -57,7 +57,7 @@ Both summaries are unofficial, equal-weight averages of included visible courses
 
 ### Weighted GPA
 
-These controls are available in the **2.3.0 prerelease** and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
+These controls are available in the **2.4.0 prerelease** and were introduced in the earlier weighted-GPA prerelease. See [availability and installation details](FEATURES.md#available-release). Playground displays both GPAs when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off; numeric-rating mode remains unchanged.
 
 Let `S` be the set of included, visible courses with a recognized posted A–F letter, deduplicated by course identity, and let `N` be its size. For each course `i`, let `u_i` be its unweighted points and `h_i` be 1 if the user checked **Honors/AP**, otherwise 0. The checkbox defaults to off and is never inferred from the course title.
 
@@ -172,9 +172,9 @@ The weight map uses the posted gradebook, including during grade testing. Its ci
 
 During single-score grade testing, on-page **Grade impact** labels use the current hypothetical scores, Count choices, and grading rules. When score ranges are active, counted assignments instead say **Grade impact varies with ranges**. Subtracting two endpoint grades would not establish the minimum and maximum impact of an individual assignment. Return ranged assignments to single scores to see exact impacts under that scenario.
 
-### Upcoming ungraded-assignment weight preview
+### Ungraded-assignment weight preview
 
-**Planned for the [2.4.0 prerelease](FEATURES.md#upcoming-weight-map-prerelease); not in the current source.** The formulas above remain the checkbox-off view. Turning on **Show ungraded assignments** expands the weight map to include ungraded work, without assigning it an earned score or changing the actual grade calculation.
+**Available in the [2.4.0 prerelease](FEATURES.md#weight-map-prerelease).** The formulas above remain the checkbox-off view. Turning on **Show ungraded assignments** expands the weight map to include ungraded work, without assigning it an earned score or changing the actual grade calculation.
 
 For this preview, use only non-excluded assignments with known positive possible points. In a weighted class, each also needs a known nonnegative category weight. Rows whose weight cannot be determined stay in the list without a circle and contribute to neither preview denominator. A category can enter the preview with only ungraded work, even though it is inactive in the current grade.
 

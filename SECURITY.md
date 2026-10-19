@@ -2,9 +2,7 @@
 
 Read the opening comment in [aeries-playground.user.js](aeries-playground.user.js) for the full security and privacy explanation: page access, every requested permission and schedule endpoint, saved data, update behavior, safeguards, and remaining limitations. See the [README](README.md) for installation. This page summarizes the available controls and explains how to report a concern.
 
-This page describes the current **2.3.0 prerelease** source on `main`, including the on-page score matching, after-school countdown, and visible KBAR fallback. See [release-specific downloads](docs/FEATURES.md#available-release) to distinguish it from the stable edition.
-
-The explicitly marked [upcoming weight-map preference](#upcoming-weight-map-preference) below describes the planned 2.4.0 prerelease; it is not present in the current installable source.
+This page describes the current **2.4.0 prerelease** source on `main`, including the on-page score matching, after-school countdown, visible KBAR fallback, and saved weight-map preview choice. See [release-specific downloads](docs/FEATURES.md#available-release) to distinguish it from the stable edition.
 
 ## Privacy controls
 
@@ -20,7 +18,7 @@ For the controls and their effects, see the [feature guide](docs/FEATURES.md#set
 
 ### On-page score matching
 
-The **2.3.0 prerelease** can use a more precise numeric score already embedded in the current Aeries page when it matches the displayed assignment. It temporarily reads school, student, and person identifiers, along with course/gradebook/term information and assignment details, to reject unrelated or ambiguous matches. Those matching identifiers and embedded score records remain in page memory; this feature does not write them to userscript storage or include them in external requests. Existing saved course identifiers and replacement-rule references remain as documented above.
+The **2.4.0 prerelease** can use a more precise numeric score already embedded in the current Aeries page when it matches the displayed assignment. It temporarily reads school, student, and person identifiers, along with course/gradebook/term information and assignment details, to reject unrelated or ambiguous matches. Those matching identifiers and embedded score records remain in page memory; this feature does not write them to userscript storage or include them in external requests. Existing saved course identifiers and replacement-rule references remain as documented above.
 
 Embedded data is parsed as JSON, not executed as page JavaScript. The feature does not read login cookies, request credentials, fetch hidden records, or add userscript permissions or network endpoints. Missing or inconsistent data retains the displayed score. These checks reduce mistaken matches but do not certify the accuracy of Aeries data or account for every page layout.
 
@@ -34,17 +32,17 @@ The [GPA controls](docs/FEATURES.md#weighted-and-unweighted-gpa-together) save p
 
 Selections can reveal course information and, like other preferences, may be copied by the userscript manager's sync or backups. Do not treat a configuration export as anonymized. **Clear saved settings and pause** also removes these selections from the script's active storage; separate backup copies remain manager-controlled.
 
-### Upcoming weight-map preference
+### Weight-map preference
 
-**Planned for the [2.4.0 prerelease](docs/FEATURES.md#upcoming-weight-map-prerelease).** **Show ungraded assignments** starts off and saves one Boolean display preference through the existing userscript-manager storage. It is global across courses and manually selected profiles/years, rather than a per-course policy. A successful save persists after reload; ordinary cross-tab saves remain last-write-wins, with no live preference synchronization.
+**Available in the [2.4.0 prerelease](docs/FEATURES.md#weight-map-prerelease).** **Show ungraded assignments** starts off and saves one Boolean display preference through the existing userscript-manager storage. It is global across courses and manually selected profiles/years, rather than a per-course policy. A successful save persists after reload; ordinary cross-tab saves remain last-write-wins, with no live preference synchronization.
 
 The preview reads the same loaded assignment data and category weights used by the map. It adds no requests, userscript permissions, or external services. It saves no posted scores, ungraded assignment list, calculated weights, or preview results. Gray circles do not assign zero grades, and the checkbox does not change official grades or the current grade calculation.
 
-Manager sync or backups may copy the saved preference along with other configuration. **Clear saved settings and pause** resets the choice to off in active storage; manager-held backups remain separate. Other open tabs should be reloaded after a reset. These are descriptions of the prepared change, not a security certification or a claim of live browser verification.
+Manager sync or backups may copy the saved preference along with other configuration. **Clear saved settings and pause** resets the choice to off in active storage; manager-held backups remain separate. Other open tabs should be reloaded after a reset. These are descriptions of the implemented behavior, not a security certification or a claim of live browser verification.
 
 ### KBAR playback
 
-The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.3.0 prerelease**, including the visible Settings fallback described below. The earlier **2.1.0 prerelease** does not include KBAR, and the **2.2.1 prerelease** does not include that fallback.
+The [KBAR feature](docs/FEATURES.md#kbar-music) is available in the **2.4.0 prerelease**, including the visible Settings fallback described below. The earlier **2.1.0 prerelease** does not include KBAR, and the **2.2.1 prerelease** does not include that fallback.
 
 No YouTube embed is created until the user requests KBAR playback through **P**, a playback button, or the manager menu. Playback starts off on each page load, and no playback state is saved. KBAR is separate from schedule opt-in and adds no userscript grants.
 
@@ -66,7 +64,7 @@ Use the official repository's source and review the complete file you intend to 
 
 The script requests manual updates for fresh Tampermonkey installations. Existing installations may retain their previous update settings, and other managers can behave differently; check the script's update settings in your manager. Review a replacement file before installing it. Findings about one file do not automatically apply to a different copy.
 
-The README's raw-`main` installation link currently serves the **2.3.0 prerelease**; the stable **Latest** release remains **2.0.0**. They and earlier prereleases have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
+The README's raw-`main` installation link currently serves the **2.4.0 prerelease**; the stable **Latest** release remains **2.0.0**. They and earlier prereleases have separate tagged downloads. Check the release label and installed file's metadata version. Neither a stable nor a prerelease label is a security certification. See the feature guide for the exact release and asset addresses.
 
 Reading grades and changing their display are necessary for these features. Display or calculation bugs, page changes, inaccurate public schedules, and manager behavior remain possible. A static review or successful check is not a certification or a guarantee of zero risk. The [calculation reference](docs/CALCULATIONS.md) explains when estimates are available and what they mean.
 
