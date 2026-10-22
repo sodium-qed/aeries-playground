@@ -48,12 +48,21 @@ jobs:
           # User-authorized merge of the weight-map preview and current KBAR fallback.
           expected_hash = '9c3c031018cb8de56cbf7ea5b540dd0ba559ae887b7aaac5989046510233a4ac'
           expected_size = 326943
+          # This publisher belongs only to the frozen 2.4 artifact. Later pushes,
+          # including documentation/license comments in the userscript, must not
+          # create releases or republish assets. Manual recovery remains strict.
+          prepared_source = (source.is_file()
+              and source.stat().st_size == expected_size
+              and hashlib.sha256(source.read_bytes()).hexdigest() == expected_hash)
+          if os.environ.get('GITHUB_EVENT_NAME') == 'push' and not prepared_source:
+              print('Push differs from the frozen 2.4 artifact; no release or asset changes attempted.')
+              raise SystemExit(0)
           if datetime.now(timezone.utc) < launch_time:
               print('The release time has not arrived; no release was created.')
               raise SystemExit(0)
           if not source.is_file():
               raise SystemExit('The prepared userscript is missing.')
-          if source.stat().st_size != expected_size or hashlib.sha256(source.read_bytes()).hexdigest() != expected_hash:
+          if not prepared_source:
               raise SystemExit('The userscript does not match the prepared launch file.')
           if not re.search(r'^//\s*@version\s+2\.4\.0\s*$', source.read_text(), re.MULTILINE):
               raise SystemExit('The userscript metadata does not match version 2.4.0.')

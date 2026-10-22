@@ -5,89 +5,117 @@
 > **Temporary contributor commit pause through October 25, 2026.** Please hold new commits, pushes, merges, and releases until the scheduled code audit and release starting **Sunday, October 25 at 11:59 PM Pacific** have finished. Already scheduled maintenance will continue. Ideas and bug reports are welcome in issues.
 <!-- temporary-maintenance-pause-end -->
 
-Personalize your Aeries dashboard, understand assignment weights, and explore hypothetical grades. Built for the MVLA Aeries student portal, with an optional next-class panel for Mountain View High School.
+Make your Aeries dashboard easier to read, understand how assignments affect a grade, and try “what if?” scores in your browser. Aeries Playground is a userscript for the **MVLA Aeries student portal**, with an optional next-class panel for **Mountain View High School**.
 
-**[Install Aeries Playground](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js)**
+It is an independent, unofficial project. Hypothetical edits change the local display and calculation; they do not submit grade changes to Aeries. Your posted gradebook and teacher's grading policy remain the reference.
 
-[Feature guide](docs/FEATURES.md) · [Calculation reference](docs/CALCULATIONS.md) · [Security information and reporting](SECURITY.md)
-
-The installation link above follows `main` and currently installs a prerelease with weighted GPA, KBAR playback, validated on-page fractional-score precision, an after-school countdown, and an optional ungraded-assignment weight preview. For the stable edition, install the attached userscript from the [Latest GitHub release](https://github.com/sodium-qed/aeries-playground/releases/latest); those prerelease features are not included there. See the [feature guide](docs/FEATURES.md#available-release) for release-specific downloads. Review the source you intend to install and keep one copy enabled.
-
-Aeries Playground is unofficial and is not affiliated with Aeries or a school district. Its grade calculations are estimates under the supplied grading rules. Hypothetical edits change the displayed scenario; Aeries remains the authoritative gradebook.
-
-Grade calculations preserve more precise fractional scores already embedded in the page when they pass the [matching checks](docs/FEATURES.md#fractional-score-precision). The optional next-class panel keeps a [countdown to the next school day](docs/FEATURES.md#countdown-after-school) running after school.
-
-The [ungraded-assignment weight preview](docs/FEATURES.md#show-ungraded-assignments) adds a saved **Show ungraded assignments** checkbox inside the weight map, defaulting off. Turn it on to show ungraded work with known positive weights as gray circles without changing the current grade. Turn it off to return to graded-only shares. See the [prerelease download details](docs/FEATURES.md#weight-map-prerelease).
+[Install](#install) · [Get started](#get-started) · [Features](#features) · [Update](#update-manually) · [Help and feedback](#help-and-feedback)
 
 ## Install
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) for your browser.
-2. Enable userscript execution using [Tampermonkey's browser instructions](https://www.tampermonkey.net/faq.php?q=Q209).
-3. Open the **[installation link](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js)**, review the script, and confirm installation in Tampermonkey.
-4. Refresh the [MVLA Aeries student portal](https://mvla.aeries.net/student/).
+Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/). The script runs only on `https://mvla.aeries.net/student/*`, covering the dashboard and recognized gradebook table/card views. Other Aeries domains and the native mobile app are outside its scope.
 
-If the published script opens as text, follow [Tampermonkey's script-editor installation guide](https://www.tampermonkey.net/faq.php?q=Q102) and paste the complete script. A repository ZIP is not an installable userscript.
+Choose which file to install:
 
-Keep one copy of Aeries Playground enabled at a time. After installation, open the dashboard before configuring individual courses.
-
-## Features
-
-| Feature | What you can do |
+| Download | What you are choosing |
 | --- | --- |
-| Dashboard customization | Set course names, icons, periods, progress-bar scales, grade colors, and per-course thresholds. |
-| Grade summaries | Choose posted letters or custom 4/3/2/1 ratings, and view an overall average or both weighted and unweighted GPA estimates from visible classes. |
-| Weighted GPA | Manually select honors/AP courses; A/B/C receive one bonus point, while D/F remain 1/0. |
-| Assignment analysis | Filter by category, inspect grade impacts, and compare assignment weights in assignment-number order. Circle area shows each assignment's weight. |
-| Grade testing lab | Change points or number correct, include/exclude work, and add hypothetical assignments with live grade calculations. |
-| Course grading profiles | Configure total-points or weighted-category grading, score limits, average scales, and final-grade rounding. |
-| Score planning | Find the minimum score needed for a target grade, model assessment replacements, or enter score ranges for several assignments. |
-| Grade explanations | Inspect category totals, effective weights, contributions, exclusions, and replacement effects. |
-| MVHS next class | Opt in through Settings to see the current/next period and countdown from mvhs.io, with seconds shown when fresh bell.plus schedule and clock checks agree. |
-| KBAR music | Optional looping YouTube playback with **P**, plus play/pause and close controls in Settings. See [controls and privacy details](docs/FEATURES.md#kbar-music). |
-| Settings profiles | Organize course settings by a manually selected profile and school year, toggle individual enhancements, or clear saved settings and pause. |
+| [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. This is the published stable edition; it does not include every feature in the current source. |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | Follows `main` and currently installs a prerelease. The overview below describes this source. |
+
+See the [feature guide's download details](docs/FEATURES.md#available-release) for specific builds and their differences. **Pre-release** and stable **Latest** are separate choices.
+
+1. Install Tampermonkey for your browser.
+2. Follow its [userscript permission instructions](https://www.tampermonkey.net/faq.php?q=Q209) where applicable, and allow the extension to run on the supported Aeries site.
+3. Open your chosen userscript, review the complete file and its opening privacy explanation, and confirm installation in Tampermonkey.
+4. Keep **one copy** of Aeries Playground enabled, then reload the [MVLA Aeries student portal](https://mvla.aeries.net/student/).
+
+If the file opens as text or downloads without an installer, follow [Tampermonkey's script-editor instructions](https://www.tampermonkey.net/faq.php?q=Q102). Paste the complete script, including its header, and save. A repository ZIP is not the installable script.
 
 ## Get started
 
-Press **S** outside a text field to open Settings, or use Tampermonkey's **Aeries Playground — open settings (S)** menu command.
+1. **Open the Aeries dashboard** to discover your courses.
+2. **Press S outside an editable control** to open Settings. You can also use Tampermonkey's **Aeries Playground — open settings (S)** menu command. Feature toggles apply and save immediately; colors, default thresholds, and profile/year fields use **Save settings**.
+3. **Open Courses** to customize display names, icons, periods, progress bars, and course thresholds. Use **Save course settings**. Select **Honors/AP — weighted GPA bonus** yourself for the courses you want weighted; the script does not infer eligibility.
+4. **Open a course's full gradebook** with Aeries' missing-only filter off. Wait for the rows and totals to load. Use **Assignment weight map** to inspect weights, or **Start grade testing** in the **Grade testing lab** to try scores, ranges, and added assignments.
+5. **Choose Exit grade testing when finished.** It restores posted values and clears the scenario. Reloading, changing gradebooks or settings profile/year, and detected gradebook refreshes also clear it. Saved grading profiles and replacement rules remain.
 
-- **Courses:** edit display names, icons, periods, progress bars, and course cutoffs; use **Save course settings**.
-- **GPA controls:** use the **Honors/AP — weighted GPA bonus** checkbox beside each course's period setting, or the **Honors/AP** checkboxes in GPA details. Selections start unchecked; Courses uses **Save course settings**, while GPA-detail changes save immediately.
-- **Settings:** toggle features, set colors and default cutoffs, or choose a profile/year. Toggles save immediately; other fields use **Save settings**. Both custom 4/3/2/1 ratings and the MVHS next-class panel start off. Read the explanation beside **What class is next (MVHS)** before enabling it.
-- **KBAR:** press **P** outside editable controls with the Playground dialog closed, or use **Settings → Play / pause KBAR (P)**. Playback connects to YouTube and may show ads. **P** pauses the loaded embed; **Close KBAR player** stops and unloads it.
-- **Gradebook details:** open **Grade testing lab**, **Category**, or **Assignment weight map**. Start with all assignments loaded and Aeries' missing-only filter off. Grading-profile edits and replacement-rule changes save automatically. Hypothetical scores reset when you exit or reload.
+Before using another student's account or starting a new school year, choose the appropriate **Settings profile** and **School-year starting year**, then save. These are manual settings; account changes do not select a profile for you.
 
-Choose a separate settings profile/year before using another student's account or starting a new school year. Profiles are selected manually.
+See [Grade testing lab](docs/FEATURES.md#grade-testing-lab) for score controls and saved rules.
 
-## Pause, reset, and update
+## Features
 
-- **Pause:** turn off **Enable Playground** to pause enhancements while retaining your setup. Turn off **What class is next (MVHS)** to stop only the schedule panel in the current tab. Reload other Aeries tabs promptly; they can retain the old choice, continue requests, and save it again.
-- **Start fresh:** choose **Clear saved settings and pause** in Settings, confirm, and reload other Aeries tabs. This clears course customizations and saved grading rules as well as general preferences.
-- **Stop:** disable the script in Tampermonkey and reload Aeries.
-- **Update manually:** review the published script's **Raw** view and confirm its replacement in Tampermonkey. A fresh Tampermonkey installation is configured for manual updates; an existing installation can retain its manager update preference.
+| Tool | What it helps you do |
+| --- | --- |
+| Dashboard customization | Set course names, icons, progress bars, colors, and thresholds. Optionally display your own 4/3/2/1 ratings alongside the posted numeric grades. |
+| Grade summaries | Inspect an average of your custom ratings, or weighted and unweighted GPA estimates from included, visible courses with posted letter grades. Honors/AP selections add one point for A/B/C; D/F receive no bonus. |
+| Assignment analysis | Filter the displayed rows by category, see an assignment's calculated grade impact, and compare weights. Circle **area** represents weight; impact describes a different quantity. |
+| Ungraded assignment preview | Turn on **Show ungraded assignments** inside the weight map to preview shares using known possible points and category weights. Gray means ungraded; the current grade does not change. |
+| Grade testing and planning | Try individual scores or ranges, include/exclude assignments, add hypothetical work, find a score needed for a target, and model supported assessment replacements. |
+| Grading profiles and explanations | Set points or weighted-category rules, score limits, and rounding. **Explain my grade** shows category totals, contributions, and modeled replacements. |
+| MVHS next class | Opt in to public schedule requests for current/next periods and a countdown that can continue to the next school day. Match your courses to periods locally. |
+| KBAR music | Request looping YouTube playback with **P**, Settings, or the manager menu. Playback starts off each time you load the page. |
 
-## Supported pages
+The [feature guide](docs/FEATURES.md) explains controls and defaults; the [calculation reference](docs/CALCULATIONS.md) gives formulas and fictional worked examples.
 
-The script runs on `https://mvla.aeries.net/student/*` in a modern desktop browser with Tampermonkey. It supports the dashboard and recognized gradebook table/card views, including percentage and four-point gradebooks. The next-class panel is specific to **Mountain View High School**. Other Aeries domains and the native mobile app are outside its scope.
+### Optional schedules and music
 
-## School policies
+**What class is next (MVHS)** starts off. Read its Settings explanation before enabling public schedule and clock requests to mvhs.io's Firebase service and bell.plus. These requests contain no grades or course data; the services still receive connection information such as your IP address. Seconds require fresh, agreeing schedule and clock checks. Use the school's announced schedule if feeds disagree. See [next-class controls and limits](docs/FEATURES.md#mvhs-next-class-panel).
 
-Aeries Playground is an unofficial, independent tool; its availability does not imply approval by Aeries, MVLA, or any school. Hypothetical calculations run locally in your browser and do not change official grades or submit grade changes to Aeries.
+For KBAR, press **P** outside editable controls with the Playground dialog closed, or use **Settings → Play / pause KBAR (P)**. Playback loads a YouTube embed, which can collect connection/playback information and show ads. **Pause leaves it loaded; Close KBAR player unloads it.** If embedding fails, **Settings → Open on YouTube** opens the video separately without closing the embed. See [KBAR controls and privacy](docs/FEATURES.md#kbar-music).
 
-Follow your school's applicable device, account, and acceptable-use rules when installing or using the script. This documentation does not certify compliance with those rules or grant permission to use school systems.
+## Saved settings and temporary scores
 
-## Documentation and feedback
+Tampermonkey stores preferences, profile/year labels, course information, grading-rule drafts, and replacement-rule references. Course settings and rules belong to the selected profile/year. Display toggles, colors, default thresholds, and the ungraded-assignment preview choice are shared across profiles.
+
+Grading-profile edits and added/removed replacement rules save automatically. GPA inclusion and Honors/AP changes save immediately in GPA details; changes in Courses use **Save course settings**. Check for storage errors if settings do not survive a reload.
+
+Posted grades, hypothetical scores, ranges, added assignments, calculated results, and playback state are not saved. Configuration can still identify courses and assignments; manager sync or backups may copy it elsewhere. See [saved-data details](docs/FEATURES.md#settings-profiles-and-saved-data) and [security and privacy](SECURITY.md).
+
+## Update manually
+
+1. Choose a file from the [download choices](#install). The `main` link follows branch changes; a tagged release asset is a specific published file.
+2. Review the replacement file. For a repository file view, select **Raw** to open the userscript installer.
+3. Confirm replacement in Tampermonkey. If using its editor, replace the **existing script's complete contents** and save. Keep one copy enabled.
+4. Reload every open Aeries tab so they use the newly installed file.
+
+Fresh Tampermonkey installations are configured for manual updates. Existing installations may retain their previous update preference, and other managers can behave differently; check the script's manager settings. An ordinary update does not require clearing saved settings.
+
+## Pause, reset, or remove
+
+| Goal | Action and effect |
+| --- | --- |
+| Discard a hypothetical scenario | Use **Reset hypothetical changes** to start again, or **Exit grade testing** to restore posted values. Saved rules remain. |
+| Pause enhancements | Turn off **Enable Playground** in Settings. This stops enhancements and schedule work, exits grade testing, and closes KBAR in that tab while retaining saved settings. Re-enabling can resume a previously enabled schedule panel. |
+| Stop only schedule requests | Turn off **What class is next (MVHS)**. This stops schedule work and requests cancellation of pending transfers in that tab; grade tools remain available. |
+| Clear configuration and start fresh | Choose **Clear saved settings and pause**, then confirm. It clears all saved profiles, course customizations, rules/drafts, and preferences, and leaves Playground paused. |
+| Stop the script completely | Disable or remove it in Tampermonkey, then reload Aeries. Disabling leaves stored settings in place. |
+
+**Reload other Aeries tabs promptly after pausing, turning schedules off, or clearing settings.** Changes do not synchronize live: an old tab can continue requests and save its old choices again. Reset protection does not immediately update every tab. Cancellation cannot undo requests already sent.
+
+To remove saved configuration, use the in-app clear before uninstalling, or close Aeries tabs and erase this script's storage through the manager. Manage any manager sync or backup copies separately.
+
+## Limits and school policies
+
+Calculations depend on loaded assignments and supported rules. Missing assignments, Aeries' missing-only filter, conflicting totals, or unsupported policies can block results. Posted impact labels and weight maps require checks against Aeries totals; matching totals do not establish every teacher policy. More displayed decimals do not guarantee more accurate inputs. More precise scores already embedded in the page are used only after matching checks.
+
+GPA estimates give equal weight to included, visible courses, without transcript credits, earlier years, or institution-specific bonus caps. Arbitrary drop-lowest rules, hidden teacher rules, and zero-point extra-credit policies are not inferred. Page changes can break recognition or display. See [Troubleshooting](docs/FEATURES.md#troubleshooting) for recovery steps.
+
+Aeries Playground is not affiliated with Aeries, MVLA, or any school, and its availability does not imply approval. Follow your school's device, account, and acceptable-use rules. Neither this documentation nor the software license grants permission to use school systems or certifies compliance with school policy.
+
+## Help and feedback
 
 - [Feature guide](docs/FEATURES.md): controls, defaults, troubleshooting, and limitations.
 - [Calculation reference](docs/CALCULATIONS.md): formulas and worked examples.
-- [Security and privacy information](aeries-playground.user.js): read the explanatory comment at the top of the script.
-- [Contributing](CONTRIBUTING.md): bug reports, feature requests, and proposed changes.
-- [Security information and reporting](SECURITY.md): where to find the source explanation and how to report a sensitive issue privately.
+- [Security and privacy](SECURITY.md): page access, storage, external services, and private vulnerability reporting. The [userscript's opening comment](aeries-playground.user.js) contains the detailed source explanation.
+- [Contributing](CONTRIBUTING.md): how to report a problem, suggest an improvement, or prepare a change.
 
-Use the repository's [issue forms](https://github.com/sodium-qed/aeries-playground/issues/new/choose) for ordinary feedback, with fictional example values.
+Have an idea or found a bug? Use the [bug report or feature request form](https://github.com/sodium-qed/aeries-playground/issues/new/choose). Include your browser/manager, installed download, steps, and expected versus actual behavior with fictional examples. Share no student records, copied pages, storage exports, credentials, or identifiable screenshots. Follow [SECURITY.md](SECURITY.md#report-a-vulnerability-privately) for sensitive concerns.
+
+If the page looks wrong, disable Playground in Tampermonkey and reload to compare with the original page. You do not need to clear saved settings to report a problem.
 
 ## License
 
-Copyright (c) 2026 sodium-qed. The [Aeries Playground Open Source License](LICENSE) is a custom copyleft license designed to meet the [Open Source Definition](https://opensource.org/osd); it has not been approved by the Open Source Initiative (OSI).
+Copyright (c) 2026 sodium-qed. The [Aeries Playground Open Source License](LICENSE) is a custom copyleft license. Read its full terms and the [licensing guide](docs/LICENSING.md) for permissions, source-sharing obligations, and which terms apply.
 
-You may use, modify, redistribute, and sell copies. Distributed modifications must include source access under the same license, preserve notices, and identify changes. Private changes need not be published. The license explicitly permits giving the **complete source** to AI tools, automated scanners, or human security auditors, including paid services, without asking permission. It does not grant endorsement or trademark rights, and earlier valid licenses remain unaffected.
-
+You may use, modify, redistribute, and sell copies. Distribution requires preserving notices, identifying changes, and giving recipients complete corresponding source under the same license. Private changes need not be published. Giving the **complete source** to AI tools, automated scanners, or human security reviewers, including paid services, is expressly permitted without asking permission. Share the script alone, without account information or student data. The license grants no school approval, endorsement, or trademark rights, and preserves valid permissions for earlier copies.

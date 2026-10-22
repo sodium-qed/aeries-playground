@@ -1,24 +1,35 @@
+<!--
+Check the README's current maintenance notice before submitting code changes.
+For a possible vulnerability, follow SECURITY.md before posting details publicly.
+Use invented examples. Never include credentials, real grades, copied account
+pages, browser captures, or saved-settings exports.
+-->
+
 ## Problem and change
 
-Describe the user-facing problem, what this changes, and the resulting behavior. Use invented course, assignment, and grade examples.
+What user-facing problem does this address, what changes, and what will users see or be able to do? Link a related issue if there is one; an issue is not required for a small correction.
 
 ## Verification
 
-List the checks actually performed and their results. For calculations, include an expected result and the applicable grading rule. For settings or schedule changes, cover the affected saved-state behavior and schedule opt-in where relevant. For documentation-only changes, check links, control names, and consistency with the available source.
+List the checks you actually ran and their results. State “not run” where appropriate, with any remaining limitation.
 
-For weighted-GPA work, cover both averages, manual Honors/AP selection, A/B/C bonuses and unchanged D/F points, exclusions, empty inputs, and profile/year persistence. Use the fictional all-selected A/B/C/D/F example: unweighted 2.00, weighted 2.60. Say whether checks were formula-only or included actual browser behavior.
+- Checker tests: `node --test tests/check-userscripts.test.mjs`
+- Syntax and basic metadata: `node scripts/check-userscripts.mjs`
+- Whitespace/diff review: `git diff --check`
+- Affected behavior or documentation: describe the inputs/steps, expected result, and observed result.
 
-For KBAR work, cover interaction-only iframe creation, P shortcut exclusions and Settings controls, pause versus close, teardown, no persisted playback state, blocked playback, and message origin/window checks. Say whether verification used a mocked player or actual YouTube playback. For schedule/settings work, cover the current-tab limit and ordinary last-write-wins behavior separately from reset detection; do not claim immediate cross-tab revocation.
+Use the relevant [feature checks in CONTRIBUTING.md](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md#verify-the-behavior-you-change). Distinguish numerical examples, synthetic page fixtures, mocked network/player checks, and live browser verification. The checker tests do not test Playground's features.
 
-## Documentation and limitations
+## Documentation and remaining limits
 
-Identify updated guides and any behavior that remains unsupported or unverified. If permissions, storage, updates, or requests changed, update the explanatory comment at the top of aeries-playground.user.js and identify that change here. Keep README instructions aligned with whether the script has been published.
+Identify the guides or control text updated and any behavior still unsupported or unverified. If page access, permissions, storage, external requests, update behavior, or safeguards changed, identify the matching changes to the userscript's opening explanation and SECURITY.md.
 
-Clearly label upcoming and prerelease behavior. A published prerelease is downloadable but is not the stable Latest release; a raw-main install link follows the source on main. For documentation-only work, confirm the installable source is unchanged and no tag/release/asset is being published. Label future feature guides as upcoming until their source is released. Keep explicit version labels, dates, and a changelog out of the README; do not add a CHANGELOG file.
+For documentation work, check links, control names, source behavior, and release availability. Identify source-comment or license-metadata edits separately from executable changes. Keep planned features labeled as planned and a published prerelease distinct from stable Latest; `main` may differ from a tagged asset. Documentation work must not create or republish releases, tags, or assets, and does not require an `@version` bump.
 
-- [ ] This request contains no real student data, credentials, copied account pages, or saved-settings exports.
-- [ ] Applicable license, copyright, attribution, and third-party notices are preserved.
-- [ ] The description distinguishes completed checks from assumptions and does not claim zero risk or an independent audit.
+## Before submitting
 
-For a sensitive report, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md) before posting reproduction details in a public pull request.
+- [ ] The contribution contains no real student data, credentials, logged-in URLs, copied account pages, or saved-settings exports.
+- [ ] I have the right to offer this contribution under the repository's license and have preserved applicable copyright, attribution, and third-party notices.
+- [ ] The description separates completed checks from assumptions and does not claim zero risk or an independent audit.
 
+Keep the change focused. See [CONTRIBUTING.md](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md) for first-contribution steps, testing limits, and release guidance.

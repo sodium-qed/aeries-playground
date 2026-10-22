@@ -34,218 +34,244 @@
  *
  * PRIVACY, PERMISSIONS, AND SECURITY NOTES
  *
- * Aeries Playground changes the page you see and calculates hypothetical
- * grades in your browser. It does not change your official grades, submit
- * grade changes to Aeries, or change account settings.
+ * This source reads the current Aeries page and changes its local display.
+ * Grade calculations run in the browser. It does not submit grade changes,
+ * change account settings, request a password, read login cookies, or fetch
+ * additional Aeries records. These are descriptions of this file, not a
+ * security certification or protection against a malicious replacement.
+ * Full policy and private reporting: SECURITY.md in the official repository.
  *
- * AT A GLANCE
- * - Grade tools work without this script making external requests. Public
- *   schedule access starts off, including when upgrading an older install,
- *   until you enable the explained next-class toggle in Settings.
- * - Schedule requests contain no grades, class names, or Aeries account data.
- * - Posted grades and hypothetical scores are not saved. Saved preferences
- *   and course policies can be cleared from Settings.
- * - Updates are manual on a fresh Tampermonkey install; see the update note
- *   below. Optional KBAR playback loads a third-party YouTube embed only
- *   after you press P or use its playback button. YouTube may collect
- *   playback information and show ads; see the KBAR section below.
- * These statements describe this file, not a security certification. Like
- * any userscript, it relies on your browser, manager, and installed source.
+ * CONTROLS
+ * - S outside editable controls opens Settings; the manager menu also works.
+ * - Grade tools do not require public schedules or KBAR. Leave "What class
+ *   is next (MVHS)" off and do not start KBAR to avoid those integrations.
+ *   Aeries, your browser, and your manager can still make their own requests.
+ * - Turning the schedule setting off revokes consent, clears its in-memory
+ *   cache, stops refreshes, requests cancellation, and ignores late responses
+ *   in this tab. A request already received by a service cannot be recalled.
+ * - Turning off "Enable Playground" pauses enhancements, closes the grade lab,
+ *   removes KBAR, and stops schedule work. It keeps settings and consent;
+ *   re-enabling Playground can resume previously enabled schedule requests.
+ * - "Clear saved settings and pause" replaces active configuration with
+ *   paused defaults, schema/migration flags, and a reset marker. Check for
+ *   success or a storage error. Manager sync and backups remain separate.
+ * - Disable/remove the script in your manager and reload every Aeries tab
+ *   to stop it entirely. Disabling does not erase its saved configuration.
+ * - Reload or close other Aeries tabs after changing consent, pausing, or
+ *   clearing settings. Changes do not immediately update those tabs.
  *
- * WHERE IT RUNS AND WHAT IT READS
- * - Runs on https://mvla.aeries.net/student/ pages, outside embedded frames.
- *   The userscript metadata and an additional hostname/path check limit it
- *   to those pages.
- * - Reads the course cards, assignments, grades, categories, and grading
- *   information on the page, including embedded numeric scores when they
- *   match the displayed assignment and current student/course identifiers.
- *   These identifiers are used only in memory to verify the match, not saved.
- * - Does not request your password, read login cookies, or fetch hidden
- *   Aeries records. Embedded page data is parsed as JSON, never executed.
- * - Hypothetical scores, added assignments, and calculated results stay in
- *   page memory. They reset when you exit grade testing, reload, switch
- *   gradebooks/settings scope, or a gradebook refresh is detected. Course
- *   grading settings and replacement rules are saved.
+ * PAGE DATA AND SAVED CONFIGURATION
+ * - Metadata limits execution to https://mvla.aeries.net/student/* outside
+ *   frames, at document-idle. Code also checks the hostname and /student/ path.
+ * - Reads displayed courses, assignments, scores, categories, and grading
+ *   information. For eligible percentage gradebooks it can restore a more
+ *   precise score from one bounded RecentData JSON initializer already in
+ *   the page. It does not execute that initializer as JavaScript.
+ * - Score matching checks school/student/person identifiers, the selected
+ *   course/gradebook/term, assignment identity and dates, possible points,
+ *   and displayed score/percentage consistency. Ambiguous or inconsistent
+ *   matches retain visible scores; four-point gradebooks skip this adapter.
+ * - Student/person identity values and embedded records are working data in
+ *   memory, not added to storage or external requests. Saved course keys can
+ *   independently contain school, gradebook, term, section, or year values.
+ * - Posted score values, raw marks, calculated grades/GPAs, hypothetical
+ *   score edits and ranges are not written to this version's configuration.
+ *   Scenarios reset on exit, reload, scope/gradebook changes, or a recognized
+ *   gradebook refresh. This is not a guarantee of secure memory erasure.
+ * - The userscript manager stores configuration under aeries-playground-v1:
+ *   toggles and schedule consent; profile/year labels; course names and keys;
+ *   nicknames, icons, periods, inclusion and Honors/AP choices; colors,
+ *   thresholds and scales; grading policies and incomplete rule-form drafts.
+ *   Course discovery can save names/keys automatically when pages are read.
+ * - Replacement rules save source/target assignment names, IDs, categories,
+ *   a hypothetical-reference flag, policy, and optional cap. This includes
+ *   references to hypothetical assignments, but not their entered scores.
+ *   Grading-profile drafts save on edit; added/removed replacement rules save
+ *   automatically. Invalid drafts can leave the last valid policy active.
+ * - Select a separate profile/year manually before browsing another account's
+ *   courses or a new school year. Matching identifiers do not select profiles.
+ *   Profiles organize course settings; they are not private accounts or access
+ *   controls. Display toggles, colors, default thresholds, schedule consent,
+ *   and the default-off Show ungraded assignments preference are global.
+ * - Saved names and references are not anonymized or encrypted by Playground.
+ *   Manager sync/backups can copy them elsewhere. Do not share a settings
+ *   export as generic preferences. Upgrading does not erase older storage.
  *
- * WHAT IS SAVED
- * - GM_getValue and GM_setValue read and write this userscript's storage in
- *   your userscript manager. Saved data includes preferences, profile/year
- *   labels, course names and identifiers, nicknames, icons, period mappings,
- *   honors/AP GPA selections, color thresholds, grading rules, and unfinished
- *   grading-rule forms.
- * - Saved replacement rules also include the referenced assignment names,
- *   identifiers, and categories, plus the replacement policy and score cap.
- *   The script does not save posted grades, hypothetical scores, calculated
- *   results, or a copy of the gradebook page.
- * - Course identifiers and assignment references are not anonymized; saved
- *   data can reveal school and course information. Do not share storage
- *   exports as if they contained only generic display preferences.
- * - Profiles and school years are selected manually. Choose a separate
- *   profile/year before using another student's account or starting a new
- *   school year; the script does not detect those changes automatically.
- *   Course settings/rules use the selected profile/year. Global display
- *   toggles, colors, and default thresholds remain shared across profiles.
- * - Grading-rule forms save automatically, including incomplete drafts;
- *   only complete, valid rules are applied. Replacement rules save when
- *   added or removed. Page exit flushes only a pending save; an idle tab does
- *   not rewrite its old settings on exit. Before saving, the script checks
- *   a reset marker so a tab opened before an in-app clear cannot normally
- *   restore that cleared copy. Ordinary simultaneous edits remain last-write
- *   wins; the manager does not provide an atomic multi-tab transaction here.
- * - Storage is controlled by your userscript manager. Its sync or backup
- *   settings may copy stored data elsewhere; review or disable those settings
- *   if you want it kept on this device.
+ * OTHER OPEN TABS
+ * Each tab keeps a settings copy. Ordinary saves are last-write-wins, with
+ * no live synchronization. Another tab can continue schedule requests or
+ * save an old opt-in after you turn it off elsewhere. Before saving, this
+ * source checks a reset marker and rejects a stale copy when it detects an
+ * in-app clear; this is not immediate revocation or an atomic transaction.
+ * Older code without that check can still rewrite its copy. Page exit only
+ * flushes a pending save, not every idle tab's settings. Reload other tabs
+ * after a clear; close tabs before erasing storage through the manager.
  *
- * OPTIONAL PUBLIC SCHEDULE NETWORK REQUESTS
- * These requests support the optional next-class widget. They are off by
- * default and require you to enable "What class is next (MVHS)" in Settings.
- * An enabled widget inherited from an older install does not grant consent:
+ * OPTIONAL PUBLIC SCHEDULE REQUESTS
+ * The schedule toggle and consent flag start off. An older enabled widget
+ * without the consent flag is forced off. After opt-in, new requests start
+ * with Playground enabled on a visible dashboard. Hidden documents defer
+ * refreshes; hiding a tab does not cancel an already-started transfer.
+ * The request helper accepts only these named, constant endpoints:
  * - GET https://mvhs-app-d04d2.firebaseio.com/days.json
  * - GET https://mvhs-app-d04d2.firebaseio.com/weekday-map.json
  * - GET https://mvhs-app-d04d2.firebaseio.com/schedules.json
- *   These retrieve public bell-schedule data used by mvhs.io.
  * - GET https://bell.plus/api/data/mvhs
- *   Retrieves the public MVHS schedule to cross-check bell times.
  * - POST https://bell.plus/timesync
- *   Sends a JSON-RPC clock request with method "timesync" and an ID made from
- *   "aeries-clock-" plus the current timestamp. This POST is a clock check,
- *   not an Aeries grade or account update.
- * No grades, course names, assignment data, profile labels, or account details
- * are included in these requests. The network helper uses anonymous:true
- * to ask the userscript manager to omit cookies and specify public-site
- * Referer values. Anonymous requests do not hide your IP address or ordinary
- * connection information from those services. Requests have timeouts and
- * response-size checks; results are parsed as JSON and checked before use.
- * The final response URL must exactly match the requested endpoint. This
- * rejects unexpected responses; it does not stop a manager from following
- * an HTTP redirect before reporting the final URL. Cookie handling and
- * cancellation also depend on the userscript manager honoring its options.
- * Requests run after opt-in when the widget is enabled on a visible course
- * dashboard. Pausing Playground also stops schedule work.
- * Public schedules and the clock cross-check require same-date data less
- * than five minutes old. Course-to-period matching happens locally.
- * Turn off "What class is next (MVHS)" in Settings to revoke consent, stop
- * refreshes, cancel outstanding requests, and clear the cache in this tab.
- * Reload other open Aeries tabs promptly: they keep their previous settings
- * in memory, can continue requests, and can save the old opt-in again if
- * edited before reloading. Ordinary settings changes do not sync live.
- * Late responses are ignored even if the manager cannot abort a transfer.
- * Cancellation cannot undo a request that already reached a service.
- * Opening a source link visits that service normally; installing or updating
- * a script may separately contact its host through your userscript manager.
+ *   Body: {jsonrpc:"2.0",id:"aeries-clock-"+timestamp,method:"timesync"}.
+ *   The timestamp is Date.now(); this POST checks a public clock, not Aeries.
+ * No grades, assignments, course names, profiles, or account identifiers are
+ * included. Course-to-period matching is local. The after-school countdown
+ * uses the same requests and consent, without another student-data transfer.
  *
- * OPTIONAL KBAR / YOUTUBE PLAYBACK
- * - With Settings closed, press P outside editable controls to create a
- *   hidden YouTube player and request playback. P toggles play/pause. The
- *   player is kept outside the visible layout and adds no page scroll space.
- *   Use Settings > Close KBAR player to unload it. Settings also has a
- *   Play / pause KBAR button and an Open on YouTube fallback link.
- *   Opening the link visits YouTube normally without sending a referrer.
- *   KBAR starts off on every
- *   page load; no playback state is saved.
- * - The iframe uses https://www.youtube-nocookie.com/embed/sasjlpt7zWM
- *   with looping enabled. Its URL contains the video ID, fixed player
- *   options, and https://mvla.aeries.net as the client origin. The
- *   referrer policy sends the site origin, not the full gradebook URL.
- * - The embedded YouTube service makes its own media, advertising, and
- *   other requests. Privacy-enhanced embedding does not make playback
- *   anonymous: YouTube receives ordinary connection information and
- *   playback activity and may use cookies or other browser storage.
- * - No grades, assignments, course names, profiles, or Aeries account
- *   data are included in Playground's player URL or command messages.
- *   The remote player runs inside a cross-origin iframe; Playground
- *   does not inject YouTube's remote scripts into the gradebook itself.
- * - The command bridge checks the exact iframe window and origin. It
- *   uses the embed's internal message transport, which can change;
- *   native YouTube controls and a source link remain available.
- * - Close removes the player and stops playback. Pausing Playground,
- *   clearing saved settings, or leaving the page also removes it.
- *   P pauses playback but leaves the embed loaded. Closing cannot undo
- *   requests already sent or delete storage managed by YouTube.
+ * Requests set Accept: application/json, anonymous:true to request cookie
+ * omission, and public Referer values https://mvhs.io/ or https://bell.plus/mvhs.
+ * The POST also uses Content-Type: application/json. These requests are not
+ * anonymous browsing: services receive IP addresses, timing, and ordinary
+ * connection metadata; the clock ID is explicitly Aeries-related. Cookie
+ * omission, headers, cancellation, and timeouts depend on the manager/browser.
+ *
+ * The code requests 15-second Firebase and 10-second bell.plus timeouts.
+ * They are not an independent watchdog: Tampermonkey documents that anonymous
+ * requests use fetch mode and fetch-mode timeouts do not work in Chrome.
+ * Completed responses must be status 200, valid JSON, at most 200,000 JavaScript
+ * characters, and have a finalUrl exactly equal to the requested endpoint.
+ * The size check is after receipt, not a download cap. The final-URL check
+ * does not prevent a manager from following a redirect before rejecting it.
+ * Calendar, period, and clock structures are checked before use. In-memory
+ * caches require the same Pacific fetch date and age under five minutes;
+ * this does not prove when a publisher last updated its schedule. Failures
+ * normally retry after a minute, not on every countdown tick. Seconds require
+ * fresh, consistent clock and schedule checks, including any upcoming date;
+ * otherwise the widget uses minutes. The device clock is never changed.
+ * Pausing, successful clearing, page exit, or revoking consent invalidates
+ * requests; late responses are ignored even if manager cancellation fails.
+ *
+ * OPTIONAL KBAR / YOUTUBE
+ * - With Settings closed, P outside editable controls requests play/pause.
+ *   Settings and the manager menu also have playback controls. First use
+ *   creates an iframe; startup creates none. Playback state is never saved.
+ *   KBAR requires Playground enabled and is independent of schedule consent.
+ * - The iframe uses https://www.youtube-nocookie.com/embed/sasjlpt7zWM with
+ *   a constant video ID, fixed looping/player options, and the Aeries origin.
+ *   strict-origin-when-cross-origin permits the site origin as referrer,
+ *   not the full gradebook URL. Playground's player URL and command messages
+ *   include no grades, assignments, course names, profiles, or student IDs.
+ * - Outgoing messages target the exact youtube-nocookie origin. Incoming
+ *   bounded JSON messages must match that origin and the current iframe
+ *   window. The internal player message transport can change or fail.
+ * - YouTube loads its own code/media and potentially ads inside a cross-origin
+ *   iframe, not as scripts in the gradebook's JavaScript realm. The iframe
+ *   has no sandbox attribute. Privacy-enhanced embedding is not anonymous
+ *   or ad-free: YouTube receives connection/playback information and may use
+ *   cookies or other storage. Browser iframe/media requests are outside the
+ *   schedule-only GM request helper and its @connect entries.
+ * - The player is offscreen, inert, and excluded from accessibility navigation;
+ *   its native controls are not the visible fallback. Settings > Open on
+ *   YouTube is a visible keyboard-accessible link even if the embed fails.
+ *   It opens a normal YouTube visit with no-referrer/noopener protections,
+ *   without starting or closing the embed. Close an existing player separately.
+ * - P requests pause/resume. Pause or failure leaves the iframe loaded and
+ *   can leave third-party requests running. Settings > Close KBAR player
+ *   unloads it. Pausing Playground, successfully clearing settings, or leaving
+ *   the page also removes it in this tab. Other tabs' players are separate.
+ *   Closing cannot undo requests or delete YouTube-managed storage.
  * - YouTube terms: https://www.youtube.com/t/terms
  *   Google privacy policy: https://policies.google.com/privacy
  *
- * WHY EACH PERMISSION IS REQUESTED
- * - GM_getValue / GM_setValue: load and save the local settings described above.
- * - GM_registerMenuCommand: add the menu shortcut that opens Settings.
- * - GM_xmlhttpRequest: retrieve public schedules and check the clock across
- *   domains. @connect lists the two schedule hosts, without a wildcard.
- *   The manager still grants this capability while the widget is off; opt-in
- *   is enforced by this file's code, not by a separate permission sandbox.
- * The script has no @require dependencies, does not evaluate downloaded
- * scripts in Aeries, and adds no Playground analytics. Schedule responses
- * are data, not executable code. The optional YouTube iframe loads its
- * own third-party code and may show advertising as described above.
- * Browser iframe/media requests do not use GM_xmlhttpRequest or its
- * @connect allowlist. KBAR requires no additional userscript grants.
+ * PERMISSIONS, SAFEGUARDS, AND REVIEW
+ * - GM_getValue / GM_setValue read/write the configuration described above.
+ *   GM_registerMenuCommand adds Settings and KBAR menu commands.
+ *   GM_xmlhttpRequest supplies the optional public schedule/clock requests.
+ *   @connect names the two schedule hosts without a wildcard. The grant
+ *   remains available when schedules are off; consent is a code-level check,
+ *   not a separate permission sandbox or a limit on all page requests.
+ * - There are no @require dependencies, Playground analytics endpoints, or
+ *   downloaded scripts evaluated in Aeries by this source. YouTube's iframe
+ *   loads third-party code as described above. Source links are normal visits.
+ * - Playground controls use an unbound form ID and type="button" buttons.
+ *   Inline lab controls stop relevant bubbling events and prevent Enter
+ *   submission. Names/labels use textContent or ordinary text attributes,
+ *   not HTML interpolation. These reduce accidental submissions/injection;
+ *   they do not isolate displayed data from page scripts or other extensions.
+ * - Review GradeDOM, el, labContain, persist, clearSavedSettings,
+ *   serializePlanningRules, saveProfile, requestScheduleJSON,
+ *   scheduleRequestsAllowed, abortScheduleRequests, requestBellPlusClock,
+ *   verifiedBellSeconds, kbar, and kbarShortcut. The repository checker only
+ *   compiles JavaScript and checks basic metadata; it does not run the UI,
+ *   audit data flows, or verify manager/browser/network behavior.
+ * - The license expressly permits complete-source AI, automated, and human
+ *   review, including paid review, without advance permission. Preserve its
+ *   notices and send the script alone, without account access or private data.
+ *   AI/static review is not an independent audit or a guarantee of safety.
  *
- * BUILT-IN SAFEGUARDS AND HOW TO INSPECT THEM
- * - Playground controls are created with a separate, unbound form attribute;
- *   its buttons use type="button". Inline score editors also block their
- *   events from bubbling into Aeries and prevent Enter from submitting.
- * - Displayed names and labels use textContent, not HTML interpolation.
- * - A single request helper uses the five constant endpoints listed above.
- *   The clock payload is constructed inside it from a checked clock ID;
- *   callers cannot supply a URL or arbitrary request body. Each request
- *   checks opt-in, and schedule parsing checks data structures and times.
- * - Bell.plus seconds are shown only when its schedule and clock checks agree
- *   with the primary schedule; otherwise the widget falls back to minutes.
- * - To review the implementation, search for GradeDOM, el, persist,
- *   clearSavedSettings, serializePlanningRules, saveProfile,
- *   scheduleRequestsAllowed, requestScheduleJSON, abortScheduleRequests,
- *   requestBellPlusClock, verifiedBellSeconds, kbar, and kbarShortcut.
- *   KBAR is separate from the schedule request helper.
- * The accompanying custom license explicitly permits giving the complete
- * source to AI tools, automated scanners, or human security auditors,
- * including paid services, without asking permission.
- * Send the script alone, without login details, copied Aeries pages, grades,
- * screenshots, or saved personal data. An AI review is not an independent
- * security audit and does not guarantee safety.
+ * UPDATES AND REPORTING
+ * @downloadURL none requests manual updates and disables update checks in
+ * a fresh Tampermonkey setup. Existing update preferences can persist; other
+ * managers may behave differently. Check your installed script's settings
+ * and review the complete replacement file before installing it. Installation
+ * and updating may separately contact the source host. Keep one copy enabled.
  *
- * UPDATES AND PAGE ACCESS
- * - @downloadURL none disables automatic updates for a fresh Tampermonkey
- *   install. Existing installs may retain their previous update preferences;
- *   turn off automatic updates for this script in the manager if needed.
- *   Other managers may handle this metadata differently. Review a replacement
- *   file, then install it manually from the official repository.
- * - Reading visible grades and modifying their display are essential to the
- *   features. Local controls avoid submitting Aeries forms, but a page change
- *   can still cause display or compatibility bugs. Disable the script and
- *   reload to return to the original page. A malicious replacement file
- *   could misuse granted access; these safeguards describe this code only.
- *
- * STOPPING THE SCRIPT AND REMOVING SAVED DATA
- * - Turning off "Enable Playground" pauses enhancements, removes the KBAR
- *   player to stop its playback, and keeps saved settings.
- *   Exiting grade testing clears its temporary scenario, not saved policies.
- * - To stop the script completely, disable or remove it in your userscript
- *   manager and reload Aeries. Disabling it does not erase stored data.
- * - "Clear saved settings and pause" in Settings removes saved profiles,
- *   course customizations, grading-rule drafts and replacement rules, resets
- *   preferences, and pauses Playground. It retains only blank paused defaults
- *   and a reset marker. Reload other Aeries tabs afterward; older script code
- *   without the reset-marker check can still save its own copy.
- * - Alternatively, close Aeries tabs and erase this script's storage in your
- *   userscript manager. Neither method removes manager sync or backup copies;
- *   manage those separately if enabled.
- *
- * SHARING EXAMPLES AND REPORTING A PROBLEM
- * Use fictional examples in issues, commits, pull requests, and logs. Do not
- * publish real gradebook page source, copied DOM, grades, student identifiers,
- * identifiable screenshots, cookies, session IDs, or passwords. Browser
- * exports can contain data not visible on screen. Repository ignore rules
- * do not sanitize uploads or remove tracked files or history.
- * For a vulnerability, use "Report a vulnerability" on the repository's
- * Security tab if that private option is available. Otherwise open an issue
- * asking for a private reporting channel, without sensitive details. This
- * file does not enable private reporting or promise a response deadline.
- * If account information was exposed, do not quote or repost it. Notify the
- * affected owner and maintainer privately. Exposed credentials or sessions
- * need to be reset/revoked through their provider; deleting a file alone
- * does not remove Git history, cached copies, or restore account security.
+ * Use fictional examples in issues, commits, pull requests, and logs. Never
+ * share real page source/DOM, student identifiers, grades, identifiable
+ * screenshots, settings exports, passwords, cookies, or session tokens.
+ * Exports can include data invisible on screen; ignore rules do not sanitize
+ * uploads or erase tracked files/history. For vulnerabilities, use "Report
+ * a vulnerability" on the repository Security tab if that private option is
+ * available. Otherwise ask for a private channel in an issue without details.
+ * This comment does not enable private reporting or promise a response time.
+ * If account data was exposed, contact the owner/maintainer privately without
+ * reposting it. Reset credentials/revoke sessions through their provider as
+ * appropriate; deleting a file alone cannot undo an exposure.
  */
 
 /*
+ * Aeries Playground licensing
+ *
+ * Effective software license: Aeries Playground Open Source License, Version 1.0
+ * Custom identifier: LicenseRef-Aeries-Playground-Open-Source-1.0
+ *
+ * READING THIS FILE
+ *
+ * The complete operative Version 1.0 license follows the "BEGIN EFFECTIVE
+ * LICENSE" marker below. Its wording is unchanged. These introductory notes
+ * explain the license's status and navigation; they add no conditions and do
+ * not replace or expand the operative grant.
+ *
+ * The license permits use, study, modification, redistribution, and commercial
+ * services. Distributed covered copies must preserve notices, identify changes,
+ * use the same license for covered modifications, and provide recipients with
+ * complete corresponding source. Private changes need not be published.
+ *
+ * Section 3 expressly permits submitting the COMPLETE source, including private
+ * modifications, to ChatGPT, other AI services or models, automated scanners,
+ * and human reviewers, including paid services. Source-sharing requirements
+ * concern recipients, not compulsory publication to everyone. Review permission
+ * does not grant rights in private account data or another person's material.
+ *
+ * VERSION STATUS AND OTHER RIGHTS
+ *
+ * A complete proposed rewrite, Version 1.1, is in docs/LICENSE-PROPOSAL.md.
+ * It is NOT effective. The reviewed history includes retained contributions
+ * under Version 1.0 without established authority to apply new terms to all of
+ * that material. Merely publishing proposed terms does not provide that authority.
+ * See docs/LICENSING.md for the current obligations and revision requirements.
+ *
+ * Earlier valid grants remain available for the copies and material they cover,
+ * including Version 1.0 and any valid MIT grants. Nothing here rewrites earlier
+ * repository history, tags, or release assets. Separately licensed material
+ * retains its own terms. Copyright remains with the respective rights holders.
+ * No trademark rights or permission to imply endorsement are granted.
+ *
+ * This is a custom license, not an OSI-approved license. Its open-source design
+ * intent and custom LicenseRef identifier are not a claim of OSI approval,
+ * SPDX License List inclusion, or compatibility with another license.
+ *
+ * The full operative text controls. For current contribution instructions, see
+ * CONTRIBUTING.md. For code-review and reporting precautions, see SECURITY.md.
+ *
+ * BEGIN EFFECTIVE LICENSE
+ *
  * Aeries Playground Open Source License, Version 1.0
  *
  * Copyright (c) 2026 sodium-qed
@@ -379,6 +405,8 @@
  * for loss or damage arising from use of the Software or this license. Nothing
  * here excludes liability or rights that applicable law does not allow to be
  * excluded.
+ *
+ * END EFFECTIVE LICENSE
  */
 
 (() => {
@@ -993,7 +1021,7 @@ const GradeDOM = (() => {
       if (mapped[name] < -1 || mapped[name] >= width) mapped[name] = -1;
     }
     if (mapped.name < 0 || mapped.earned < 0 || mapped.possible < 0) {
-      return { assignments, issues: ['Map an assignment name, earned points, and possible points before importing. A combined score column can serve as both point columns.'] };
+      return { assignments, issues: ['Assignment-name, earned-point, and possible-point columns must be identified before these rows can be read. A combined score column can serve as both point columns.'] };
     }
     const occurrences = new Map();
     let ungradedCount = 0, excludedCount = 0, shapeCount = 0, duplicateIdCount = 0;
@@ -1048,8 +1076,8 @@ const GradeDOM = (() => {
     }
     if (ungradedCount) issues.push(`${ungradedCount} row(s) lack a usable numeric score or possible points and will be excluded; no missing score was converted to zero.`);
     if (excludedCount) issues.push(`${excludedCount} explicitly excluded or excused row(s) will not count.`);
-    if (shapeCount) issues.push(`${shapeCount} merged, nested, or incomplete row(s) were skipped. Check the table preview before confirming.`);
-    if (duplicateIdCount) issues.push('Repeated assignment IDs were kept as separate rows. Verify they are distinct assignments before confirming.');
+    if (shapeCount) issues.push(`${shapeCount} merged, nested, or incomplete row(s) were skipped. Check whether the remaining rows represent the complete assignment list.`);
+    if (duplicateIdCount) issues.push('Repeated assignment IDs were kept as separate rows. Verify that they represent distinct assignments.');
     if (!assignments.length) issues.push('No assignment rows could be read with this mapping.');
     return { assignments, issues };
   }
@@ -1332,9 +1360,9 @@ const GradeDOM = (() => {
     const restored=restoreEmbeddedPrecision(assignments,readEmbeddedScores(doc),rules);
     if(restored)issues.push(`More precise scores were read from matching on-page Aeries data for ${restored} assignment(s). Other scores retain their displayed precision.`);
     if(assignments.some(a=>!a.included))issues.push('Blank or excluded scores do not count. A numeric score can count even when Grading Complete says No, as in Aeries Totals.');
-    if(Object.keys(rules.weights).length)issues.push('Category weights were read from Aeries Totals and will be imported with these rows.');
+    if(Object.keys(rules.weights).length)issues.push('Category weights were read from Aeries Totals and are used with these rows.');
     if(rules.scoreFloor!==null || rules.scoreCeiling!==null)issues.push(`Aeries assignment score limits detected: ${rules.scoreFloor??'no minimum'}% to ${rules.scoreCeiling??'no maximum'}%. These will apply to hypothetical scores.`);
-    if(doc.querySelector('input[id$="_chkMissingAssignmentOnly"]')?.checked)issues.push('Show only missing assignments is enabled. Turn it off and reimport to calculate the full gradebook.');
+    if(doc.querySelector('input[id$="_chkMissingAssignmentOnly"]')?.checked)issues.push('Show only missing assignments is enabled. Turn it off and wait for all rows to load before calculating the full gradebook.');
     return {assignments,issues,rules};
   }
   return { readCards, listTables, readTable, parseGrade, courseKey, cleanText, currentCourse, readAeriesRules, parseDueDate, isFourPointCourse, assignmentGrade, parseCourseGrade, readRawScoreMetadata, parseRecentData, readEmbeddedScores, restoreEmbeddedPrecision };
@@ -2210,7 +2238,7 @@ const GradeDOM = (() => {
     buildGradingProfileUI(profileBody,()=>{renderGradeLabResult();refreshPlanningUI();renderGradeExplanation();});
     const tools=el('div',null,{id:'ap-lab-tools'});tools.hidden=true;
     const target=el('section',null,{class:'ap-plan-section'});
-    target.append(el('h3','What do I need? · Hypothetical score'),note('For every candidate score, this calculator counts the assessment itself, applies its replacement rules to earlier scores, and then checks whether your target course grade is reached.'));
+    target.append(el('h3','What do I need? · Hypothetical score'),note('For each candidate score evaluated during the search, this calculator counts the assessment itself, applies its replacement rules, and checks whether your target course grade is reached.'));
     const grid=el('div',null,{class:'ap-plan-grid'});
     const assignment=planningSelect('ap-lab-target-assignment','Choose an assignment');
     const desired=planningNumber('ap-lab-target-value'),maximum=planningNumber('ap-lab-target-max'),step=planningNumber('ap-lab-target-step');
@@ -2235,7 +2263,7 @@ const GradeDOM = (() => {
     const save=button('Save replacement rules for this course',savePlanningReplacementRules);save.id='ap-lab-replace-save';
     const reset=button('Load saved replacement rules',()=>{gradeLab.replacementDraft=clone(planningCourse().replacementRules||[]);gradeLab.replacementListSignature='';renderGradeLabResult();});reset.id='ap-lab-replace-load';
     const replacementActions=el('div',null,{class:'ap-lab-actions'});replacementActions.append(add,save,reset);
-    replacements.append(replacementGrid,replacementActions,list,message,note('Added and removed rules save automatically in this browser for this course.'),note('A replacement copies the source percentage while preserving the earlier assignment’s points possible. Rules use the source’s entered score; replacements do not cascade through other rules. A cap limits only the replacement score.'),note('Rules stay connected when you rename a hypothetical assignment during this session. After reload, recreated hypothetical assignments must match the saved name and category.'));
+    replacements.append(replacementGrid,replacementActions,list,message,note('Added and removed rules save automatically in userscript-manager storage for this course.'),note('A replacement copies the source percentage while preserving the earlier assignment’s points possible. Rules use the source’s entered score; replacements do not cascade through other rules. A cap limits only the replacement score.'),note('Rules stay connected when you rename a hypothetical assignment during this session. After reload, recreated hypothetical assignments must match the saved name and category.'));
     target.append(replacements,actions,output,breakdown);tools.append(target);toolbar.append(profileBody,tools,explainBody);
     gradeLab.planning={tools,assignment,desired,maximum,step,desiredLabel,output,apply,source,destination,policy,cap,list,message,explainBody,ruleSummary,breakdown,solve};
     for(const n of [assignment,desired,maximum,step,source,destination,policy,cap])n.addEventListener(n.tagName==='SELECT'?'change':'input',()=>{gradeLab.targetSolution=null;apply.disabled=true;breakdown.replaceChildren();output.textContent='Inputs changed. Calculate the required score again.';if(gradeLab.active && [source,destination,policy,cap].includes(n))renderGradeLabResult();else refreshPlanningUI();});
@@ -2260,7 +2288,7 @@ const GradeDOM = (() => {
     if(gradeLab.targetRuleSummarySignature!==summarySignature){
       gradeLab.targetRuleSummarySignature=summarySignature;ui.ruleSummary.replaceChildren();
       const resolved=resolvePlanningRules(rows),selectedRules=resolved.rules.filter(r=>r.sourceId===ui.assignment.value);
-      ui.ruleSummary.append(note(resolved.rules.length?`${resolved.rules.length} configured replacement rule(s) will be evaluated for every candidate score.`:'No replacement rules are configured. Add any that apply before calculating.'));
+      ui.ruleSummary.append(note(resolved.rules.length?`${resolved.rules.length} configured replacement rule(s) will be evaluated for each candidate score checked during the search.`:'No replacement rules are configured. Add any that apply before calculating.'));
       const names=new Map(rows.map(a=>[a.id,a.name]));
       for(const r of selectedRules)ui.ruleSummary.append(note(`${names.get(r.sourceId)} can replace ${names.get(r.targetId)} · ${r.onlyIfHigher?'only if higher':'always'}${r.capPercent==null?'':` · capped at ${fmt(r.capPercent)}%`}.`));
       if(selectedRules.length)ui.ruleSummary.append(note('These rules apply during the search even if this assessment’s score is currently blank.'));
@@ -2330,7 +2358,7 @@ const GradeDOM = (() => {
     ui.breakdown.append(el('strong','Hypothetical replacements at the required score'));
     if(!calculated.appliedReplacements.length)ui.breakdown.append(note(rules.replacements.length?'No earlier score is changed at this candidate score under the configured rules.':'No replacement rules are configured.'));
     for(const r of calculated.appliedReplacements)ui.breakdown.append(note(`${names.get(r.sourceId)} → ${names.get(r.targetId)}: ${fmt(r.originalEarned)} / ${fmt(r.possible)} becomes ${fmt(r.newEarned)} / ${fmt(r.possible)} (${fmt(r.newPercent)}%).`));
-    ui.breakdown.append(note('The minimum was found by applying the rules again for every candidate score; the current blank or entered score is not held fixed during the search.'));
+    ui.breakdown.append(note('The minimum was found by applying the rules again for each candidate score evaluated during the search; the current blank or entered score is not held fixed.'));
     gradeLab.targetSolution={...result,assignmentId:selected.id,inputSignature:planningTargetSignature(model.assignments,rules)};ui.apply.disabled=false;
   }
   function applyPlanningTarget(){
@@ -2369,12 +2397,12 @@ const GradeDOM = (() => {
     const signature=JSON.stringify([active,model.assignments.map(({id,name,earned,possible,included,category})=>({id,name,earned,possible,included,category})),rules,result,upper,error,gradeLab.baselineError]);
     if(signature===gradeLab.explanationSignature)return;gradeLab.explanationSignature=signature;
     box.replaceChildren(el('h3',active?'Hypothetical grade explanation':'Posted grade explanation'));
-    if(error){box.append(note('Hypothetical total unavailable: '+error,'ap-plan-message'));return;}
+    if(error){box.append(note('Grade explanation unavailable: '+error,'ap-plan-message'));return;}
     if(blocked)box.append(note('A complete matching total is unavailable: '+blocked,'ap-plan-message'));
     else if(ranged)box.append(note(`Hypothetical overall grade — lower bound: ${planningFormat(result.value,rules,true)}; upper bound: ${planningFormat(upper.value,rules,true)}. All counted ranges vary together; single scores stay fixed.`));
     else box.append(note((active?'Hypothetical calculated grade: ':'Reconstructed from Aeries scores: ')+planningFormat(result.value,rules,true)));
     if(active&&planningCourse().gradingRules)box.append(note('Uses your saved course grading profile.'));
-    else box.append(note('Uses category weights and score limits read from Aeries.'));
+    else box.append(note('The calculation below shows the category weights and score limits in use.'));
     if(!active&&!postedCheck.error&&result.appliedReplacements.length)box.append(note('Your configured replacement rules reconcile the visible scores with Aeries’ posted totals.'));
     const table=el('table',null,{class:'ap-plan-table'}),head=el('thead'),hr=el('tr');
     const headings=ranged?['Category','Lower earned / possible','Upper earned / possible','Lower category grade','Upper category grade','Effective weight','Lower contribution','Upper contribution']:['Category','Earned / possible','Category grade','Effective weight','Contribution'];
@@ -2415,7 +2443,7 @@ const GradeDOM = (() => {
     const section = el('section', null, { class: 'ap-plan-section', 'aria-labelledby': 'ap-profile-title' });
     section.append(el('h3', 'Course grading profile', { id: 'ap-profile-title' }),
       note(context.current.title, 'ap-plan-message'),
-      note('Changes save automatically in this browser for this course. Complete, valid rules apply to local hypothetical simulations; incomplete edits are kept as a draft.', 'ap-plan-message'));
+      note('Changes save automatically in userscript-manager storage for this course. Complete, valid rules apply to local hypothetical simulations; incomplete edits are kept as a draft.', 'ap-plan-message'));
     const message = el('p', '', { class: 'ap-plan-message', role: 'status', 'aria-live': 'polite' });
     const grid = el('div', null, { class: 'ap-plan-grid' });
     const controls = [];
@@ -2597,7 +2625,7 @@ const GradeDOM = (() => {
       const stored = persist();
       applyValues(null);
       controls.forEach(control => control.removeAttribute('aria-invalid'));
-      message.textContent = stored ? 'No saved grading profile. All rule fields are blank; no preset rules were applied.' : storageError;
+      message.textContent = stored ? 'No saved grading profile. The lab uses rules read from Aeries; separately saved replacement rules remain available. The profile form is blank.' : storageError;
       if (typeof onSaved === 'function') onSaved();
     });
     clear.id = 'ap-profile-clear';
@@ -2709,8 +2737,8 @@ const GradeDOM = (() => {
       actions.append(el('strong','Grade testing lab'),toggle,add,reset);
       toolbar.append(actions,el('p',freshNotice?'Gradebook changed. Hypothetical changes were reset.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.',{class:'ap-lab-help'}),
         el('p','',{id:'ap-lab-result','aria-live':'polite','aria-atomic':'true'}),
-        el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in this browser. Nothing is submitted to Aeries.'),
-        el('p','Turn on Range beside any assignment and choose # correct or Points for its bounds. Multiple ranges update the combined grade automatically. For a single score, edit Score or Complete; the other updates automatically. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; points entered directly stay exact. For unequal question values, use raw marks.'));
+        el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in userscript-manager storage. Nothing is submitted to Aeries.'),
+        el('p','Turn on Range beside any assignment and choose # correct or Points for its bounds. Multiple ranges update the combined grade automatically. For a single score, edit Score or Complete; the other updates automatically. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; points entered directly are not deliberately rounded. For unequal question values, use raw marks.'));
       info.element.before(toolbar);
       initPlanningUI();
     }else if(!gradeLab.toolbar.isConnected)info.element.before(gradeLab.toolbar);
@@ -2844,7 +2872,7 @@ const GradeDOM = (() => {
       high.setAttribute('aria-label',`Upper bound in ${state.mode==='raw'?'number correct':'points'} for ${name}`);
       low.disabled=high.disabled=mode.disabled=rawPossible.disabled=!draft.included;panel.dataset.excluded=String(!draft.included);
       hint.textContent=!draft.included?'Not counted':state.error?state.error:state.mode==='raw'
-        ?`${fmt(state.low.earned)}–${fmt(state.high.earned)} points out of ${fmt(state.possible)}${state.low.basis==='points'||state.high.basis==='points'?' · Equivalent # correct; entered points stay exact.':''}`
+        ?`${fmt(state.low.earned)}–${fmt(state.high.earned)} points out of ${fmt(state.possible)}${state.low.basis==='points'||state.high.basis==='points'?' · Equivalent # correct; entered points avoid raw-score conversion.':''}`
         :`Score points out of ${fmt(state.possible)}${state.low.basis==='raw'||state.high.basis==='raw'?' · Linked to # correct.':''}`;
     }};
     enabled.addEventListener('change',()=>{
@@ -2995,7 +3023,7 @@ const GradeDOM = (() => {
       rawEarned.setAttribute('aria-invalid',String(fromRaw&&state.invalidEarned));
       possible.setAttribute('aria-invalid',String(state.invalidPossible));
       rawPossible.setAttribute('aria-invalid',String(state.invalidRawPossible));
-      rawEarned.title=next.rawDerived?'Equivalent raw score (approximate). Your entered points are kept exactly.':`Number correct or raw score for ${name}`;
+      rawEarned.title=next.rawDerived?'Equivalent raw score (approximate). Your entered points are retained without raw-score conversion.':`Number correct or raw score for ${name}`;
     };
     for(const [key,node] of Object.entries(controls))node.addEventListener('input',()=>{
       editingField=key;
@@ -4454,14 +4482,14 @@ window.addEventListener('pagehide',abortScheduleRequests);
     for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
       const n=input('', 'checkbox');n.checked=draft[key];toggles[key]=n;n.addEventListener('change',()=>setToggle(key,n.checked));const l=el('label',null,{class:'ap-toggle'});l.append(n,el('span',label));box.append(l);
       if(key==='nextClass'){
-        const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off cancels requests in this tab. Reload other Aeries tabs promptly; they keep old settings and can continue requests or save the old opt-in again.');
+        const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off requests cancellation and ignores late responses in this tab. Reload other Aeries tabs promptly; they keep old settings and can continue requests or save the old opt-in again.');
         explanation.id='ap-schedule-consent';n.setAttribute('aria-describedby',explanation.id);box.append(explanation);
       }
     }
     box.append(note('Toggles apply and save immediately. Impact estimates and the weight map use the open gradebook’s scores and grading rules.'));
     box.append(note('Number grades replace only the dashboard letter: 4, 3, 2, or 1 from your thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
     box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA displays both unweighted and weighted averages of posted letters. Unweighted A/B/C/D/F = 4/3/2/1/0; honors/AP classes you check use 5/4/3/1/0 for weighted GPA. Select them in Courses or in the GPA details. Both averages ignore plus/minus signs and thresholds.'));
-    box.append(note('Precise mode shows up to 8 decimals for calculated percentages and impact estimates, and keeps the precision Aeries actually displays. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
+    box.append(note('Precise mode shows up to 8 decimals for supported calculated values and impacts. Native labels keep their posted formatting; matching on-page data may supply more precise input scores independently of this setting. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const musicBox=el('div',null,{class:'ap-box'});
     musicBox.append(el('h3','KBAR music · P'),note('With Settings closed, press P outside editable controls to play or pause the English KBAR video on loop. The YouTube player stays hidden outside the visible layout and does not add page scroll space. Use the buttons here to control or close it.'));
     musicBox.append(note('Starting KBAR connects to YouTube. It may collect playback information and show ads. Playground sends no grades or course data. Close the player to stop and unload it; P pauses it.'));

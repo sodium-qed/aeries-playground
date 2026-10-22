@@ -1,33 +1,43 @@
-name: Feature request
-description: Suggest a specific improvement to Aeries Playground.
-title: "[Feature] "
+name: Suggestion
+description: Share an idea, a small improvement, or something that could be clearer. No coding knowledge needed.
+title: "[Suggestion] "
 body:
   - type: markdown
     attributes:
       value: |
-        Describe a user need with invented examples. Do not include actual grades, student names, copied Aeries pages, saved-settings exports, or login details. For a possible security issue, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md).
+        A sentence or two is enough to start. You do not need a technical solution. Give the issue a title that describes the idea and spell out any abbreviations.
+
+        This issue will be public. Use invented examples, not real grades, names, account details, copied Aeries pages, or saved-settings exports. For a possible security or privacy problem, read [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md) before sharing details.
   - type: textarea
     id: problem
     attributes:
-      label: What problem would this solve?
-      description: Explain the task or display problem using fictional examples.
+      label: What would you like to do?
+      description: Describe the improvement and how it would help you. It is fine to describe a need without knowing the solution.
+      placeholder: I would like to... This would help when...
     validations:
       required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where would this help? (optional)
+      options:
+        - Dashboard or course appearance
+        - Grade testing or calculations
+        - GPA or 4/3/2/1 summary
+        - Assignment weight map
+        - Next-class widget
+        - KBAR music
+        - Settings
+        - Installation or updates
+        - Instructions or documentation
+        - Somewhere else / I am not sure
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed behavior
-      description: Describe what you would expect to see or do, including the relevant page and controls. Say whether the feature should be optional and what its default should be.
-    validations:
-      required: true
-  - type: textarea
-    id: existing
+      label: Example or extra detail (optional)
+      description: A fictional example, a sketch with no account data, or what you would expect to see is helpful. No research or implementation plan is required.
+      placeholder: On this page... I would expect... For example, in an invented course...
+  - type: markdown
     attributes:
-      label: Existing settings or alternatives
-      description: Which current controls or workarounds have you considered? Check the feature guide first and distinguish stable-release behavior, the current prerelease, and any upcoming features. The next-class widget requires an explicit opt-in, and fresh Tampermonkey installations use manual updates.
-  - type: textarea
-    id: information
-    attributes:
-      label: Information the feature would need
-      description: If known, explain whether the idea needs new saved preferences, page information, or an external service. Describe the type of information only; do not attach personal data. Leave blank if unsure.
-
+      value: |
+        [Browse existing ideas](https://github.com/sodium-qed/aeries-playground/issues) · [Feature guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/FEATURES.md) · [Contribution guide](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md)

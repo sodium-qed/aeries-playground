@@ -1,3 +1,49 @@
+Aeries Playground licensing
+
+Effective software license: Aeries Playground Open Source License, Version 1.0
+Custom identifier: LicenseRef-Aeries-Playground-Open-Source-1.0
+
+READING THIS FILE
+
+The complete operative Version 1.0 license follows the "BEGIN EFFECTIVE
+LICENSE" marker below. Its wording is unchanged. These introductory notes
+explain the license's status and navigation; they add no conditions and do
+not replace or expand the operative grant.
+
+The license permits use, study, modification, redistribution, and commercial
+services. Distributed covered copies must preserve notices, identify changes,
+use the same license for covered modifications, and provide recipients with
+complete corresponding source. Private changes need not be published.
+
+Section 3 expressly permits submitting the COMPLETE source, including private
+modifications, to ChatGPT, other AI services or models, automated scanners,
+and human reviewers, including paid services. Source-sharing requirements
+concern recipients, not compulsory publication to everyone. Review permission
+does not grant rights in private account data or another person's material.
+
+VERSION STATUS AND OTHER RIGHTS
+
+A complete proposed rewrite, Version 1.1, is in docs/LICENSE-PROPOSAL.md.
+It is NOT effective. The reviewed history includes retained contributions
+under Version 1.0 without established authority to apply new terms to all of
+that material. Merely publishing proposed terms does not provide that authority.
+See docs/LICENSING.md for the current obligations and revision requirements.
+
+Earlier valid grants remain available for the copies and material they cover,
+including Version 1.0 and any valid MIT grants. Nothing here rewrites earlier
+repository history, tags, or release assets. Separately licensed material
+retains its own terms. Copyright remains with the respective rights holders.
+No trademark rights or permission to imply endorsement are granted.
+
+This is a custom license, not an OSI-approved license. Its open-source design
+intent and custom LicenseRef identifier are not a claim of OSI approval,
+SPDX License List inclusion, or compatibility with another license.
+
+The full operative text controls. For current contribution instructions, see
+CONTRIBUTING.md. For code-review and reporting precautions, see SECURITY.md.
+
+BEGIN EFFECTIVE LICENSE
+
 Aeries Playground Open Source License, Version 1.0
 
 Copyright (c) 2026 sodium-qed
@@ -131,3 +177,5 @@ without warranties of any kind. To that same extent, no Licensor is liable
 for loss or damage arising from use of the Software or this license. Nothing
 here excludes liability or rights that applicable law does not allow to be
 excluded.
+
+END EFFECTIVE LICENSE
