@@ -1,43 +1,30 @@
 name: Suggestion
-description: Share an idea, a small improvement, or something that could be clearer. No coding knowledge needed.
+description: Share an idea or something that could be easier. A sentence or two is enough.
 title: "[Suggestion] "
 body:
   - type: markdown
     attributes:
       value: |
-        A sentence or two is enough to start. You do not need a technical solution. Give the issue a title that describes the idea and spell out any abbreviations.
+        Describe the idea in your title, then answer the first question. No technical solution or coding knowledge is needed. Spell out abbreviations so others can understand the request.
 
-        This issue will be public. Use invented examples, not real grades, names, account details, copied Aeries pages, or saved-settings exports. For a possible security or privacy problem, read [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md) before sharing details.
+        This issue is public. Use invented examples, without real grades, names, account details, copied Aeries pages, or saved-settings exports. For a possible vulnerability or data leak, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md#report-a-vulnerability-privately) before sharing details.
   - type: textarea
     id: problem
     attributes:
       label: What would you like to do?
-      description: Describe the improvement and how it would help you. It is fine to describe a need without knowing the solution.
+      description: Describe the improvement and when it would help. It is fine to explain a need without knowing the solution.
       placeholder: I would like to... This would help when...
     validations:
       required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Where would this help? (optional)
-      options:
-        - Dashboard or course appearance
-        - Grade testing or calculations
-        - GPA or 4/3/2/1 summary
-        - Assignment weight map
-        - Next-class widget
-        - KBAR music
-        - Settings
-        - Installation or updates
-        - Instructions or documentation
-        - Somewhere else / I am not sure
   - type: textarea
     id: proposal
     attributes:
       label: Example or extra detail (optional)
-      description: A fictional example, a sketch with no account data, or what you would expect to see is helpful. No research or implementation plan is required.
-      placeholder: On this page... I would expect... For example, in an invented course...
+      description: Add an invented example, a sketch without account data, or what you would expect to see. You can leave this blank.
+      placeholder: On this page... I would expect... For example, in a fictional course...
   - type: markdown
     attributes:
       value: |
-        [Browse existing ideas](https://github.com/sodium-qed/aeries-playground/issues) · [Feature guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/FEATURES.md) · [Contribution guide](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md)
+        One idea per issue helps discussion. You can [browse existing ideas](https://github.com/sodium-qed/aeries-playground/issues), but research is not required to submit a suggestion.
+
+        [Feature guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/FEATURES.md) · [Contribution guide](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md)

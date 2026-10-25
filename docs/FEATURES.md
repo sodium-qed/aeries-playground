@@ -1,21 +1,31 @@
 # Feature guide
 
-Use this guide for controls, defaults, saved settings, and recovery. The [README](../README.md) covers installation and supported pages; the [calculation reference](CALCULATIONS.md) covers formulas and worked examples.
+Use Playground on a recognized Aeries dashboard or gradebook to customize the display, inspect assignment weights, and try possible scores. The changes are local: a hypothetical score never submits a grade or creates an assignment in Aeries.
 
-Playground reads the supported Aeries page and changes its local presentation. Hypothetical grades are estimates under the supplied rules. They do not submit grade changes, create official assignments, or replace the teacher's grading policy.
+| What you want to do | Start here |
+| --- | --- |
+| Find the dialog or a page control | [Find the controls](#find-the-controls) |
+| Rename a course, set a period, or change its bar | [Course customization](#course-names-icons-and-periods) |
+| Choose classes for weighted/unweighted GPA | [GPA](#weighted-and-unweighted-gpa-together) |
+| Compare assignment weights or preview ungraded work | [Assignment weight map](#assignment-weight-map) |
+| Try a score, add an assessment, or solve for a target | [Grade testing lab](#grade-testing-lab) |
+| Set up a next-class countdown or KBAR | [MVHS schedule](#mvhs-next-class-panel) · [KBAR](#kbar-music) |
+| Understand what saves, switch students/years, or pause | [Settings guide](SETTINGS.md) |
+| Recover from missing controls or an unavailable result | [Troubleshooting](TROUBLESHOOTING.md) |
+
+For installation and supported pages, start with the [README](../README.md). For formulas, worked examples, and the limits of an estimate, use the [calculation reference](CALCULATIONS.md).
 
 ## Available release
 
-This guide documents the current source, whose userscript metadata remains **2.4.0**.
+This guide describes the repository source, whose userscript metadata remains **2.4.0**. Choose the file you intend to install; the stable shortcut and the current source are different downloads.
 
-| Edition | Status and download |
+| Download | What it selects |
 | --- | --- |
-| **2.4.0** | Published prerelease containing the features below. [Release page](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) · [Version-specific userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v2.4.0/aeries-playground.user.js). |
-| **2.3.0** | Published earlier prerelease. It includes the fractional-score adapter and next-school-day countdown, but predates the ungraded-assignment weight preview. [Release page](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.3.0). |
-| **2.0.0** | Current stable **Latest**. [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest). It predates weighted GPA, KBAR, the fractional-score adapter, the next-school-day countdown, and the ungraded-assignment preview. |
-| **3.0.0** | Planned stable release; not released by this documentation update. See [maintenance and release readiness](MAINTENANCE.md). |
+| [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) · [2.4.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v2.4.0/aeries-playground.user.js) | The published **prerelease** for the feature set described here. |
+| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **2.0.0**; it does not contain every feature in this guide. Check that release's description before installing. |
+| [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source, including documentation and embedded-help revisions made after the published asset. |
 
-The [main-branch installation link](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) follows `main`; it is not an immutable release download. The branch may include documentation, license-comment, and help-wording updates absent from the published asset; those text edits do not add features or alter calculation/control logic. Review the exact file you install. `/releases/latest` and its download shortcuts still point to the stable edition, not the 2.4.0 prerelease.
+**3.0.0** is planned, not published by this documentation update. The [maintenance plan](MAINTENANCE.md) tracks release readiness. Review the exact replacement file and [update steps](SETTINGS.md#update-the-userscript); a release number in this guide does not update an installed copy.
 
 <a id="weight-map-prerelease"></a>
 <a id="weighted-gpa-prerelease"></a>
@@ -24,13 +34,14 @@ Older links to the weight-map and weighted-GPA prerelease notes lead here. Use t
 
 ## Find the controls
 
-1. Open the Aeries dashboard to discover its course cards. The current gradebook can also discover its own course.
-2. Press **S** outside an editable field, or use Tampermonkey's **Aeries Playground — open settings (S)** menu command.
-3. Choose **Courses**, **Weight map**, or **Settings** in the dialog. Save ordinary form edits before changing tabs or reopening the dialog.
-4. Open a course's gradebook with all assignments loaded and Aeries' **Show only missing assignments** turned off. Its local toolbar provides **Start grade testing**, **Add hypothetical assignment**, **Course grading profile**, and **Explain my grade**.
-5. Check that posted totals can be reconstructed before relying on a hypothetical result.
+1. Open the supported Aeries student page with Playground enabled. Visit the dashboard to discover its course cards, or open one course's gradebook to discover that course.
+2. Press **S** outside an editable control, or choose Tampermonkey's **Aeries Playground — open settings (S)** menu command.
+3. Use **Courses** for course customization, **Weight map** for the open gradebook, or **Settings** for global features and profile/year labels.
+4. On a recognized gradebook, use the toolbar above the assignments: **Start grade testing**, **Add hypothetical assignment**, **Course grading profile**, and **Explain my grade**. **Assignment weight map** opens the map directly.
 
-There is no general floating Playground launcher in the current source. The gradebook's **Assignment weight map** button opens that dialog tab directly. The schedule and KBAR features are optional and are not needed for grade tools.
+There is no floating Playground launcher. The Weight map tab needs an open recognized gradebook; it is not a saved list of every course's assignments. If Playground or the map is off, the tab offers **Enable Weight map**. That button also re-enables Playground, which can resume a previously enabled schedule integration.
+
+Save **Courses** and ordinary **Settings** form fields before changing dialog tabs or reopening the dialog. Toggles and grading-rule forms have different save behavior; use the [save-control reference](SETTINGS.md#which-save-control-do-i-use) when unsure.
 
 ### Keyboard and dialog behavior
 
@@ -49,7 +60,7 @@ Typing within grade-testing controls keeps its keystrokes local; their event han
 
 ### Course names, icons, and periods
 
-Open **Courses** to configure the courses discovered in the selected profile/year.
+Open **Courses**, edit the entry you want, then select **Save course settings**. The list contains courses discovered in the selected profile/year; it can include saved courses that are not visible on the current page.
 
 | Field | What it changes |
 | --- | --- |
@@ -94,7 +105,7 @@ Display precision, the [fractional-score adapter](#fractional-score-precision), 
 
 ### Overall grade and current-year GPA
 
-**Overall grade / GPA above classes** starts on and uses the currently visible dashboard cards, deduplicated by course identity.
+**Overall grade / GPA above classes** starts on. To see GPA, leave **Show 4/3/2/1 on dashboard** off and open the dashboard. To see an average of custom ratings instead, turn that toggle on. Both modes use the currently visible dashboard cards, deduplicated by course identity.
 
 | **Show 4/3/2/1 on dashboard** | Summary | Details control |
 | --- | --- | --- |
@@ -107,7 +118,7 @@ The class-inclusion checkbox saves immediately and affects both summary modes. N
 
 ### Weighted and unweighted GPA together
 
-In letter mode, open **Calculation & GPA class selection**. Each row has two independent choices:
+On the dashboard in letter mode, open **Calculation & GPA class selection**, choose which courses count, and check the courses eligible for the supported Honors/AP bonus. These checkboxes save immediately. Each row has two independent choices:
 
 - **Include** decides whether that course counts in both GPAs.
 - **Honors/AP** adds one point for a counted A, B, or C in weighted GPA only. It does not include an excluded class.
@@ -129,6 +140,23 @@ For five included, checked courses with A/B/C/D/F, unweighted GPA is **2.00** an
 ## Assignment analysis
 
 These tools read the recognized gradebook's native table/card rows and visible totals. Eligible embedded scores already present on that page may refine the inputs. Playground does not fetch hidden Aeries gradebook records.
+
+### Check the posted baseline
+
+1. Select the intended course and grading period in Aeries.
+2. Turn Aeries' **Show only missing assignments** off and wait for its rows and totals to finish loading.
+3. Read the Playground status above the assignments. A matching-total status means the loaded rows reconstruct the displayed totals under the rules in use. An error names the condition that still needs attention.
+4. Open **Explain my grade** to inspect category totals and contributions. If it says **A complete matching total is unavailable**, the category arithmetic is not confirmation of an overall result.
+
+Playground's own [category filter](#category-filter) only hides rows after they are read; it does not change the baseline. If the baseline cannot be reconstructed, use the [recovery steps](TROUBLESHOOTING.md#gradebook-totals-do-not-match) before interpreting estimates.
+
+| Tool | Question it answers | Inputs while grade testing is active |
+| --- | --- | --- |
+| Weight map | How much of the calculation does each assignment represent? | Posted rows and Aeries-read rules; optional ungraded preview |
+| Grade impact | How much does the current calculated grade change if this assignment is removed? | Current hypothetical scores, Count choices, and applicable rules |
+| Grade testing lab | What course grade follows from the scores and rules I enter? | The active local scenario, after the posted baseline check |
+
+Weight and impact are different quantities. A large circle can have a small impact, and a weight map opened during testing does not visualize the edited scenario.
 
 ### Fractional-score precision
 
@@ -158,7 +186,7 @@ An impact is neither an assignment's weight nor its historical posting effect, a
 
 ### Assignment weight map
 
-Open **Assignment weight map** above the gradebook or the dialog's **Weight map** tab.
+Open **Assignment weight map** above the gradebook or the dialog's **Weight map** tab. Start with **Show ungraded assignments** off to inspect the work currently counting toward the grade. Select an assignment in the circle view or list, then use **Show in gradebook** to locate it.
 
 - Circle **area**, not diameter, represents an assignment's share. All categories use one size scale.
 - Graded colors follow the posted numeric grade and selected cutoffs.
@@ -169,7 +197,7 @@ Open **Assignment weight map** above the gradebook or the dialog's **Weight map*
 
 With the ungraded toggle off, the map describes included graded work. Ungraded and explicitly excluded work is omitted. Graded assignments in a 0% category remain in the list with no circle when the overall map can be calculated. A course with no counted grade may instead show an unavailable message.
 
-Weights change when additional work or categories start counting. Score floors/ceilings are used when checking posted totals; circle sizes still use possible points, and colors use posted scores.
+Weights change when additional work or categories start counting. Circle sizes are rescaled for each map so its largest circle keeps the same visual size; compare the displayed percentages when changing courses or toggling the preview. Score floors/ceilings are used when checking posted totals; circle sizes still use possible points, and colors use posted scores.
 
 #### Show ungraded assignments
 
@@ -197,7 +225,14 @@ The preview does not predict an earned score, alter the gradebook, change lab Co
 
 ## Grade testing lab
 
-Select **Start grade testing** in the toolbar or beneath an assignment's percentage. That control starts testing for the whole open gradebook; it is not limited to the row you clicked. **Add hypothetical assignment** also starts testing if needed.
+For a first scenario:
+
+1. [Check the posted baseline](#check-the-posted-baseline), then select **Start grade testing** in the toolbar or beneath an assignment's percentage. Either button starts testing for the whole gradebook.
+2. Change one existing **Score**, or select **Add hypothetical assignment**, give it a name/category, and enter earned/possible points.
+3. Read **Hypothetical overall grade** alongside **Posted**. Open **Explain my grade** to see the calculation.
+4. Use the row's **Reset** to undo that score, **Reset hypothetical changes** to clear scenario scores/ranges/additions, or **Exit grade testing** to restore the posted view.
+
+**Add hypothetical assignment** starts testing if needed. Scores and new assignment cards are temporary; grading profiles and replacement rules can save automatically. Read [reset behavior](#reset-or-leave-a-scenario) before using a reset as an undo.
 
 ### Edit scores and add assignments
 
@@ -275,18 +310,18 @@ Allowed scores are multiples of the increment from zero through the largest mult
 
 A rule copies a source assignment's percentage to a target while preserving the target's possible points. The source still counts normally in its own category.
 
-1. Choose **Assessment supplying the score** and **Earlier assignment it can replace**.
+1. Choose **Assessment supplying the score** and **Target assignment it can replace**.
 2. Choose **Only if higher** or **Always replace**.
 3. Optionally enter a nonnegative **Replacement cap (%)**.
 4. Select **Add hypothetical replacement**.
 
-Both assignments need names/categories, and a source cannot replace itself. “Earlier” is a user-facing label: the tool does not enforce chronological order. Both must count and have numeric scores for an ordinary rule to apply. The target/range calculators first supply their candidate scores, so a previously blank future source can participate.
+Both assignments need names/categories, and a source cannot replace itself. The tool does not enforce chronological order; choose the intended target yourself. Both must count and have numeric scores for an ordinary rule to apply. The target/range calculators first supply their candidate scores, so a previously blank future source can participate.
 
 **Only if higher** keeps the original target unless the capped offer improves it. **Always replace** can lower the target. Multiple sources for one target must all use only-if-higher; the best eligible improvement wins. The cap limits the proposed replacement, not the source's own score. Sources use their original entered scores, so rules do not cascade; assignment score limits apply afterward.
 
 Adding/removing rules saves automatically per course/profile/year. **Save replacement rules for this course** saves explicitly; **Load saved replacement rules** reloads the latest stored list, not an older version.
 
-Rules stay linked when you rename a hypothetical assignment during that session. Saved references are refreshed when rules are saved; save again after a rename if you want the new name/category recorded. After reload, recreate hypothetical assignments with the saved name/category, uniquely. Posted assignment references also need their matching identity/name. Unmatched rules are labeled inactive; resolve or remove them before using target/range calculations. Ordinary single-score simulation can continue with only matched rules, so inspect that list before trusting its result.
+Rules stay linked when you rename a hypothetical assignment during that session. Saved references are refreshed when rules are saved; save again after a rename if you want the new name/category recorded. After reload, recreate hypothetical assignments with the saved name/category, uniquely. The name and category match is exact and case-sensitive. Posted assignment references also need their matching identity/name. Unmatched rules are labeled inactive; resolve or remove them before using target/range calculations. Ordinary single-score simulation can continue with only matched rules, so inspect that list before trusting its result.
 
 Rules save their policy and assignment references, not assignment scores. See [replacement math](CALCULATIONS.md#replacement-rules).
 
@@ -357,108 +392,48 @@ The visible **Open on YouTube** link sends no referrer and allows no opener acce
 
 ## Settings, profiles, and saved data
 
+Use the [settings guide](SETTINGS.md) for the full defaults, save behavior, and profile/year workflow. The key distinction is between saved configuration and the temporary scenario:
+
+| You changed | How it is kept |
+| --- | --- |
+| A feature toggle, map's ungraded toggle, or GPA checkbox | Applies immediately and attempts to save automatically |
+| A course nickname/period/bar, or global colors/cutoffs/profile/year | Requires the form's **Save course settings** or **Save settings** button |
+| A course grading profile or added/removed replacement rule | Saves automatically; incomplete profile edits remain a draft |
+| A hypothetical score, new assignment card, or range | Memory only; exit/reload clears it |
+
 ### Default toggles
 
-Settings toggles apply and attempt to save immediately.
-
-| Setting | Fresh-install default | Scope |
-| --- | --- | --- |
-| **Enable Playground** | On | Global master pause |
-| **Dashboard grade colors** | On | Global |
-| **Show 4/3/2/1 on dashboard** | Off | Global; also selects summary mode |
-| **Overall grade / GPA above classes** | On | Global |
-| **What class is next (MVHS)** | Off; explicit opt-in | Global saved choice; running requests are tab-local |
-| **Course nicknames & icons** | On | Global display toggle |
-| **Grade progress bars** | On | Global |
-| **Grade colors on details page** | On | Global; see the active-lab limitation above |
-| **Assignment impact labels on the page** | On | Global |
-| **Ridiculously precise mode** | On | Global |
-| **Category filter on gradebook pages** | On | Global feature toggle |
-| **Assignment weight map** | On | Global |
-| **Show ungraded assignments**, inside Weight map | Off | Global map preference; also saves immediately |
-
-Existing valid preferences are generally retained on upgrade. Some former built-in defaults have migration logic, including older average cutoffs, bar minima, the old third-band color, and former automatically generated icons. A new install's default table is not a promise that every older setting remains unchanged.
+A new install enables the grade tools, colors, bars, overall summary, and precise formatting. Numeric 4/3/2/1 display, schedule access, and the map's ungraded preview start off. KBAR starts unloaded. See the [complete default table](SETTINGS.md#default-toggles).
 
 ### What changes and what stays saved
 
-| Item | Save behavior and scope |
-| --- | --- |
-| Feature toggles, colors, global cutoffs, current profile/year labels | Global. Toggles save immediately; other fields require **Save settings**. |
-| Course names/identifiers, aliases, icons, period overrides, bar ranges, course cutoffs | Per course in the selected profile/year; editable form uses **Save course settings**. Course discovery itself is saved automatically. |
-| Summary inclusion | Per course/profile/year, default included; saves immediately in summary details. |
-| Honors/AP selection | Per course/profile/year, default unchecked; immediate in GPA details or **Save course settings** in Courses. |
-| Course grading policy and unfinished form draft | Per course/profile/year; automatic save, with only valid rules active. |
-| Replacement policy and referenced assignment names/IDs/categories | Per course/profile/year; automatic on add/remove or explicit save. |
-| Hypothetical scores, added assignments, ranges, target results | Memory only; scenario exit/reset/reload clears them. |
-| Posted grades, calculated GPA, weight previews, gradebook page | Not persisted by Playground. |
-| Selected category, map selection, public schedule cache, KBAR state | Page memory only. |
+Profiles organize course customizations and grading rules; global display settings remain shared. Posted grades and hypothetical scores are not saved by this source. Replacement rules save assignment references, which can include names and categories. See [the storage table](SETTINGS.md#what-changes-and-what-stays-saved).
 
 ### Select a profile and school year
 
-Enter **Settings profile** and **School-year starting year**, then **Save settings**. Both start blank. A supplied year must have four digits; a profile label may contain up to 60 characters. Use the same trimmed, case-sensitive labels to return to an existing scope.
-
-Course settings are partitioned by that pair of labels and course/gradebook/term identity. A new pair starts a separate collection of course settings; global toggles, colors, and default thresholds remain shared. There is no automatic account/student/year selection and no profile picker or per-profile delete control. Select the right labels before customizing another student's courses.
-
-Changing scope exits the current scenario. This separation is organizational, not encryption or independent storage accounts. Saved course identifiers and replacement references can reveal school/course information. Review manager sync/backups if you want configuration kept on one device; see [saved-data details](../SECURITY.md).
+When switching students, close other Aeries tabs, pause Playground in the remaining tab, switch the Aeries account, and save the intended **Settings profile** and **School-year starting year** while paused, then re-enable it. Selection is manual; matching a score to a student does not select a settings profile. See [switching profiles](SETTINGS.md#select-a-profile-and-school-year).
 
 ### Storage errors and multiple tabs
 
-If storage fails, most settings still work for the current visit. A storage-error message can appear when a form reports its save or the dialog is rendered again. Reopen Settings if a supposedly saved preference disappears after reload.
-
-Ordinary saves write the tab's loaded settings; simultaneous edits are last-write-wins, not merged. Reload other tabs after important settings changes. After an in-app clear, an old tab checks the reset marker before saving and can report **Saved settings were cleared in another tab. Reload this tab before saving.** That check is not immediate synchronization of its already-running features.
+Ordinary saves are last-write-wins across tabs. After changing important settings, consent, or pause state, reload other Aeries tabs. Check for a storage-error message if a change does not survive reload. See [storage recovery](TROUBLESHOOTING.md#settings-do-not-survive-reload).
 
 ## Updating and returning to the original page
 
-| Goal | Action |
-| --- | --- |
-| Temporarily pause | Turn **Enable Playground** off. Saved configuration stays; testing exits, schedule work stops in that tab, and KBAR unloads. |
-| Stop only schedules | Turn **What class is next (MVHS)** off; other features stay available. |
-| Return to Aeries with no Playground code running | Disable the userscript in Tampermonkey and reload. Saved settings remain. |
-| Clear configuration | In Settings, select **Clear saved settings and pause**, confirm, then reload other Aeries tabs promptly. |
-| Update | Review the intended source/release, install it as the replacement, keep only one copy enabled, and reload Aeries. |
+For a temporary pause, turn **Enable Playground** off. For native Aeries with no Playground code running, disable the userscript in the manager and reload every Aeries tab. Neither action deletes saved settings.
 
-A successful clear removes saved profiles, course customizations, grading profiles/drafts, replacement rules, and preferences, then restores defaults with **Enable Playground off**. It resets schedule consent and **Show ungraded assignments** to off. Re-enable Playground when ready; enabling schedules again needs its own opt-in.
-
-Clearing does not delete manager sync/backups or YouTube-controlled storage. If the clear fails to save, the script restores its previous in-memory settings and reports the failure. Clearing all settings is not a routine troubleshooting prerequisite.
-
-A fresh Tampermonkey install is configured for manual updates. An existing install can retain its previous manager update preference; inspect that setting. Use [Available release](#available-release) to distinguish a stable download, an explicit prerelease asset, and the moving main branch.
+**Clear saved settings and pause** removes active configuration after confirmation; it is not needed for ordinary troubleshooting. An update replaces the installed script and requires a reload. Follow the [pause, clear, and update steps](SETTINGS.md#pause-clear-or-remove-playground) to choose the action you need.
 
 ## Troubleshooting
 
-| Symptom | Check or recovery |
-| --- | --- |
-| Cannot find Settings | Use **S** outside editable/grade-lab controls or the manager menu. No floating launcher is supplied. Confirm Tampermonkey/script execution is enabled on the supported MVLA student page. |
-| Courses missing | Visit the dashboard or that course's recognized gradebook. Course discovery reads those pages; it does not fetch another account's courses. |
-| Edits disappear after changing tabs | Save Courses/non-toggle Settings forms before navigating. Grading-profile drafts and added/removed replacement rules have separate automatic saves. |
-| Wrong preferences after changing student/year | Enter the correct manual profile/year and save; score-matching checks do not switch settings scope. |
-| No weighted GPA | Turn on **Overall grade / GPA above classes**, turn numeric 4/3/2/1 mode off, and check that the installed edition includes weighted GPA. |
-| GPAs match unexpectedly | Check Honors/AP on included A/B/C courses; save if edited in Courses. Checked D/F receive no bonus. |
-| Course absent from GPA | It must be visible, included, and have a recognized A–F letter. Honors/AP does not override exclusion. |
-| Number rating differs from the posted letter | Ratings use your thresholds, not the teacher's letter scale. Turn numeric mode off to inspect the original mark. |
-| Impact, map, or hypothetical total unavailable | Turn Aeries' missing-only filter off, wait for the selected gradebook, and compare loaded rows with category/overall totals. Review unsupported rules or your configured policy. |
-| **Waiting for the selected gradebook or filter to finish loading…** persists | Let Aeries finish loading, then reload if necessary. The tool refuses to reuse old rows for a new course/filter. |
-| Some scores have more decimals than native labels | Eligible matching embedded values are used locally. Precise mode changes formatting, not matching eligibility. Not every row has usable extra precision. |
-| Ungraded checkbox missing | Use the explicit 2.4.0 prerelease or matching main source and reload. The checkbox is inside Weight map, not the Settings toggle list. |
-| Preview row has no circle | Read its missing-point/category-weight explanation; a known zero-weight category also has no circle. Explicit exclusions stay omitted. |
-| Preview changes graded weights | Ungraded work changes preview denominators and can activate a category. Turn it off for current counted shares. |
-| Count off does not clear an error | Fix/reset malformed score/raw fields and name/category fields. Exclusion does not bypass all input validation. |
-| “What do I need?” unavailable | Turn off counted ranges; provide target, positive possible points, nonnegative maximum, and positive increment. Finish/clear replacement entry and resolve unmatched rules. |
-| Range result unavailable | Check nonnegative ordered bounds, positive Score/raw totals, baseline reconciliation, and weights for newly active categories. Resolve unfinished/unmatched replacements. |
-| Reset did not undo replacement changes | Rule additions/removals save immediately. Remove unwanted rules explicitly; scenario reset reloads the saved list. |
-| Saved hypothetical replacement is inactive | Recreate exactly one assignment with its saved name/category, or remove the rule. Save rules again after a rename before leaving. |
-| Next-class panel missing | Enable Playground and the explained schedule toggle; visit a dashboard with visible course cards. |
-| Next class shows only a period | Set its exact period override and resolve duplicate matches. Unmatched periods are not inferred to be free. |
-| Schedule unavailable | Use **Retry schedule**, check userscript network permission and the linked public source. |
-| Countdown has no seconds | Minutes are the fallback for stale/unavailable/disagreeing clock or schedule data, including an unverified future date. |
-| No upcoming class after school | Search is limited to fourteen dates and depends on valid public schedule data. |
-| P does nothing or KBAR is silent | Enable Playground; close the dialog and leave editable/lab controls, or use Settings/menu playback. Close the embed, retry, or use **Open on YouTube**. Hidden player errors are not displayed in Settings. |
-| Paused music still has a loaded player | Use **Close KBAR player** to unload it. Pause retains the iframe. |
-| Page gains a blank area after KBAR | The player is intended to stay outside normal layout. Keep one updated copy, reload, and report a remaining layout problem. |
-| Settings fail to survive reload | Reopen Settings for storage errors, check the relevant Save control, and avoid conflicting saves from other tabs. Scores/ranges are temporary by design. |
-| Another tab cleared settings or disabled schedules | Reload promptly. That tab's change does not immediately stop this tab's running state. |
-| Display breaks or behavior changes unexpectedly | Disable duplicate/older scripts. Pause Playground or disable it and reload to compare with native Aeries. Aeries layout changes can invalidate the parser. |
+Start with the [troubleshooting guide](TROUBLESHOOTING.md). It groups recovery by task:
 
-For a useful ordinary report, give the installed version/source, browser, manager, affected feature, settings, steps, expected result, and fictional example values. Do not provide account access, cookies, page exports, or unredacted gradebooks. See [Contributing](../CONTRIBUTING.md) for reports and [Security](../SECURITY.md) for sensitive concerns.
+- [Missing controls or courses](TROUBLESHOOTING.md#controls-or-courses-are-missing)
+- [Unavailable or mismatched grade totals](TROUBLESHOOTING.md#gradebook-totals-do-not-match)
+- [Weight-map previews](TROUBLESHOOTING.md#weight-map-and-ungraded-preview)
+- [Scores, ranges, and replacement rules](TROUBLESHOOTING.md#grade-testing-targets-and-ranges)
+- [GPA and dashboard display](TROUBLESHOOTING.md#gpa-and-dashboard-display)
+- [Schedules](TROUBLESHOOTING.md#next-class-schedule) or [KBAR](TROUBLESHOOTING.md#kbar-playback)
+- [Saving and multiple tabs](TROUBLESHOOTING.md#settings-do-not-survive-reload)
 
 ## Limitations
 

@@ -28,6 +28,17 @@ The script does not fetch hidden assignments, prior terms, or a transcript to fi
 
 Dashboard display settings are separate from calculation policies. Changing colors, threshold cutoffs, bar bounds, nicknames, or Honors/AP selections does not change assignment scores or the gradebook formula. A saved **Course grading profile** can change the hypothetical formula; it does not modify Aeries.
 
+Keep the units separate when reading results:
+
+| Value | Meaning |
+| --- | --- |
+| `8 / 10` points | Earned points and possible points for an assignment. |
+| `80%` | Earned divided by possible, multiplied by 100. |
+| `+5 pp` | A difference of five **percentage points**, such as 85% minus 80%; it is not a 5% relative increase. |
+| `3.5 / 4` average | A continuous average in the course's average scale. |
+| Dashboard rating `3` | A threshold band assigned from a course's posted numeric grade. |
+| GPA `3` | An equal-course average of letter-grade points; the Honors/AP choice affects only its weighted version. |
+
 ### Order of a hypothetical calculation
 
 The supported calculation proceeds in this order:
@@ -65,7 +76,7 @@ embedded percentage:       97.8%
 
 The denominator remains **15**. This restores a supplied value; it does not guess extra digits or alter the posted grade. Missing, malformed, duplicated, inconsistent, excluded, and ungraded records retain the visible score. Four-point gradebooks are not adjusted. The recent-items data may cover only some assignments, so a single gradebook can contain inputs with different source precision.
 
-Restored points remain authoritative when initializing the score editor. If displayed **Complete** metadata converts to different points, the editor retains points mode and derives an approximate raw equivalent. Re-entering the same numeric point value preserves the point value; deliberately changing raw marks applies the [raw conversion](#raw-marks-and-gradebook-points).
+When displayed **Complete** metadata does not match the posted or restored points, the editor retains points mode and derives an approximate raw equivalent. It treats differences smaller than **0.000000001 points** as matching when choosing the initial input mode. Re-entering the same numeric point value preserves that draft's input mode; deliberately changing raw marks applies the [raw conversion](#raw-marks-and-gradebook-points).
 
 Calculations use finite JavaScript numbers, not unlimited decimal precision. Extra displayed digits do not prove hidden official precision, and restored inputs do not guarantee reconciliation. The matching identifiers are temporary and do not select settings profiles; see [on-page score matching](../SECURITY.md#on-page-score-matching).
 
@@ -89,6 +100,8 @@ A counted assignment must be included and have a nonnegative numeric earned scor
 | Counted earned points over a zero-point denominator | Unsupported extra-credit policy; calculation unavailable. |
 
 Blank scores in the lab remain ungraded even when **Count** is checked. They do not create an active category or contribute possible points to the grade. Turning Count off omits that row from valid calculations. Explicitly excluded posted work starts with Count off; testing can include it locally if you supply a valid score and denominator.
+
+For example, **8/10** plus **blank/10** gives **80%** in Total points mode. Changing the blank to **0/10** gives **8/20 = 40%**. Excluding that zero returns the grade to **80%**. A blank, a counted zero, and an excluded zero are three different states.
 
 **Current validation limitation:** malformed score text can still block the lab after Count is turned off. A scored hypothetical assignment without a name or category can also block it while unchecked. Correct or blank the malformed score, finish the assignment, or remove the hypothetical row. Count is not a way to retain an invalid draft and obtain a total.
 
@@ -161,9 +174,13 @@ Empty categories are omitted, and active weights are normalized. Weights may be 
 | Tests | 40/50 | 80% | 60 | 60% | 48 percentage points |
 | Total | — | — | 100 | 100% | **84%** |
 
-If only Homework has a counted score, its effective share becomes **100%**, and the course grade is **90%**. A zero-weight category can have counted points and appear in reconciliation while contributing zero to the overall grade. If all active weights are zero, there is **no weighted grade**, not a grade of 0%. A missing or negative weight for an active category is an error.
+Within a category, possible points still determine assignment weight. Homework scores **9/10** and **45/90** produce **54/100 = 54%**, not the equal-per-assignment mean of 70%. With Tests at **80%** and the same **40 / 60** category weights, the course grade is **0.4 × 54% + 0.6 × 80% = 69.6%**.
 
-The native adapter chooses weighted mode when it reads category weights from Aeries totals; otherwise it uses points mode. It does not infer an unseen teacher policy. A custom profile requires at least one positive applicable weight before it can be saved as valid, although the engine can recognize an Aeries baseline containing only zero-weight categories and report that no grade exists yet.
+With the original **18/20 Homework** row as the only counted score, its effective share becomes **100%**, and the course grade is **90%**. A zero-weight category can have counted points and appear in reconciliation while contributing zero to the overall grade. If all active weights are zero, there is **no weighted grade**, not a grade of 0%. A missing or negative weight for an active category is an error.
+
+The native adapter chooses weighted mode when it reads category weights from Aeries totals; otherwise it uses points mode. It does not infer an unseen teacher policy. A custom profile requires weights for currently counted categories, with at least one positive weight among them. If no category currently counts, at least one entered category weight must be positive. This validation differs from the calculation engine, which can recognize an Aeries baseline containing only zero-weight categories and report that no grade exists yet.
+
+**Current profile limitation:** its active-category check reads single-score drafts and can miss a category that counts only through a range. Supply a weight for every category you intend to use in ranges or the target solver. A saved profile is not proof that every later scenario has the weights it needs.
 
 ### Four-point averages and other display scales
 
@@ -202,7 +219,7 @@ For a rounding policy, `d` must be an integer from **0 through 8**. Rounding is 
 
 For an unrounded average of **3.456/4**, two-place nearest and up rounding both yield **3.46/4**; down yields **3.45/4**. No rounding retains **3.456/4**. The calculation does not first round its internal percentage. Category values and contributions remain unrounded, so a sum of displayed contributions can differ from the displayed final total.
 
-**Ridiculously precise mode** generally formats calculated values to at most eight decimal places; turning it off generally uses two. Trailing zeroes are removed. Summary GPA/rating values and map weights use compact formatting of at most two decimals regardless of that toggle. These display choices do not change the model or impose a final-grade policy.
+**Ridiculously precise mode** generally formats calculated values to at most eight decimal places; turning it off generally uses two. Trailing zeroes are removed. Headline GPA/rating values and map weights use compact formatting of at most two decimals regardless of that toggle. Expanded GPA/rating arithmetic follows the precision toggle. These display choices do not change the model or impose a final-grade policy.
 
 ## Display ratings and GPA
 
@@ -270,11 +287,17 @@ Weight describes how possible points enter the current formula. Impact answers w
 
 For **90/100** and **40/50**, the first assignment's weight is **100/150 = 66.6666…%**. Its impact is **86.6666…% − 80% = +6.6666… percentage points**. Weight and impact are not interchangeable.
 
+The second assignment has positive weight **50/150 = 33.3333…%**, but its impact is **86.6666…% − 90% = −3.3333… percentage points**. A negative impact means the current grade is lower with that assignment included. A valid zero impact means removing it leaves the grade unchanged; an unavailable impact means there is no usable comparison.
+
+Weight is a share of possible points under the formula, not a promise about the benefit of one more earned point. With a **50% assignment minimum**, both **1/10** and **2/10** contribute **5/10**. That assignment can have positive weight while this particular score increase has no effect.
+
 Impact is a leave-one-out comparison using today's model, not the historical change when the assignment was posted. It removes replacement rules involving the removed assignment, including any benefit it supplied to other targets. Removing the only counted assignment in a category can deactivate that category and renormalize the remaining weights. In the **84%** weighted example above, removing Homework leaves Tests at **80%**, so Homework's impact is **+4 percentage points**.
 
 Percentage courses label impact **pp**, meaning percentage points. Average courses convert the internal difference to average points; **3.5 − 3.4 = +0.1 average points**. Impacts use unrounded grades even when the profile rounds the final grade. Formatting can round the label. If removal leaves no valid comparison grade, including when the assignment is the only counted score, the impact is unavailable.
 
 Weight-map circle **areas** are proportional to shares on one scale across categories. Radii scale with the square root of weight: twice the weight means twice the area, not twice the diameter. Positive weights sum to 100%, subject to formatting; impacts do not. A zero-weight category can retain list entries without circles. Very small positive weights can display as **<0.01%**.
+
+The map rescales its circles each time so the largest has a fixed maximum size. Compare the listed percentages when switching between current weight and the ungraded preview: an assignment can keep the same circle size while its share changes.
 
 The map always uses **posted** assignments and the grading rules read from Aeries, including while testing is active. Saved hypothetical profile changes, added assignments, and future replacement rules do not change it. Circles and list entries follow numeric-aware assignment-number order.
 
@@ -325,7 +348,7 @@ candidate fraction     = source fraction, or min(source fraction, cap / 100) wit
 candidate target score = candidate fraction × target possible
 ```
 
-A **90/100** test replacing a **40/50** quiz proposes **0.90 × 50 = 45** earned points for the quiz. The source still counts as **90/100** in its own category; it is not consumed or moved to the target's category. The target keeps its own possible points and category.
+A **90/100** test replacing a **40/50** quiz proposes **0.90 × 50 = 45** earned points for the quiz. The source still counts as **90/100** in its own category; it is not consumed or moved to the target's category. The target keeps its own possible points and category. Replacement conversion does not use the raw-mark conversion's round-down-to-hundredths rule: a **2/3** source can propose **6.6666…/10** for a **0/10** target.
 
 | Policy or condition | Behavior |
 | --- | --- |
@@ -379,9 +402,13 @@ Final rounding can affect the minimum. For a lone 100-point assignment, a **90%*
 
 Turn off counted assignment ranges before solving: the tool holds other scores at single values. Maximum and increment are **gradebook points**, not number-correct units. **Apply hypothetical score** writes the result into the local point-score draft and checks Count. Relevant scenario or policy changes invalidate the saved solution and require a new calculation. The result is specific to the supplied maximum, increment, rules, and baseline, not a prediction of future teacher policy.
 
+The step grid always begins at zero; it is not anchored to the assignment's current score. A result of **0 points required** is valid when including a scored zero still reaches the target. It does not mean the assignment stays ungraded or excluded. A result can also be lower than an existing score because the solver is finding a replacement hypothetical score, not additional points to earn.
+
 ## Score-range calculation
 
 Turn on **Range** for one or more assignments and enter nonnegative lower and upper bounds, with lower no greater than upper. Counted ranges require positive possible points. Percentage-based books allow **Points** or **# correct**; raw bounds need a positive raw total and use the [round-down conversion](#raw-marks-and-gradebook-points). Native four-point books use points.
+
+For an assignment with a usable single score, enabling Range initializes both bounds from that score. For a blank score, it starts at zero through the available total. Review these initial values; they are editable defaults, not predicted outcomes. Equal bounds are valid. Bounds above possible points are also allowed, with any configured assignment ceiling applied during calculation. Ranges have no separate score-increment control.
 
 Switching display units preserves each endpoint's entered units and precision. Two raw bounds are checked for order in raw units before truncation; mixed-basis bounds are compared using their actual point scores. Turning Count off omits that range. Turning Range off returns to the saved single-score draft rather than selecting one of the bounds.
 
@@ -413,7 +440,7 @@ The lab's temporary state and saved course policies have different lifetimes:
 | Action | Effect |
 | --- | --- |
 | Per-assignment Reset | Restore that posted assignment's score/denominator/inclusion draft and remove its range. Saved grading and replacement policies remain active. |
-| Reset hypothetical changes | Clear all score edits, ranges, and added assignments, then reload the saved replacement-rule list. Testing remains active. |
+| Reset hypothetical changes | Clear all score edits, ranges, and added assignments, then reload the saved replacement-rule list. Testing remains active; the planner fields are not explicitly cleared. |
 | Exit grade testing | Clear the temporary scenario and planner fields and restore the original posted display. |
 | Reload, switch gradebooks/terms, change profile/year, or detected gradebook-data refresh | Discard the temporary scenario. A gradebook/filter transition can close testing while fresh rows load. |
 | Clear saved grading profile | Remove the custom grading policy and its form draft; testing falls back to the rules read from Aeries. Saved replacement rules are separate. |
@@ -432,7 +459,7 @@ Before showing posted impacts or the weight map, the adapter reconstructs the lo
 | Missing-only filter | Blocks reconstruction while enabled. |
 | Category totals | At least one recognized category total is required. Every counted category must match a reported category. |
 | Percentage/point category totals | Reconstructed effective earned and possible totals must each differ from the reported values by no more than **0.011 points**. |
-| Average-category totals | Compare the reconstructed average to the displayed average, using tolerance `max(0.011, half of the last displayed decimal unit + 0.000000001)`. These books can report a zero points denominator. |
+| Category totals recognized as averages | Compare the reconstructed average to the displayed average, using tolerance `max(0.011, half of the last displayed decimal unit + 0.000000001)`. These books can report a zero points denominator. A blank grade has no recognized average unit and falls back to the earned/possible points check. |
 | Overall percentage | Must be numeric and within **0.011 percentage points** of the reconstructed unrounded percentage. |
 | Overall average | Uses the same display-decimal-based tolerance as average categories, in average points. |
 | Categories present only in the assignment model | Block reconstruction; they are missing from the reported totals. |
@@ -446,6 +473,6 @@ Posted impacts and the map use only the native posted-rule check; a custom simul
 There are two deliberately limited empty-course cases:
 
 - **First-assignment testing:** an entirely ungraded course can enter the lab if the missing-only filter is off, recognized category totals exist, and category earned/possible/grade values and the overall grade are absent or zero. This permits a hypothetical first score without treating existing blanks as zero.
-- **Ungraded weight preview:** an empty current grade can be accepted when its category totals pass the map's reconciliation checks and the overall grade is absent or zero. Percentage categories still need usable earned/possible totals, normally zero; missing totals are not automatically accepted. An average category with no counted rows and no posted average can be accepted in this empty preview.
+- **Ungraded weight preview:** an empty current grade can be accepted when its category totals pass the map's reconciliation checks and the overall grade is absent or zero. Categories without a recognized numeric average still need usable earned/possible totals, normally zero; missing totals are not automatically accepted. This includes blank category grades in a native four-point book.
 
 These checks do not infer arbitrary drop-lowest rules, hidden exclusions, different assignment weighting inside a four-point rubric, zero-point extra-credit policies, or additional teacher adjustments. Course-title recognition and native page selectors also have limits. Load the complete grading period and inspect the visible scores and known policy before changing a profile to explain a discrepancy. When a policy cannot be represented, the official gradebook remains authoritative.

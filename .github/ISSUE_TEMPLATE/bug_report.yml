@@ -1,55 +1,30 @@
 name: Bug report
-description: Tell us what went wrong. Plain language and invented examples are enough.
+description: Tell us what went wrong. You do not need to know the cause or repeat the problem.
 title: "[Bug] "
 body:
   - type: markdown
     attributes:
       value: |
-        Describe what you noticed; you do not need to know the cause. Technical details below are optional, and “I don't know” is fine. Give the issue a short, descriptive title.
+        Give the issue a short, descriptive title. Only the first question is required; answer the others when you can. “I don't know” is fine.
 
-        This issue will be public. Use generic courses and invented scores. Do not share real grades, names, account identifiers, passwords, cookies, logged-in URLs, Aeries page exports, or saved-settings exports. Screenshots are optional and must have private information removed. For a possible security or privacy problem, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md) before posting details here.
+        This issue is public. Use generic courses and invented scores. Do not share real grades, names, account identifiers, passwords, cookies, logged-in URLs, copied Aeries pages, network captures, or saved-settings exports. Screenshots are optional and must have private information removed. For a possible vulnerability or data leak, follow [SECURITY.md](https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md#report-a-vulnerability-privately) before posting details here.
   - type: textarea
     id: actual
     attributes:
       label: What happened?
-      description: Describe the incorrect display, missing control, or error. Type a short error message only if it contains no private data.
-      placeholder: When I..., Playground showed... / The control did not...
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: What did you expect?
-      description: Describe what you expected to see or be able to do. You do not need to know the correct formula.
-      placeholder: I expected...
+      description: Name the page or control, describe what you saw, and say what you expected if you know. Type an error message only if it contains no private data.
+      placeholder: When I..., Playground showed... / I expected to be able to...
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: What led to the problem?
-      description: List the page and clicks you remember. If it happened only once or you cannot repeat it, say so. Do not paste a logged-in URL.
+      label: How did you reach the problem? (optional)
+      description: List the page and clicks you remember. If it happened once or you cannot repeat it, say so. Do not paste a logged-in URL.
       placeholder: |
-        1. Opened the dashboard / an invented course's gradebook...
+        1. Opened the dashboard / a fictional course's gradebook...
         2. Selected...
         3. Noticed...
-    validations:
-      required: true
-  - type: dropdown
-    id: page
-    attributes:
-      label: Where did this happen? (optional)
-      options:
-        - Dashboard or course appearance
-        - Grade testing or calculations
-        - GPA or 4/3/2/1 summary
-        - Assignment weight map
-        - Next-class widget
-        - KBAR music
-        - Settings
-        - Installation or updates
-        - Instructions or documentation
-        - Somewhere else / I am not sure
   - type: input
     id: environment
     attributes:
@@ -60,20 +35,20 @@ body:
     id: script-version
     attributes:
       label: Script version and installation (optional)
-      description: If known, read @version near the top of Aeries Playground in your manager's editor. Say whether you used a release or the README install link, and whether this was a fresh install or manual update.
-      placeholder: Version...; release tag or main link...; fresh install or update... / I don't know
+      description: If known, read @version near the top of Aeries Playground in the manager's editor. Include a release tag or source commit if you know it, and say whether this was a fresh install or manual replacement.
+      placeholder: Version...; release or main link...; fresh install or replacement... / I don't know
   - type: textarea
     id: example
     attributes:
-      label: Small invented example or relevant settings (optional)
-      description: For calculations, fictional scores and grading rules help; distinguish zero, blank, and excluded work. Otherwise describe the relevant control or setting. Do not attach page source, logs with account data, or a settings export.
+      label: Invented example or relevant settings (optional)
+      description: Fictional scores and grading rules help with calculations. Distinguish zero, blank, and excluded work. For other problems, describe the setting or control. Do not attach page source or a settings export.
       placeholder: |
-        Fictional Course A uses total points. Practice A is 8/10, Quiz B is 0/10, and Project C is blank/20.
-        I expected 40% from the two graded assignments. The value I actually saw was...
+        Fictional Course A uses total points: Practice A is 8/10, Quiz B is 0/10, and Project C is blank/20.
+        I expected 40% from the two graded assignments. Playground displayed...
         The relevant setting was...
   - type: markdown
     attributes:
       value: |
-        You do not need to clear saved settings or share account access to report a problem. If you already compared with the script disabled and reloaded, you can mention the result above.
+        You do not need developer tools, account access, or a settings reset to report a problem. If you already compared with the script disabled and reloaded, mention the result above.
 
-        [Troubleshooting](https://github.com/sodium-qed/aeries-playground/blob/main/docs/FEATURES.md#troubleshooting) · [Optional details for specific features](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md#use-a-small-invented-example)
+        [Troubleshooting](https://github.com/sodium-qed/aeries-playground/blob/main/docs/FEATURES.md#troubleshooting) · [Optional details for specific features](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md#extra-details-that-may-help)

@@ -39,10 +39,13 @@
  * change account settings, request a password, read login cookies, or fetch
  * additional Aeries records. These are descriptions of this file, not a
  * security certification or protection against a malicious replacement.
- * Full policy and private reporting: SECURITY.md in the official repository.
+ * Full policy and reporting instructions: SECURITY.md in the official repository.
  *
  * CONTROLS
  * - S outside editable controls opens Settings; the manager menu also works.
+ *   Feature toggles apply and attempt to save immediately. Reopen Settings
+ *   to check for a storage error. If saving fails, the previous stored choice
+ *   can return on reload even though the change worked in this tab.
  * - Grade tools do not require public schedules or KBAR. Leave "What class
  *   is next (MVHS)" off and do not start KBAR to avoid those integrations.
  *   Aeries, your browser, and your manager can still make their own requests.
@@ -75,9 +78,11 @@
  *   memory, not added to storage or external requests. Saved course keys can
  *   independently contain school, gradebook, term, section, or year values.
  * - Posted score values, raw marks, calculated grades/GPAs, hypothetical
- *   score edits and ranges are not written to this version's configuration.
- *   Scenarios reset on exit, reload, scope/gradebook changes, or a recognized
- *   gradebook refresh. This is not a guarantee of secure memory erasure.
+ *   score edits and ranges remain working data. Current features do not add
+ *   these values to saved configuration.
+ *   Scenarios reset when you exit grade testing, reload, change scope or
+ *   gradebooks, or a recognized gradebook refresh occurs. Unsaved working
+ *   data in an open or browser-restored page is not securely erased.
  * - The userscript manager stores configuration under aeries-playground-v1:
  *   toggles and schedule consent; profile/year labels; course names and keys;
  *   nicknames, icons, periods, inclusion and Honors/AP choices; colors,
@@ -88,14 +93,18 @@
  *   references to hypothetical assignments, but not their entered scores.
  *   Grading-profile drafts save on edit; added/removed replacement rules save
  *   automatically. Invalid drafts can leave the last valid policy active.
- * - Select a separate profile/year manually before browsing another account's
- *   courses or a new school year. Matching identifiers do not select profiles.
- *   Profiles organize course settings; they are not private accounts or access
- *   controls. Display toggles, colors, default thresholds, schedule consent,
- *   and the default-off Show ungraded assignments preference are global.
+ * - Close other Aeries tabs, then pause Playground before switching students
+ *   or years. Check for a storage error. On the intended account, set the
+ *   profile/year and Save settings while paused, then re-enable. Choosing a
+ *   new profile while active can immediately save the current page's courses
+ *   under that label. Profiles are manual organization, not private accounts
+ *   or access controls. Matching identifiers do not select them. Display
+ *   toggles, colors, default thresholds, schedule consent, and the default-off
+ *   Show ungraded assignments preference remain global.
  * - Saved names and references are not anonymized or encrypted by Playground.
  *   Manager sync/backups can copy them elsewhere. Do not share a settings
- *   export as generic preferences. Upgrading does not erase older storage.
+ *   export as generic preferences. Upgrading does not erase older/imported
+ *   fields; a successful clear replaces the stored configuration.
  *
  * OTHER OPEN TABS
  * Each tab keeps a settings copy. Ordinary saves are last-write-wins, with
@@ -109,9 +118,10 @@
  *
  * OPTIONAL PUBLIC SCHEDULE REQUESTS
  * The schedule toggle and consent flag start off. An older enabled widget
- * without the consent flag is forced off. After opt-in, new requests start
- * with Playground enabled on a visible dashboard. Hidden documents defer
- * refreshes; hiding a tab does not cancel an already-started transfer.
+ * without the consent flag is forced off. Opt-in permits both schedule
+ * services and the clock check; there is no separate seconds toggle. New
+ * requests start with Playground enabled on a visible dashboard. Hidden tabs
+ * defer refreshes; hiding a tab does not cancel an already-started transfer.
  * The request helper accepts only these named, constant endpoints:
  * - GET https://mvhs-app-d04d2.firebaseio.com/days.json
  * - GET https://mvhs-app-d04d2.firebaseio.com/weekday-map.json
@@ -132,8 +142,9 @@
  * omission, headers, cancellation, and timeouts depend on the manager/browser.
  *
  * The code requests 15-second Firebase and 10-second bell.plus timeouts.
- * They are not an independent watchdog: Tampermonkey documents that anonymous
- * requests use fetch mode and fetch-mode timeouts do not work in Chrome.
+ * There is no independent watchdog. Tampermonkey documents that anonymous
+ * requests use fetch mode and warns that fetch-mode timeouts do not work in
+ * Chrome; behavior still needs checking in the installed manager/browser.
  * Completed responses must be status 200, valid JSON, at most 200,000 JavaScript
  * characters, and have a finalUrl exactly equal to the requested endpoint.
  * The size check is after receipt, not a download cap. The final-URL check
@@ -183,9 +194,11 @@
  * - GM_getValue / GM_setValue read/write the configuration described above.
  *   GM_registerMenuCommand adds Settings and KBAR menu commands.
  *   GM_xmlhttpRequest supplies the optional public schedule/clock requests.
- *   @connect names the two schedule hosts without a wildcard. The grant
- *   remains available when schedules are off; consent is a code-level check,
- *   not a separate permission sandbox or a limit on all page requests.
+ *   @connect names two schedule domains without a wildcard in this file.
+ *   Tampermonkey domain permissions also include subdomains; manager settings
+ *   can add permissions. These are broader than the five constant endpoints.
+ *   The grant remains available while schedules are off; consent is enforced
+ *   by this source, not a separate sandbox or a limit on all page requests.
  * - There are no @require dependencies, Playground analytics endpoints, or
  *   downloaded scripts evaluated in Aeries by this source. YouTube's iframe
  *   loads third-party code as described above. Source links are normal visits.
@@ -197,20 +210,22 @@
  * - Review GradeDOM, el, labContain, persist, clearSavedSettings,
  *   serializePlanningRules, saveProfile, requestScheduleJSON,
  *   scheduleRequestsAllowed, abortScheduleRequests, requestBellPlusClock,
- *   verifiedBellSeconds, kbar, and kbarShortcut. The repository checker only
- *   compiles JavaScript and checks basic metadata; it does not run the UI,
- *   audit data flows, or verify manager/browser/network behavior.
+ *   verifiedBellSeconds, kbar, and kbarShortcut. Repository checks compile
+ *   JavaScript, check basic metadata and supported local documentation links,
+ *   and test those checkers. They do not test calculations or live UI, audit
+ *   data flows, or verify manager/browser/network behavior.
  * - The license expressly permits complete-source AI, automated, and human
  *   review, including paid review, without advance permission. Preserve its
  *   notices and send the script alone, without account access or private data.
  *   AI/static review is not an independent audit or a guarantee of safety.
  *
  * UPDATES AND REPORTING
- * @downloadURL none requests manual updates and disables update checks in
- * a fresh Tampermonkey setup. Existing update preferences can persist; other
- * managers may behave differently. Check your installed script's settings
- * and review the complete replacement file before installing it. Installation
- * and updating may separately contact the source host. Keep one copy enabled.
+ * @downloadURL none requests manual updating; Tampermonkey documents it as
+ * disabling update checks. This metadata is not an inspection of the installed
+ * settings: existing preferences can persist, and other managers can differ.
+ * Check the installed script's update settings and review each replacement
+ * file. Installation and updating can separately contact the source host.
+ * There is no self-updater in this source. Keep one copy enabled.
  *
  * Use fictional examples in issues, commits, pull requests, and logs. Never
  * share real page source/DOM, student identifiers, grades, identifiable
@@ -218,59 +233,213 @@
  * Exports can include data invisible on screen; ignore rules do not sanitize
  * uploads or erase tracked files/history. For vulnerabilities, use "Report
  * a vulnerability" on the repository Security tab if that private option is
- * available. Otherwise ask for a private channel in an issue without details.
- * This comment does not enable private reporting or promise a response time.
+ * available. Otherwise ask for a private channel in an issue without details,
+ * then wait for a private route before sending the report. Ordinary issues
+ * and comments are public. This comment neither enables private reporting nor
+ * establishes its availability or promises a response time.
  * If account data was exposed, contact the owner/maintainer privately without
  * reposting it. Reset credentials/revoke sessions through their provider as
  * appropriate; deleting a file alone cannot undo an exposure.
  */
 
 /*
- * Aeries Playground licensing
+ * BEGIN LICENSE READING EDITION
  *
- * Effective software license: Aeries Playground Open Source License, Version 1.0
+ * Aeries Playground Open Source License, Version 1.0
+ * Restated reading edition - 25 October 2026
  * Custom identifier: LicenseRef-Aeries-Playground-Open-Source-1.0
  *
- * READING THIS FILE
+ * Copyright (c) 2026 sodium-qed
  *
- * The complete operative Version 1.0 license follows the "BEGIN EFFECTIVE
- * LICENSE" marker below. Its wording is unchanged. These introductory notes
- * explain the license's status and navigation; they add no conditions and do
- * not replace or expand the operative grant.
+ * This edition reorganizes and restates the existing Version 1.0 permissions
+ * and conditions. It explains the current terms and adds no permission,
+ * restriction, license version, or transfer of copyright.
  *
- * The license permits use, study, modification, redistribution, and commercial
- * services. Distributed covered copies must preserve notices, identify changes,
- * use the same license for covered modifications, and provide recipients with
- * complete corresponding source. Private changes need not be published.
+ * The complete original grant is included in:
+ * LICENSES/LicenseRef-Aeries-Playground-Open-Source-1.0.txt
  *
- * Section 3 expressly permits submitting the COMPLETE source, including private
- * modifications, to ChatGPT, other AI services or models, automated scanners,
- * and human reviewers, including paid services. Source-sharing requirements
- * concern recipients, not compulsory publication to everyone. Review permission
- * does not grant rights in private account data or another person's material.
+ * That original text remains authoritative if this restatement differs from it.
+ * The installable userscript contains both this reading edition and the complete
+ * original grant, so a standalone copy carries the terms with it. Section
+ * references below refer to this reading edition; docs/LICENSING.md maps them
+ * to the original seven sections.
  *
- * VERSION STATUS AND OTHER RIGHTS
+ * 1. WHAT THE LICENSE COVERS
  *
- * A complete proposed rewrite, Version 1.1, is in docs/LICENSE-PROPOSAL.md.
- * It is NOT effective. The reviewed history includes retained contributions
- * under Version 1.0 without established authority to apply new terms to all of
- * that material. Merely publishing proposed terms does not provide that authority.
- * See docs/LICENSING.md for the current obligations and revision requirements.
+ * The "Software" is the code and accompanying material distributed under this
+ * license. Material expressly supplied under separate terms keeps those terms.
+ * A "Licensor" is a copyright holder offering material under this license;
+ * the permissions come from each Licensor for that Licensor's material.
+ * Copyright remains with the respective holders.
  *
- * Earlier valid grants remain available for the copies and material they cover,
- * including Version 1.0 and any valid MIT grants. Nothing here rewrites earlier
- * repository history, tags, or release assets. Separately licensed material
- * retains its own terms. Copyright remains with the respective rights holders.
+ * In this edition, "covered work" means the Software or a copyright-derived
+ * work based on it. The same-license condition concerns that covered material;
+ * it does not take ownership of independent work or change third-party terms.
+ *
+ * 2. PERMISSION FOR EVERYONE, INCLUDING COMMERCIAL USE
+ *
+ * Every Licensor grants everyone a nonexclusive, worldwide, royalty-free
+ * copyright license to use, reproduce, modify, create derivative works of,
+ * display, perform, and distribute the licensed material, in source or other
+ * forms, subject to these conditions. The grant is perpetual and cannot be
+ * revoked except for breach under the correction procedure in section 9.
+ *
+ * You may exercise these permissions for any purpose, including a commercial
+ * purpose. They apply to every person and organization, every field of activity,
+ * and every technology. They continue to apply when the Software is extracted
+ * from this project, renamed, used alone, or included in another distribution.
+ *
+ * No separate signature, registration, advance approval, or payment to a
+ * Licensor is required.
+ *
+ * 3. PRIVATE USE, CHANGES, AND NOTICES
+ *
+ * You may download, install, run, read, inspect, analyze, copy, and change the
+ * Software for personal, educational, business, or other purposes. You may keep
+ * backups, move copies between your devices, and store them in a private cloud.
+ * You do not have to publish private changes or send them to a Licensor.
+ *
+ * Keep the existing copyright, attribution, license, and third-party notices
+ * in copies. Do not misrepresent the Software's origin or claim that a Licensor
+ * approved your modifications.
+ *
+ * Merely running the Software, including a modified version used to provide a
+ * service, does not require a public release of private changes. Giving someone
+ * a copy is distribution even when the transfer is private; sections 5 and 6
+ * explain the conditions that apply to those copies.
+ *
+ * 4. COMPLETE-SOURCE AI, SCANNER, AND HUMAN REVIEW
+ *
+ * You may provide the COMPLETE source code, including privately modified copies,
+ * to ChatGPT, any other AI service or model, automated scanners, and human
+ * reviewers for explanation, analysis, debugging, testing, or security auditing.
+ * You may upload the entire source for these purposes. Paid reviewers and
+ * commercial review services are permitted without asking a Licensor.
+ *
+ * Each Licensor directly permits reviewers, service providers, and their
+ * processors to receive, copy, store, process, and analyze the submitted code;
+ * make working changes for the review; produce results; and retain review
+ * records. They may return reviewed code, patches, and proposed changes to the
+ * person requesting review. No separate signature or permission is needed.
+ *
+ * You and the reviewers may publish findings, explanations, and security reports,
+ * including relevant code excerpts. Independently created findings, reports,
+ * and AI outputs do not acquire this license merely because the Software was
+ * reviewed. Copied or derived material remains covered to the extent copyright
+ * applies, while the independent remainder does not.
+ *
+ * Keep the notices when supplying source for review. Private review does not
+ * require public disclosure of submitted code, private modifications, or review
+ * records. Distribution of Software or modified copies still follows sections
+ * 5 and 6: source access is for recipients, not compulsory publication to
+ * everyone.
+ *
+ * These express review permissions do not narrow the general grant in section 2.
+ * They concern the Software, not private account data or other material that
+ * a Licensor does not own.
+ *
+ * 5. SHARING, SELLING, AND MODIFYING COPIES
+ *
+ * You may share, mirror, publish, sell, rent, or otherwise distribute unchanged
+ * or modified copies, alone or in a bundle. Public forks and releases of modified
+ * versions are permitted. You may charge for copies, access, support, or services
+ * without a royalty or separate permission from a Licensor.
+ *
+ * When you distribute the Software or a covered derivative work:
+ *
+ * a. Include the complete original Version 1.0 license and keep the existing
+ *    copyright, attribution, and third-party notices. Existing license notices
+ *    must also be kept as described in section 3. You may add accurate notices
+ *    for your own contributions.
+ *
+ * b. Identify modified versions as modified. Give a brief description of the
+ *    changes and their dates. Do not present them as an official release or
+ *    imply a Licensor's endorsement.
+ *
+ * c. License the covered work, including your modifications, under the same
+ *    Version 1.0 terms. Every recipient automatically receives the license
+ *    permissions directly from the relevant copyright holders. Do not impose
+ *    additional legal or contractual restrictions on exercising those rights.
+ *    A recipient who paid for a copy may still share it further.
+ *
+ * d. Give every recipient the complete corresponding source for the covered
+ *    work, including your modifications, using the delivery options in section 6.
+ *
+ * 6. WHAT SOURCE TO PROVIDE AND HOW TO PROVIDE IT
+ *
+ * Complete corresponding source is the preferred form for changing the version
+ * you distribute. It includes your modifications and any project-specific files
+ * or scripts needed to build, install, and run that version. Deliberately
+ * obfuscated code, minified code, and generated intermediate output do not
+ * substitute for that preferred form.
+ *
+ * General-purpose tools and unchanged third-party dependencies need not be
+ * included if they are ordinarily available separately. Their own license
+ * terms still apply.
+ *
+ * You may include the complete corresponding source with the copy, or give
+ * clear instructions for obtaining it without an additional charge through a
+ * readily accessible means. Maintain that means for as long as you distribute
+ * the version. An unchanged source distribution that already contains the
+ * complete corresponding source and license satisfies this requirement.
+ *
+ * The obligation is to provide source access to recipients. It does not require
+ * making private modifications or the source available to everyone.
+ *
+ * 7. INDEPENDENT WORK, SEPARATE TERMS, AND OTHER RIGHTS
+ *
+ * Independent software and material do not have to adopt this license merely
+ * because they are bundled with the Software, run alongside it, communicate
+ * with it, or are used to review it. Separately licensed third-party material
+ * keeps its own terms and notices.
+ *
+ * The license does not restrict independently written implementations, ideas,
+ * facts, or other material outside copyright protection. It does not limit
+ * fair use, fair dealing, or other rights and exceptions provided by law.
+ *
  * No trademark rights or permission to imply endorsement are granted.
  *
- * This is a custom license, not an OSI-approved license. Its open-source design
- * intent and custom LicenseRef identifier are not a claim of OSI approval,
- * SPDX License List inclusion, or compatibility with another license.
+ * 8. EARLIER COPIES AND OTHER VALID LICENSES
  *
- * The full operative text controls. For current contribution instructions, see
- * CONTRIBUTING.md. For code-review and reporting precautions, see SECURITY.md.
+ * Valid permissions already received for earlier copies remain available,
+ * including permissions under MIT where they were actually granted. This
+ * license does not revoke or replace those permissions and does not apply
+ * automatically to earlier repository history. You may rely on another valid
+ * license for the copy and material it covers.
  *
- * BEGIN EFFECTIVE LICENSE
+ * This reading edition preserves Version 1.0. It neither applies new terms to
+ * someone else's contribution nor changes the grants attached to earlier tags,
+ * release assets, or downloaded copies.
+ *
+ * 9. BREACH, WRITTEN NOTICE, AND CORRECTION
+ *
+ * If you breach the terms, a Licensor may notify you in writing. Your rights
+ * under this license in that Licensor's material end if you do not correct the
+ * breach within 30 days after receiving the notice. Correction includes ending
+ * noncompliant distribution and taking reasonable steps to remedy the breach.
+ *
+ * Compliant recipients retain their own directly granted rights; your breach
+ * does not terminate theirs. Rights you independently hold under another
+ * license or under law remain unaffected.
+ *
+ * 10. WARRANTY AND LIABILITY
+ *
+ * To the extent applicable law permits, the Software comes "as is," without
+ * warranties of any kind. To the same extent, no Licensor is liable for loss
+ * or damage arising from use of the Software or this license. Rights and
+ * liability that applicable law does not allow to be excluded are not excluded.
+ *
+ * LICENSE IDENTITY
+ *
+ * This is a custom copyleft license. Its name and custom LicenseRef identifier
+ * do not claim OSI approval, inclusion in the SPDX License List, or compatibility
+ * with another license. See docs/LICENSING.md for practical examples, the
+ * original-section map, and the distinction between copyright and ownership
+ * of a repository or a copy.
+ *
+ * END LICENSE READING EDITION
+ *
+ * BEGIN ORIGINAL VERSION 1.0 LICENSE
  *
  * Aeries Playground Open Source License, Version 1.0
  *
@@ -406,7 +575,7 @@
  * here excludes liability or rights that applicable law does not allow to be
  * excluded.
  *
- * END EFFECTIVE LICENSE
+ * END ORIGINAL VERSION 1.0 LICENSE
  */
 
 (() => {
@@ -538,7 +707,8 @@ const GradeMath = (() => {
       normalizedRules.push({ sourceId, targetId, onlyIfHigher, capPercent });
     }
 
-    // The assessment counts normally and may also improve earlier scores.
+    // A scored, included source still counts normally. Its percentage can
+    // replace a target score without changing the target's possible points.
     const effective = new Map([...originals].map(([id, row]) => [id,
       {...row,originalEarned:row.earned,replacementSourceId:null,counted:row.included&&row.earned!==null}]));
     const winningReplacements = new Map();
@@ -690,7 +860,7 @@ const GradeMath = (() => {
     const highResult = evaluate(lastIndex);
     if (highResult.error) return highResult;
     if (!meetsTarget(highResult.value)) return { ...highResult, status: 'unreachable' };
-    // Positive weights, original-score replacements, and score limits make
+    // Nonnegative weights, original-score replacements, and score limits make
     // this grade nondecreasing in the selected score. Integer binary search
     // includes both 0 and the largest allowed multiple without scanning them.
     let low = 0, high = lastIndex;
@@ -1912,7 +2082,7 @@ const GradeDOM = (() => {
     badge.title=`${basis} with this assignment minus the grade without it. `+
       (hypothetical?'Uses the current test scores, Count choices, and active grading and replacement rules. ':'Uses the grading rules shown by Aeries. ')+
       (rules.averageMaximum?'Shown in average points. ':'pp means percentage points. ')+
-      'Removing a replacement source also removes its effect on other assignments. This is not the change since posting; effects do not add up.';
+      'Uses unrounded course grades. Removing a replacement source also removes its effect on other assignments. This is not the change since posting; effects do not add up.';
     if(delta===null)badge.title=(!assignment||assignment.included===false||assignment.earned===null
       ?'This assignment is not currently counted. '
       :'There is no comparison grade after removing this assignment. ')+badge.title;
@@ -2238,7 +2408,7 @@ const GradeDOM = (() => {
     buildGradingProfileUI(profileBody,()=>{renderGradeLabResult();refreshPlanningUI();renderGradeExplanation();});
     const tools=el('div',null,{id:'ap-lab-tools'});tools.hidden=true;
     const target=el('section',null,{class:'ap-plan-section'});
-    target.append(el('h3','What do I need? · Hypothetical score'),note('For each candidate score evaluated during the search, this calculator counts the assessment itself, applies its replacement rules, and checks whether your target course grade is reached.'));
+    target.append(el('h3','What do I need? · Hypothetical score'),note('Find the smallest score on a point-increment grid starting at zero, up to your maximum. Other entered scores stay fixed. Each candidate evaluated counts the selected assignment and recalculates replacements, assignment limits, and final rounding.'));
     const grid=el('div',null,{class:'ap-plan-grid'});
     const assignment=planningSelect('ap-lab-target-assignment','Choose an assignment');
     const desired=planningNumber('ap-lab-target-value'),maximum=planningNumber('ap-lab-target-max'),step=planningNumber('ap-lab-target-step');
@@ -2252,18 +2422,18 @@ const GradeDOM = (() => {
     const actions=el('div',null,{class:'ap-lab-actions'});actions.append(solve,apply);
     target.append(grid,ruleSummary);
     const replacements=el('section',null,{class:'ap-plan-section'});
-    replacements.append(el('h3','Replacement rules used in this calculation'),note('Choose which earlier scores the assessment can replace and when. You can add several rules for the same assessment. These rules also apply to the rest of the lab.'));
+    replacements.append(el('h3','Replacement rules used in this calculation'),note('Choose the source and target of each replacement. Date order is not checked. You can add several targets for one source; these rules also apply to the rest of the lab.'));
     const replacementGrid=el('div',null,{class:'ap-plan-grid'});
     const source=planningSelect('ap-lab-replace-source','Choose a source'),destination=planningSelect('ap-lab-replace-target','Choose a target');
     const policy=planningSelect('ap-lab-replace-policy','Choose a policy',[['higher','Only if higher'],['always','Always replace']]);
     const cap=planningNumber('ap-lab-replace-cap');
-    replacementGrid.append(planningField('Assessment supplying the score',source),planningField('Earlier assignment it can replace',destination),planningField('Replacement policy',policy),planningField('Replacement cap (%) — optional',cap));
+    replacementGrid.append(planningField('Assessment supplying the score',source),planningField('Target assignment it can replace',destination),planningField('Replacement policy',policy),planningField('Replacement cap (%) — optional',cap));
     const list=el('div',null,{id:'ap-lab-replacement-list'}),message=note('','ap-plan-message');message.id='ap-lab-replacement-message';message.setAttribute('aria-live','polite');
     const add=button('Add hypothetical replacement',addPlanningReplacement);add.id='ap-lab-replace-add';
     const save=button('Save replacement rules for this course',savePlanningReplacementRules);save.id='ap-lab-replace-save';
     const reset=button('Load saved replacement rules',()=>{gradeLab.replacementDraft=clone(planningCourse().replacementRules||[]);gradeLab.replacementListSignature='';renderGradeLabResult();});reset.id='ap-lab-replace-load';
     const replacementActions=el('div',null,{class:'ap-lab-actions'});replacementActions.append(add,save,reset);
-    replacements.append(replacementGrid,replacementActions,list,message,note('Added and removed rules save automatically in userscript-manager storage for this course.'),note('A replacement copies the source percentage while preserving the earlier assignment’s points possible. Rules use the source’s entered score; replacements do not cascade through other rules. A cap limits only the replacement score.'),note('Rules stay connected when you rename a hypothetical assignment during this session. After reload, recreated hypothetical assignments must match the saved name and category.'));
+    replacements.append(replacementGrid,replacementActions,list,message,note('Added and removed rules save automatically in userscript-manager storage for this course.'),note('A replacement copies the source percentage while keeping the target’s possible points and category. Rules use original entered source scores and do not cascade. A cap limits the proposed replacement; assignment percentage limits apply afterward.'),note('Rules stay connected when you rename a hypothetical assignment during this session. After reload, recreated hypothetical assignments must match the saved name and category.'));
     target.append(replacements,actions,output,breakdown);tools.append(target);toolbar.append(profileBody,tools,explainBody);
     gradeLab.planning={tools,assignment,desired,maximum,step,desiredLabel,output,apply,source,destination,policy,cap,list,message,explainBody,ruleSummary,breakdown,solve};
     for(const n of [assignment,desired,maximum,step,source,destination,policy,cap])n.addEventListener(n.tagName==='SELECT'?'change':'input',()=>{gradeLab.targetSolution=null;apply.disabled=true;breakdown.replaceChildren();output.textContent='Inputs changed. Calculate the required score again.';if(gradeLab.active && [source,destination,policy,cap].includes(n))renderGradeLabResult();else refreshPlanningUI();});
@@ -2411,7 +2581,7 @@ const GradeDOM = (() => {
     const upperCategories=new Map((upper?.categories||[]).map(c=>[c.name,c]));
     for(const c of result.categories){
       const share=rules.mode==='weighted'?(weightTotal?c.weight/weightTotal:0):(result.totalPossible?c.possible/result.totalPossible:0),high=upperCategories.get(c.name);
-      const contribution=percent=>`${fmt(percent*share*(rules.averageMaximum||100)/100)} ${rules.averageMaximum?'grade points':'percentage points'}`;
+      const contribution=percent=>`${fmt(percent*share*(rules.averageMaximum||100)/100)} ${rules.averageMaximum?'average points':'percentage points'}`;
       const cells=ranged?[c.name,`${fmt(c.earned)} / ${fmt(c.possible)}`,`${fmt(high.earned)} / ${fmt(high.possible)}`,planningFormat(c.percent,rules),planningFormat(high.percent,rules),`${fmt(share*100)}%`,contribution(c.percent),contribution(high.percent)]:[c.name,`${fmt(c.earned)} / ${fmt(c.possible)}`,planningFormat(c.percent,rules),`${fmt(share*100)}%`,contribution(c.percent)];
       const row=el('tr');for(const text of cells)row.append(el('td',text));body.append(row);
     }
@@ -2443,7 +2613,7 @@ const GradeDOM = (() => {
     const section = el('section', null, { class: 'ap-plan-section', 'aria-labelledby': 'ap-profile-title' });
     section.append(el('h3', 'Course grading profile', { id: 'ap-profile-title' }),
       note(context.current.title, 'ap-plan-message'),
-      note('Changes save automatically in userscript-manager storage for this course. Complete, valid rules apply to local hypothetical simulations; incomplete edits are kept as a draft.', 'ap-plan-message'));
+      note('Changes save automatically in userscript-manager storage for this course. Complete, valid rules apply to local hypothetical simulations. Incomplete edits are saved as a draft; the last valid profile stays in use.', 'ap-plan-message'));
     const message = el('p', '', { class: 'ap-plan-message', role: 'status', 'aria-live': 'polite' });
     const grid = el('div', null, { class: 'ap-plan-grid' });
     const controls = [];
@@ -2476,7 +2646,7 @@ const GradeDOM = (() => {
     section.append(grid);
     const weightsBox = el('section', null, { 'aria-label': 'Category weights' });
     weightsBox.append(el('h4', 'Category weights'),
-      note('Enter a weight for each counted category, including 0 for a category that should not affect the grade. Active weights are normalized for the calculation.', 'ap-plan-message'));
+      note('Enter a nonnegative weight for every category that counts or will count in your scenario. Use 0 for a category that contributes nothing. Active weights are normalized; at least one must be positive.', 'ap-plan-message'));
     const weightGrid = el('div', null, { class: 'ap-plan-grid' });
     weightsBox.append(weightGrid);
     section.append(weightsBox);
@@ -2738,7 +2908,7 @@ const GradeDOM = (() => {
       toolbar.append(actions,el('p',freshNotice?'Gradebook changed. Hypothetical changes were reset.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.',{class:'ap-lab-help'}),
         el('p','',{id:'ap-lab-result','aria-live':'polite','aria-atomic':'true'}),
         el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in userscript-manager storage. Nothing is submitted to Aeries.'),
-        el('p','Turn on Range beside any assignment and choose # correct or Points for its bounds. Multiple ranges update the combined grade automatically. For a single score, edit Score or Complete; the other updates automatically. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; points entered directly are not deliberately rounded. For unequal question values, use raw marks.'));
+        el('p','Turn on Range to enter lower and upper bounds; multiple ranges update the combined grade. Percentage gradebooks allow # correct or Points; four-point gradebooks use Points. For a single score, edit Score or the available Complete fields. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; directly entered points are not deliberately rounded. For unequal question values, use raw marks.'));
       info.element.before(toolbar);
       initPlanningUI();
     }else if(!gradeLab.toolbar.isConnected)info.element.before(gradeLab.toolbar);
@@ -3140,7 +3310,7 @@ const GradeDOM = (() => {
     const remove=button('Remove',()=>{gradeLab.added=gradeLab.added.filter(item=>item!==a);gradeLab.ranges.delete(a.id);gradeLab.addedEditors.delete(a.id);row.remove();renderGradeLabResult();},'ap-lab-remove');remove.setAttribute('aria-label','Remove hypothetical assignment');
     const actions=el('span',null,{class:'ap-lab-row-actions'});actions.append(count,remove,range.toggle);
     heading.append(name,labTag(),actions);
-    main.append(heading,categoryLine,el('p','Enter a score or turn on Range to include this assignment.',{class:'ap-lab-new-help'}));
+    main.append(heading,categoryLine,el('p','Supply a name, category, and positive score total; enter a score or enable Range. Count must be checked for the assignment to contribute.',{class:'ap-lab-new-help'}));
     const scoreField=(label,pair)=>{
       const group=el('div',null,{class:'ap-lab-new-score-field',role:'group','aria-label':label});
       group.append(el('span',label,{class:'ap-lab-new-score-label'}),pair);return group;
@@ -3938,7 +4108,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
         b.dataset.category=category;categoryToolbar.append(b);
       }
       categoryToolbar.append(el('p','',{class:'ap-category-status',role:'status','aria-live':'polite'}),
-        el('p','Filters assignment rows in both views. Grades, impacts, and the weight map still use all assignments.'));
+        el('p','Hides loaded posted rows in both Aeries views. Calculations and the weight map still use all loaded assignments; added hypothetical cards stay visible. Aeries’ separate missing-only filter must be off for a complete baseline.'));
       info.element.parentElement.insertBefore(categoryToolbar,info.element);categorySignature=signature;
     }
     applyCategorySelection();
@@ -4092,7 +4262,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     const showUngraded=input('','checkbox');showUngraded.id='ap-weight-show-ungraded';showUngraded.checked=db.settings.weightMapUngraded;
     showUngraded.setAttribute('aria-describedby','ap-weight-ungraded-help');
     const toggle=el('label',null,{class:'ap-toggle'});toggle.append(showUngraded,el('span','Show ungraded assignments'));
-    const toggleHelp=note('Include ungraded work in a weight preview using its possible points. Gray circles mean ungraded; your current grade does not change. This choice saves automatically.');
+    const toggleHelp=note('Preview known possible points as if the shown work counted; graded shares can change too. Gray circles are ungraded, never zero scores. This map-only choice saves automatically across courses and profiles. Turn it off for current counted shares.');
     toggleHelp.id='ap-weight-ungraded-help';content.append(toggle,toggleHelp);
     showUngraded.addEventListener('change',()=>{
       setToggle('weightMapUngraded',showUngraded.checked);renderTab('weights');
@@ -4105,7 +4275,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     content.append(el('h3',state.title));
     if(state.error){content.append(note(state.error,'ap-banner'));return;}
     if(state.preview)content.append(note('Weight preview · includes ungraded assignments','ap-banner'));
-    content.append(note((state.preview?'Circle area previews each assignment’s share if all shown work with known weights counts. Gray circles are ungraded; this is not a grade forecast.':'Circle area shows each assignment’s share of the current counted grade.')+' All categories use the same size scale. Graded colors follow your grade thresholds. Hover, click, or focus an assignment for details.'));
+    content.append(note((state.preview?'Circle area previews each assignment’s share if all shown work with known weights counts. Gray circles are ungraded; this is not a grade forecast.':'Circle area shows each assignment’s share of the current counted grade.')+' All categories share one size scale within this map. Sizes rescale when the data changes; compare percentages across maps. Graded colors follow your thresholds. Hover, click, or focus an assignment for details.'));
     const style=el('style');style.textContent=`
       .ap-weight-circles{display:flex;flex-wrap:wrap;align-items:center;gap:22px;padding:20px 8px;margin:10px 0;border:1px solid #dbe4ef;border-radius:12px;background:#fafcfe}
       .ap-weight-circle{flex:0 0 auto;min-width:0;min-height:0;padding:0;border:0;border-radius:50%;box-sizing:border-box;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;line-height:1}
@@ -4145,7 +4315,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       detail.querySelector('.ap-weight-jump-error')?.remove();
       detailText.replaceChildren(el('strong',e.name),el('div',e.category+' · '+scoreText(e)));
       detailText.append(el('p',weightText(e)));
-      if(e.weightUnavailable)detailText.append(note('A circle can be sized when Aeries provides positive possible points and, in a weighted class, a category weight.'));
+      if(e.weightUnavailable)detailText.append(note('This assignment stays outside the preview denominators until Aeries provides positive possible points and, in a weighted class, a valid category weight. A known 0% category remains listed without a circle.'));
       else if(state.rules.mode==='weighted')detailText.append(note(weightPercent(e.categoryShare*100)+(state.preview?' preview':' active')+' category share × '+GradeMath.format(e.possible,4)+' / '+GradeMath.format(e.categoryPossible,4)+(state.preview?' preview':' counted')+' category points'));
       else detailText.append(note(GradeMath.format(e.possible,4)+' / '+GradeMath.format(state.totalPossible,4)+(state.preview?' preview':' counted')+' points'));
       if(e.ungraded)detailText.append(note('No grade is assigned to this work in the map. It is not counted as a zero.'));
@@ -4440,15 +4610,15 @@ window.addEventListener('pagehide',abortScheduleRequests);
     const features={weights:'weightMap'};
     const feature=features[name];
     if(feature && (!db.settings.enabled || !db.settings[feature])){
-      content.append(note(`${tabsByName[name]} is turned off. Your saved data is kept.`, 'ap-empty'),button('Enable '+tabsByName[name],()=>{if(!db.settings.enabled)setToggle('enabled',true);setToggle(feature,true);renderTab(name);},'ap-primary'));
+      content.append(note(`${tabsByName[name]} is turned off. The enable button also resumes Playground if paused and can resume previously enabled schedules. Saved settings are kept.`, 'ap-empty'),button('Enable '+tabsByName[name],()=>{if(!db.settings.enabled)setToggle('enabled',true);setToggle(feature,true);renderTab(name);},'ap-primary'));
     }else if(name==='courses')renderCourses();
     else if(name==='weights')renderWeightMap();else renderSettings();
   }
   function renderCourses(){
-    content.append(el('h2','Courses & class periods'),note('Your display names appear on the dashboard. Hover over a name to see the original. Dashboard grade colors and number grades are controlled in Settings. Class periods connect your courses to the MVHS next-class widget. Check the honors/AP courses that receive weighted GPA bonus points, then save course settings.'));
+    content.append(el('h2','Courses & class periods'),note('Edit the courses discovered in this profile/year, then choose Save course settings before changing tabs. Names and icons customize the dashboard; hover a name to see the original. Periods match visible courses to the MVHS schedule. Check Honors/AP only for courses eligible for the supported GPA bonus. Colors and numeric display are in Settings.'));
     const p=profile(),entries=Object.entries(p.courses);
     renderedCourseKeys=JSON.stringify(Object.keys(p.courses));coursesFormDirty=false;
-    if(!entries.length){content.append(note('Open your Aeries dashboard once to discover your courses.','ap-empty'));return;}
+    if(!entries.length){content.append(note('Open your Aeries dashboard to discover its courses, or open a recognized gradebook to discover that course.','ap-empty'));return;}
     const grid=el('div',null,{class:'ap-course-grid'});content.append(grid);const controls=[];
     for(const [key,c] of entries){
       const box=el('div',null,{class:'ap-box'});box.append(el('p',c.title,{class:'ap-course-title'}));
@@ -4460,11 +4630,11 @@ window.addEventListener('pagehide',abortScheduleRequests);
       const detected=live?.schedulePeriod;
       const schedulePeriod=input(c.schedulePeriod);schedulePeriod.maxLength=12;schedulePeriod.placeholder=detected?`Automatic: Period ${detected}`:'Not detected — enter period';
       schedulePeriod.setAttribute('aria-label',`${c.title} class period`);
-      box.append(field('Class period (optional override)',schedulePeriod),note(detected?`Aeries shows Period ${detected}. Leave blank to use it.`:'Enter the period from your class schedule, for example 1 or 7.'));
+      box.append(field('Class period (optional override)',schedulePeriod),note(detected?`Aeries shows Period ${detected}. Leave blank to use it.`:'Enter the exact period from your class schedule, such as 1, 7, or 2A. Suffixes matter when matching the schedule.'));
       const gpaWeighted=input('', 'checkbox');gpaWeighted.checked=c.gpaWeighted===true;
       gpaWeighted.setAttribute('aria-label',`Honors/AP bonus for ${c.title}`);
       const gpaToggle=el('label',null,{class:'ap-toggle'});gpaToggle.append(gpaWeighted,el('span','Honors/AP — weighted GPA bonus'));
-      box.append(gpaToggle,note('Weighted GPA: A = 5, B = 4, C = 3, D = 1, F = 0. Unchecked classes use the unweighted scale.'));
+      box.append(gpaToggle,note('For included courses, checked Honors/AP uses A = 5, B = 4, C = 3, D = 1, F = 0 in weighted GPA. It does not include an excluded course. Choose included courses in the dashboard GPA details.'));
       const scale=el('select');for(const [value,label] of [['percent','Percentage'],['average','Average points']])scale.append(el('option',label,{value}));scale.value=c.scale;
       const row2=el('div',null,{class:'ap-row'});row2.append(field('Bar scale',scale),field('Bar minimum',min),field('Bar maximum',max));box.append(row2);
       const custom=input(Boolean(c.customCutoffs),'checkbox');custom.checked=Boolean(c.customCutoffs);const toggle=el('label',null,{class:'ap-toggle'});toggle.append(custom,el('span','Custom thresholds for this course'));box.append(toggle);
@@ -4486,12 +4656,12 @@ window.addEventListener('pagehide',abortScheduleRequests);
         explanation.id='ap-schedule-consent';n.setAttribute('aria-describedby',explanation.id);box.append(explanation);
       }
     }
-    box.append(note('Toggles apply and save immediately. Impact estimates and the weight map use the open gradebook’s scores and grading rules.'));
+    box.append(note('Toggles apply immediately and attempt to save automatically. Colors, thresholds, profile, and year need Save settings below; save them before changing tabs. Use the gradebook toolbar for score testing and the Weight map tab for posted assignment weights.'));
     box.append(note('Number grades replace only the dashboard letter: 4, 3, 2, or 1 from your thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
-    box.append(note('With 4/3/2/1 enabled, the overall summary displays the average of your threshold-based class ratings; its color indicates the overall band. With it disabled, Current-year GPA displays both unweighted and weighted averages of posted letters. Unweighted A/B/C/D/F = 4/3/2/1/0; honors/AP classes you check use 5/4/3/1/0 for weighted GPA. Select them in Courses or in the GPA details. Both averages ignore plus/minus signs and thresholds.'));
+    box.append(note('Leave 4/3/2/1 off to see both GPAs from posted letters. In the dashboard GPA details, choose included courses and check eligible Honors/AP courses. Both averages use equal course weights and ignore plus/minus: A/B/C/D/F = 4/3/2/1/0, or 5/4/3/1/0 for checked courses in weighted GPA. Turn 4/3/2/1 on for an average of custom class ratings; its color shows the overall band.'));
     box.append(note('Precise mode shows up to 8 decimals for supported calculated values and impacts. Native labels keep their posted formatting; matching on-page data may supply more precise input scores independently of this setting. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const musicBox=el('div',null,{class:'ap-box'});
-    musicBox.append(el('h3','KBAR music · P'),note('With Settings closed, press P outside editable controls to play or pause the English KBAR video on loop. The YouTube player stays hidden outside the visible layout and does not add page scroll space. Use the buttons here to control or close it.'));
+    musicBox.append(el('h3','KBAR music · P'),note('With Playground enabled and this dialog closed, press P outside editable controls to request play/pause. The looping English KBAR player is offscreen; this button does not confirm playback. If silent, close the player and retry or use Open on YouTube below.'));
     musicBox.append(note('Starting KBAR connects to YouTube. It may collect playback information and show ads. Playground sends no grades or course data. Close the player to stop and unload it; P pauses it.'));
     const musicButton=button('Play / pause KBAR (P)',()=>kbar.toggle());musicButton.disabled=!db.settings.enabled;
     toggles.enabled.addEventListener('change',()=>{musicButton.disabled=!db.settings.enabled;});
@@ -4504,9 +4674,9 @@ window.addEventListener('pagehide',abortScheduleRequests);
     musicLinks.append(el('a','YouTube terms',{href:'https://www.youtube.com/t/terms',target:'_blank',rel:'noopener noreferrer'}),document.createTextNode(' · '),el('a','Google privacy policy',{href:'https://policies.google.com/privacy',target:'_blank',rel:'noopener noreferrer'}));
     musicBox.append(musicLinks);box.append(musicBox);
     const scopeBox=el('div',null,{class:'ap-box'});scopeBox.append(el('h3','Separate course settings'));
-    const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('Use a separate profile for each student or account. Switch profiles manually when switching students; on-page identifiers verify score matches only and do not select a settings profile. Use a new year to start fresh.'));
+    const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('When changing students, close other Aeries tabs first, pause Playground here, and reopen Settings to check for storage errors. Switch the Aeries account, then save profile/year here while paused and re-enable. Active Playground discovers the current page into the selected profile. Labels are manual and case-sensitive; score matching does not select them.'));
     grid.append(box,scopeBox);content.append(grid);
-    const colorBox=el('div',null,{class:'ap-box'});colorBox.append(el('h3','Grade colors & thresholds'),note('These settings control dashboard colors and number grades, progress bars, and grade-details colors. Course-specific thresholds override these defaults.'));
+    const colorBox=el('div',null,{class:'ap-box'});colorBox.append(el('h3','Grade colors & thresholds'),note('Default cutoffs set custom 4/3/2/1 bands; course-specific thresholds override them. The palette also colors bars, grade details, and graded map entries. Letter-based GPA is unchanged. Choose Save settings to apply this form.'));
     const colorRows=[];for(let i=0;i<4;i++){const r=el('div',null,{class:'ap-row'});const color=input(draft.colors[i],'color');color.setAttribute('aria-label','Band '+(i+1)+' color');r.append(field(['4 · top band','3 · second band','2 · third band','1 · below all cutoffs'][i],color));let percent=null,avg=null;if(i<3){percent=input(draft.cutoffs[i],'number');avg=input(draft.averageCutoffs[i],'number');percent.step=avg.step='any';r.append(field('Percentage ≥',percent),field('Average ≥',avg));}colorRows.push({color,percent,avg});colorBox.append(r);}content.append(colorBox);
     const message=note('','ap-saving');content.append(button('Save settings',()=>{
       const cut=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.percent.value)),avg=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.avg.value));
@@ -4518,7 +4688,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
 
       const ok=persist();restoreTitles();scan();message.className=ok?'ap-muted':'ap-error';message.textContent=ok?'Saved.':storageError;
     },'ap-primary'),message);
-    const local=el('div',null,{class:'ap-box'});local.append(el('h3','Saved settings'),note('Your userscript manager stores preferences, course names and aliases, and grading-rule references. Posted grades and hypothetical scores are not saved. Disable manager sync if you want settings kept on one device.'),note('Clear saved settings removes profiles, course customizations, and grading rules, then pauses Playground. Reload other Aeries tabs afterward. This does not remove copies held in manager sync or backups.'));
+    const local=el('div',null,{class:'ap-box'});local.append(el('h3','Saved settings'),note('Your userscript manager stores preferences, discovered course names/keys, customizations, grading rules and drafts, and replacement assignment references. Posted grades, hypothetical scores, and ranges are not saved. Review manager sync/backups if you want configuration kept on one device.'),note('Clear saved settings removes profiles, course customizations, and grading rules, then pauses Playground. Reload other Aeries tabs afterward. This does not remove copies held in manager sync or backups.'));
     const clearMessage=note('','ap-saving');local.append(button('Clear saved settings and pause',()=>{
       if(!window.confirm('Clear all Aeries Playground settings, profiles, course customizations, and grading rules? Playground will be paused.'))return;
       if(clearSavedSettings()){renderTab('settings');content.append(note('Saved settings cleared. Playground is paused. Reload other Aeries tabs.'));}

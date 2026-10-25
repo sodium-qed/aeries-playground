@@ -2,7 +2,7 @@ blank_issues_enabled: true
 contact_links:
   - name: Installation and feature help
     url: https://github.com/sodium-qed/aeries-playground/blob/main/README.md#install
-    about: Start with installation instructions and links to the feature guide. You can still report a problem if the instructions do not help.
-  - name: Security and privacy reporting
+    about: Start with setup and the feature guide. Use Bug report if the instructions do not solve your problem.
+  - name: Report a security or privacy problem
     url: https://github.com/sodium-qed/aeries-playground/blob/main/SECURITY.md#report-a-vulnerability-privately
-    about: Read this before sharing sensitive details. It explains how to use private reporting if available or ask for a private channel.
+    about: Read how to report privately or request a private channel. Do not put sensitive details in a public issue.

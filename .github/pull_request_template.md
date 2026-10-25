@@ -1,35 +1,37 @@
 <!--
-Check the README's current maintenance notice before submitting code changes.
-For a possible vulnerability, follow SECURITY.md before posting details publicly.
-Use invented examples. Never include credentials, real grades, copied account
-pages, browser captures, or saved-settings exports.
+Check the README maintenance notice before making commits. Already scheduled
+maintenance is exempt. For vulnerabilities or data leaks, follow SECURITY.md
+before posting publicly. Use invented examples, without account data or exports.
 -->
 
 ## Problem and change
 
-What user-facing problem does this address, what changes, and what will users see or be able to do? Link a related issue if there is one; an issue is not required for a small correction.
+Describe the problem, what you changed, and the result a user will see. A short before/after example helps. Link a related issue if one exists; a small correction needs no issue first.
 
 ## Verification
 
-List the checks you actually ran and their results. State “not run” where appropriate, with any remaining limitation.
+Replace “Not run” with the result of each check you ran. For anything you could not check, state the limitation. A documentation edit made on GitHub can say that local commands were not run.
 
-- Checker tests: `node --test tests/check-userscripts.test.mjs`
-- Syntax and basic metadata: `node scripts/check-userscripts.mjs`
-- Whitespace/diff review: `git diff --check`
-- Affected behavior or documentation: describe the inputs/steps, expected result, and observed result.
+| Check | Result |
+| --- | --- |
+| `node --test tests/check-userscripts.test.mjs tests/check-documentation.test.mjs` | Not run |
+| `node scripts/check-userscripts.mjs` | Not run |
+| `node scripts/check-documentation.mjs` | Not run |
+| `git diff --check` | Not run |
+| Affected behavior or rendered documentation | Describe the input/steps, expected result, and observed result. |
 
-Use the relevant [feature checks in CONTRIBUTING.md](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md#verify-the-behavior-you-change). Distinguish numerical examples, synthetic page fixtures, mocked network/player checks, and live browser verification. The checker tests do not test Playground's features.
+Use the relevant [developer verification guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/DEVELOPMENT.md#verify-the-behavior-you-change). Distinguish formula examples, synthetic page fixtures, mocked requests/player checks, and live browser verification. Checker tests do not test Playground's features; the documentation checker does not validate external links, form schema, or rendering.
 
 ## Documentation and remaining limits
 
-Identify the guides or control text updated and any behavior still unsupported or unverified. If page access, permissions, storage, external requests, update behavior, or safeguards changed, identify the matching changes to the userscript's opening explanation and SECURITY.md.
+Name the guides or help text updated and any behavior still unsupported or unverified. Identify source-comment or license-notice edits separately from executable changes. If permissions, page access, storage, external requests, updates, or safeguards change, update the source's opening explanation and SECURITY.md too.
 
-For documentation work, check links, control names, source behavior, and release availability. Identify source-comment or license-metadata edits separately from executable changes. Keep planned features labeled as planned and a published prerelease distinct from stable Latest; `main` may differ from a tagged asset. Documentation work must not create or republish releases, tags, or assets, and does not require an `@version` bump.
+For documentation changes, check control names, links, source behavior, and release availability. Keep plans, published prereleases, stable releases, and `main` distinct. Documentation work does not require an `@version` bump and must not create or republish releases, tags, or assets.
 
 ## Before submitting
 
-- [ ] The contribution contains no real student data, credentials, logged-in URLs, copied account pages, or saved-settings exports.
-- [ ] I have the right to offer this contribution under the repository's license and have preserved applicable copyright, attribution, and third-party notices.
-- [ ] The description separates completed checks from assumptions and does not claim zero risk or an independent audit.
+- [ ] I reviewed the full diff and attachments and confirmed they contain no real student data, credentials, logged-in URLs, copied account pages, or saved-settings exports.
+- [ ] I have authority to offer this contribution under the repository's license and have preserved applicable copyright, attribution, and separate third-party notices.
+- [ ] The description records actual checks and remaining limits without claiming an independent audit or zero risk.
 
-Keep the change focused. See [CONTRIBUTING.md](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md) for first-contribution steps, testing limits, and release guidance.
+See [Contributing](https://github.com/sodium-qed/aeries-playground/blob/main/CONTRIBUTING.md) for the first-change path and contribution terms. Keep the change focused.
