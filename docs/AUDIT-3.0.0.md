@@ -47,3 +47,9 @@ Ordinary cross-tab saves remain last-write-wins and consent is not revoked live 
 ## Frozen source
 
 The approved userscript is **354294 bytes**, SHA-256 `ec9bb512dcd1f966c67499687fdf1c40f2c820711acc9b4f2aa83aafacb4fea6`. The release publisher must verify these exact bytes locally, at the tag, and in the downloaded asset before reporting success.
+
+## Publication verified
+
+Source commit: [`4de1703`](https://github.com/sodium-qed/aeries-playground/commit/4de17030f9e2ca5eb48f72d0026b7695a4e40af8). Tag `v3.0.0` targets that exact commit. [Aeries Playground 3.0.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) was published October 26, 2026 at 07:18:43 UTC (00:18:43 Pacific), with `draft=false`, `prerelease=false`, and verified Latest selection. The coordinator downloaded the attached userscript and independently matched the 354294-byte size and SHA-256 above.
+
+[Repository checks](https://github.com/sodium-qed/aeries-playground/actions/runs/40284991805) and the [release workflow](https://github.com/sodium-qed/aeries-playground/actions/runs/40284991746) succeeded; the publisher reran all 171 tests and 262 local-link checks before release writes. The README pause notice is removed in a subsequent documentation-only commit, leaving the reviewed source, tag, and attached asset unchanged.

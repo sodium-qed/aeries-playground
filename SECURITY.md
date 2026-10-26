@@ -2,7 +2,7 @@
 
 Aeries Playground reads the Aeries page available to the signed-in user and changes its local display. Grade calculations run in the browser; this source does not submit grades or account-setting changes to Aeries. Public schedules and KBAR playback are optional external connections. Saved configuration can reveal school, course, and assignment information even though current features do not save posted or hypothetical score values.
 
-This policy describes the **3.0.0 release candidate source** in [aeries-playground.user.js](aeries-playground.user.js). Publication of stable **3.0.0** has not yet been verified. Older tagged files can behave differently. Use the [feature guide](docs/FEATURES.md) to choose a published download, and review the actual file you install. A version label, static check, or AI review is not a security certification.
+This policy describes the **3.0.0 stable source** in [aeries-playground.user.js](aeries-playground.user.js). Stable publication and the exact source/asset were verified on October 26, 2026. Older tagged files can behave differently. Use the [feature guide](docs/FEATURES.md) to choose a published download, and review the actual file you install. A version label, static check, or AI review is not a security certification.
 
 **Found a possible vulnerability?** Use [private reporting](#report-a-vulnerability-privately). For controls, start below; for the data retained after a visit, see [saved configuration](#saved-data-and-settings-profiles).
 

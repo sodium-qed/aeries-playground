@@ -1,8 +1,10 @@
 # Maintenance and release status
 
-The complete documentation redo was published in [`81d9114`](https://github.com/sodium-qed/aeries-playground/commit/81d9114d288bc7b38561da2f4f1ab311f9685744). The subsequent full code audit starts from that revision, preserves the documentation and existing license grants, and prepares stable **3.0.0**. Publication is not established until the tag, source, asset, stable state and Latest selection are verified.
+The complete documentation redo was published in [`81d9114`](https://github.com/sodium-qed/aeries-playground/commit/81d9114d288bc7b38561da2f4f1ab311f9685744). The full code audit was integrated and published in [`4de1703`](https://github.com/sodium-qed/aeries-playground/commit/4de17030f9e2ca5eb48f72d0026b7695a4e40af8), preserving the documentation and existing license grants.
 
-The public README pause notice concerns contributor timing only; it never limits the scope of the audit. It remains until release verification succeeds. Scheduled maintenance is exempt. Historical releases including 2.3.0 and 2.4.0 remain untouched.
+[Stable 3.0.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) was published **October 26, 2026 at 00:18:43 America/Los_Angeles**. The tag targets the reviewed commit, the downloaded userscript matches its approved bytes/hash, and GitHub reports published, stable, and Latest. Both Repository checks and the guarded publisher succeeded. Historical releases including 2.3.0 and 2.4.0 remain untouched.
+
+The temporary README pause notice was removed only after successful audit, fixes, checks, and release verification. That notice concerned contributor timing only; it never limited either overhaul's scope.
 
 See the [code-audit coverage and verification record](AUDIT-3.0.0.md), [release notes](RELEASE-3.0.0.md), [developer checks](DEVELOPMENT.md#run-the-repository-checks), and [available downloads](FEATURES.md#available-release).
 

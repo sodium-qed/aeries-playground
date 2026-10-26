@@ -17,12 +17,12 @@ For installation and supported pages, start with the [README](../README.md). For
 
 ## Available release
 
-This guide describes the **3.0.0** source prepared for stable publication. Until publication is verified, use the release page to check availability; the moving `main` source and a tagged asset are distinct downloads.
+This guide describes the published **3.0.0 stable release**, verified as Latest on October 26, 2026. The moving `main` source and a tagged asset remain distinct downloads.
 
 | Download | What it selects |
 | --- | --- |
-| [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The stable release target for the audited source. Verify publication before downloading. |
-| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | GitHub's currently published stable download. |
+| [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The published stable artifact for the audited source. |
+| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0**, verified at publication; this shortcut can select a later stable release in the future. |
 | [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source; later documentation edits do not replace tagged assets. |
 | [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) | The historical prerelease, preserved under its original tag. |
 
