@@ -2,7 +2,7 @@
 
 A useful contribution can be one sentence: an idea, an unclear instruction, or something that did not work. You do not need to write code or know the cause. A GitHub account is enough to submit an issue or pull request; no other account or service is required.
 
-Before making commits, read the [temporary maintenance notice in the README](README.md). Suggestions and bug reports remain welcome during the pause. Already scheduled maintenance is exempt.
+If the [README](README.md) carries a temporary maintenance notice, follow it before making commits. Suggestions and bug reports remain welcome during a pause; scheduled maintenance is exempt.
 
 ## Choose a starting point
 
@@ -76,7 +76,7 @@ For a possible vulnerability or unintended disclosure, follow the [private-repor
 
 ## Your first change
 
-Choose one focused improvement, following the contributor-pause notice above. A small wording correction needs no issue first. For a larger change, start an issue explaining the user need so the scope can be discussed.
+Choose one focused improvement, following any active maintenance notice. A small wording correction needs no issue first. For a larger change, start an issue explaining the user need so the scope can be discussed.
 
 For a small documentation edit, you can work entirely on GitHub:
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      2.4.0
+// @version      3.0.0
 // @description  Aeries grade tools, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
@@ -19,6 +19,11 @@
 // ==/UserScript==
 
 /*
+ * 3.0.0: Correct grade reconciliation, scenario validation, saved-state
+ * recovery, native-page lifecycle, schedule timeouts and KBAR playback races.
+ * Add synthetic regression coverage and verified stable-release recovery.
+ * See docs/AUDIT-3.0.0.md for coverage and remaining live-browser limits.
+ *
  * 2.4.0 (prerelease): Add a saved Show ungraded assignments
  * toggle inside the weight map. Ungraded work uses neutral gray circles in
  * a points-based weight preview; missing scores never become counted zeros.
@@ -43,8 +48,8 @@
  *
  * CONTROLS
  * - S outside editable controls opens Settings; the manager menu also works.
- *   Feature toggles apply and attempt to save immediately. Reopen Settings
- *   to check for a storage error. If saving fails, the previous stored choice
+ *   Feature toggles apply and attempt to save immediately. Check the visible
+ *   save status for storage errors. If saving fails, the previous stored choice
  *   can return on reload even though the change worked in this tab.
  * - Grade tools do not require public schedules or KBAR. Leave "What class
  *   is next (MVHS)" off and do not start KBAR to avoid those integrations.
@@ -80,8 +85,8 @@
  * - Posted score values, raw marks, calculated grades/GPAs, hypothetical
  *   score edits and ranges remain working data. Current features do not add
  *   these values to saved configuration.
- *   Scenarios reset when you exit grade testing, reload, change scope or
- *   gradebooks, or a recognized gradebook refresh occurs. Unsaved working
+ *   Scenarios reset when you exit grade testing, leave the page, reload, change
+ *   scope or gradebooks, or a recognized gradebook refresh occurs. Unsaved working
  *   data in an open or browser-restored page is not securely erased.
  * - The userscript manager stores configuration under aeries-playground-v1:
  *   toggles and schedule consent; profile/year labels; course names and keys;
@@ -104,7 +109,11 @@
  * - Saved names and references are not anonymized or encrypted by Playground.
  *   Manager sync/backups can copy them elsewhere. Do not share a settings
  *   export as generic preferences. Upgrading does not erase older/imported
- *   fields; a successful clear replaces the stored configuration.
+ *   fields; a successful clear replaces the stored configuration. Unreadable
+ *   or unsupported configuration blocks ordinary saves so visit defaults do
+ *   not overwrite it. Recover storage access and reload a compatible script,
+ *   or explicitly clear it if clearing succeeds. Malformed saved grading
+ *   policies, replacement rules, or drafts are ignored with a recovery warning.
  *
  * OTHER OPEN TABS
  * Each tab keeps a settings copy. Ordinary saves are last-write-wins, with
@@ -141,14 +150,16 @@
  * connection metadata; the clock ID is explicitly Aeries-related. Cookie
  * omission, headers, cancellation, and timeouts depend on the manager/browser.
  *
- * The code requests 15-second Firebase and 10-second bell.plus timeouts.
- * There is no independent watchdog. Tampermonkey documents that anonymous
- * requests use fetch mode and warns that fetch-mode timeouts do not work in
- * Chrome; behavior still needs checking in the installed manager/browser.
+ * The code requests 15-second Firebase and 10-second bell.plus timeouts and
+ * uses a local timer to reject stalled requests and ask the manager to abort.
+ * Background tabs or a suspended browser can delay this timer. Tampermonkey
+ * documents that anonymous requests use fetch mode, whose built-in timeout
+ * does not work in Chrome; transfer cancellation still depends on the manager.
  * Completed responses must be status 200, valid JSON, at most 200,000 JavaScript
  * characters, and have a finalUrl exactly equal to the requested endpoint.
- * The size check is after receipt, not a download cap. The final-URL check
- * does not prevent a manager from following a redirect before rejecting it.
+ * The size check is after receipt, not a download cap. Requests ask the manager
+ * to reject redirects; managers that ignore that option may follow a redirect
+ * before the final-URL check rejects its response.
  * Calendar, period, and clock structures are checked before use. In-memory
  * caches require the same Pacific fetch date and age under five minutes;
  * this does not prove when a publisher last updated its schedule. Failures
@@ -177,9 +188,11 @@
  *   or ad-free: YouTube receives connection/playback information and may use
  *   cookies or other storage. Browser iframe/media requests are outside the
  *   schedule-only GM request helper and its @connect entries.
- * - The player is offscreen, inert, and excluded from accessibility navigation;
- *   its native controls are not the visible fallback. Settings > Open on
- *   YouTube is a visible keyboard-accessible link even if the embed fails.
+ * - The iframe is offscreen, inert, and excluded from accessibility navigation;
+ *   its native controls stay hidden. Settings supplies a visible Play/Pause/Retry
+ *   control and status from provider messages and local requests; that status
+ *   does not prove audio is audible. Settings > Open on YouTube is a visible
+ *   keyboard-accessible link even if the embed fails.
  *   It opens a normal YouTube visit with no-referrer/noopener protections,
  *   without starting or closing the embed. Close an existing player separately.
  * - P requests pause/resume. Pause or failure leaves the iframe loaded and
@@ -212,8 +225,10 @@
  *   scheduleRequestsAllowed, abortScheduleRequests, requestBellPlusClock,
  *   verifiedBellSeconds, kbar, and kbarShortcut. Repository checks compile
  *   JavaScript, check basic metadata and supported local documentation links,
- *   and test those checkers. They do not test calculations or live UI, audit
- *   data flows, or verify manager/browser/network behavior.
+ *   and test those checkers. Synthetic source tests cover calculations,
+ *   parsing, saved settings, UI helpers, public requests, and media state using
+ *   invented fixtures. They do not verify a signed-in Aeries page or installed
+ *   manager/browser/network behavior.
  * - The license expressly permits complete-source AI, automated, and human
  *   review, including paid review, without advance permission. Preserve its
  *   notices and send the script alone, without account access or private data.
@@ -949,10 +964,16 @@ const GradeMath = (() => {
 
   function fromAeries(assignments, rules, options = {}) {
     const fail=error=>({model:null,result:null,error});
+    if(!Array.isArray(assignments))return fail('Assignments must be a list.');
+    if(assignments.some(a=>!a || typeof a!=='object' || Array.isArray(a)))return fail('Each assignment must be an object.');
+    if(!options || typeof options!=='object' || Array.isArray(options))return fail('Reconciliation options must be an object.');
     if(options.partial)return fail('Show all assignments to calculate impacts; the missing-only filter is on.');
-    if(!rules || !Array.isArray(rules.categories) || !rules.categories.length)return fail('Impact estimates need the category totals shown by Aeries.');
+    if(!rules || typeof rules!=='object' || Array.isArray(rules) || !Array.isArray(rules.categories) || !rules.categories.length)return fail('Impact estimates need the category totals shown by Aeries.');
+    const averageMaximum=rules.averageMaximum==null?null:parseNumber(rules.averageMaximum);
+    if(rules.averageMaximum!=null && (averageMaximum===null || averageMaximum<=0))return fail('Enter a positive average-scale maximum.');
     const model={assignments:assignments.map(a=>({id:a.id,name:a.name,category:a.category,earned:a.earned,possible:a.possible,included:a.included})),
-      rules:{mode:rules.mode,weights:{...rules.weights},averageMaximum:rules.averageMaximum??null,scoreFloor:rules.scoreFloor??null,scoreCeiling:rules.scoreCeiling??null,replacements:rules.replacements===undefined?[]:rules.replacements},
+      rules:{mode:rules.mode,weights:{...rules.weights},averageMaximum,scoreFloor:rules.scoreFloor??null,scoreCeiling:rules.scoreCeiling??null,replacements:rules.replacements===undefined?[]:rules.replacements,
+        rounding:rules.rounding,roundingDecimals:rules.roundingDecimals},
       confirmed:true,source:'aeries',updatedAt:null};
     const result=calculate(model.assignments,model.rules);
     if(result.error)return fail(result.error);
@@ -961,15 +982,22 @@ const GradeMath = (() => {
       :'No graded assignments yet; impacts appear when scores are posted.');
     const actual=new Map(result.categories.map(c=>[c.name,c]));
     const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=0.011;
+    // Retain the existing hundredth-scale allowance while respecting coarser
+    // labels. Invalid precision metadata must never turn a comparison into NaN.
+    const displayTolerance=decimals=>{
+      const places=decimals===undefined?2:decimals;
+      return Number.isInteger(places)&&places>=0?Math.max(0.011,0.5*10**-places+1e-9):null;
+    };
     for(const reported of rules.categories){
+      if(!reported || typeof reported!=='object' || Array.isArray(reported))return fail('Aeries category totals are not readable yet.');
       const seen=actual.get(reported.name);
-      if(rules.averageMaximum && reported.unit==='average'){
+      if(averageMaximum!==null && reported.unit==='average'){
         if(options.allowEmpty && result.value===null && !seen && reported.grade===null)continue;
         // Average gradebooks may publish 0 as the points denominator. Check
         // their displayed category averages in the same units instead.
-        const average=seen?seen.percent*rules.averageMaximum/100:0;
-        const tolerance=Math.max(0.011,0.5*10**-(reported.decimals??2)+1e-9);
-        if(reported.grade===null || !Number.isFinite(average) || Math.abs(average-reported.grade)>tolerance)
+        const average=seen?seen.percent*averageMaximum/100:0;
+        const tolerance=displayTolerance(reported.decimals);
+        if(!Number.isFinite(reported.grade) || !Number.isFinite(average) || tolerance===null || Math.abs(average-reported.grade)>tolerance)
           return fail('Assignment averages do not match Aeries yet. Show all assignments for this grading period.');
       }else if(!close(seen?.earned??0,reported.earned) || !close(seen?.possible??0,reported.possible))return fail('Assignment totals do not match Aeries yet. Show all assignments for this grading period; impacts will appear when the totals agree.');
       actual.delete(reported.name);
@@ -978,9 +1006,14 @@ const GradeMath = (() => {
     // The weight map can preview ungraded work after empty totals reconcile.
     // All ordinary grade and impact callers still require a counted grade.
     if(options.allowEmpty && result.value===null && (rules.official===null || rules.official===0))return {model,result,error:null};
-    const displayedValue=rules.averageMaximum && rules.officialUnit==='average'?result.value*rules.averageMaximum/100:result.value;
-    const officialTolerance=rules.officialUnit==='average'?Math.max(0.011,0.5*10**-(rules.officialDecimals??2)+1e-9):0.011;
-    if(!Number.isFinite(rules.official) || Math.abs(displayedValue-rules.official)>officialTolerance)return fail('The calculated grade does not match the displayed Aeries grade. This class may use additional grading rules.');
+    // Saved simulation rules may explain a posted total, but only original
+    // posted assignments reach this check. Keep result.value unrounded so
+    // impacts and the arithmetic breakdown retain their existing semantics.
+    const rounded=roundPercent(result.value,model.rules);
+    if(rounded===null)return fail('Choose a valid rounding rule and its decimal places.');
+    const displayedValue=averageMaximum!==null && rules.officialUnit==='average'?rounded*averageMaximum/100:rounded;
+    const officialTolerance=displayTolerance(rules.officialDecimals);
+    if(!Number.isFinite(rules.official) || !Number.isFinite(displayedValue) || officialTolerance===null || Math.abs(displayedValue-rules.official)>officialTolerance)return fail('The calculated grade does not match the displayed Aeries grade. This class may use additional grading rules.');
     return {model,result,error:null};
   }
   return { calculate, impacts, format, parseNumber, fromAeries, roundPercent, solveTarget, calculateRange, calculateRanges, convertRawScore };
@@ -1272,7 +1305,7 @@ const GradeDOM = (() => {
     return grade;
   }
   function readAeriesRules(root = document) {
-    const weights={}, categories=[];
+    const weights=Object.create(null), categories=[];
     let official=null,officialUnit=null,officialDecimals=2;
     const fourPoint=isFourPointCourse(currentCourse(root)?.title||'');
     for(const row of root.querySelectorAll('tr[id*="DataSummary"][id$="_trSummary"]')){
@@ -1604,20 +1637,87 @@ const GradeDOM = (() => {
     cutoffs: [95,85,75], averageCutoffs: [3.7,3.1,2.5], colors: ['#1f1f7f','#1f7f1f','#c05600','#7f1f1f']
   };
   let db = {version:1, settings:clone(defaults), profiles:{}};
-  let storageError = '';
+  let storageError = '', storageRecovery = '', storageLoadBlocked = false;
+  const storageStatusNodes = new Set();
+  const storageRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  function storageStatusNote() {
+    const node = note(storageError || storageRecovery, 'ap-error');
+    node.setAttribute('role', 'status');node.setAttribute('aria-live', 'polite');
+    node.hidden = !node.textContent;storageStatusNodes.add(node);return node;
+  }
+  function refreshStorageStatus() {
+    for (const node of storageStatusNodes) {
+      if (!node.isConnected) {storageStatusNodes.delete(node);continue;}
+      const message = storageError || storageRecovery;
+      if (node.textContent !== message) node.textContent = message;
+      node.hidden = !message;
+    }
+  }
+  function noteStorageRecovery() {
+    storageRecovery = 'Some invalid saved settings were ignored. Review course settings, grading profiles, and replacement rules before relying on simulations.';
+  }
+  function validSavedGradingRules(rules) {
+    if (!storageRecord(rules)) return false;
+    // Older profiles may omit a policy; omission keeps the native/default rule.
+    for (const [key,values] of [['mode',['points','weighted']],['scale',['percent','average']],['rounding',['none','nearest','down','up']]])
+      if (rules[key] !== undefined && !values.includes(rules[key])) return false;
+    const number = value => GradeMath.parseNumber(value);
+    if (rules.averageMaximum != null && !(number(rules.averageMaximum) > 0)) return false;
+    if (rules.scale === 'percent' && rules.averageMaximum != null) return false;
+    if (rules.rounding !== undefined && rules.rounding !== 'none') {
+      const decimals = number(rules.roundingDecimals);
+      if (!Number.isInteger(decimals) || decimals < 0 || decimals > 8) return false;
+    }
+    if ([rules.scoreFloor,rules.scoreCeiling].some(value => value != null && !(number(value) !== null && number(value) >= 0)) ||
+      rules.scoreFloor != null && rules.scoreCeiling != null && number(rules.scoreFloor) > number(rules.scoreCeiling)) return false;
+    return rules.weights === undefined || storageRecord(rules.weights) && Object.values(rules.weights).every(value => number(value) !== null && number(value) >= 0);
+  }
+  function validSavedReplacement(rule) {
+    const validRef = ref => storageRecord(ref) && ['id','name','category'].every(key => typeof ref[key] === 'string' && ref[key].trim()) &&
+      (ref.hypothetical === undefined || typeof ref.hypothetical === 'boolean');
+    return storageRecord(rule) && validRef(rule.source) && validRef(rule.target) &&
+      (rule.onlyIfHigher === undefined || typeof rule.onlyIfHigher === 'boolean') &&
+      (rule.capPercent == null || GradeMath.parseNumber(rule.capPercent) !== null && GradeMath.parseNumber(rule.capPercent) >= 0);
+  }
+  function normalizeSavedCourseRules(course) {
+    if (course.gradingRules !== undefined && !validSavedGradingRules(course.gradingRules)) {
+      delete course.gradingRules;noteStorageRecovery();
+    } else if (course.gradingRules) {
+      const rules=course.gradingRules;
+      for(const key of ['averageMaximum','roundingDecimals','scoreFloor','scoreCeiling'])if(rules[key] != null && GradeMath.parseNumber(rules[key]) !== null)rules[key]=GradeMath.parseNumber(rules[key]);
+      if(rules.weights !== undefined)rules.weights=Object.fromEntries(Object.entries(rules.weights).map(([key,value])=>[key,GradeMath.parseNumber(value)]));
+    }
+    if (course.replacementRules !== undefined) {
+      const saved = course.replacementRules;
+      const valid = Array.isArray(saved) ? saved.filter(validSavedReplacement) : [];
+      if (!Array.isArray(saved) || valid.length !== saved.length) {course.replacementRules = valid;noteStorageRecovery();}
+      for(const rule of valid)if(rule.capPercent != null)rule.capPercent=GradeMath.parseNumber(rule.capPercent);
+    }
+    if (course.gradingProfileDraft !== undefined && (!storageRecord(course.gradingProfileDraft) ||
+      !storageRecord(course.gradingProfileDraft.fields) || !storageRecord(course.gradingProfileDraft.weights))) {
+      delete course.gradingProfileDraft;noteStorageRecovery();
+    }
+  }
   try {
     const v = GM_getValue(AP_KEY, null);
     if (v && v.version === 1 && v.settings && typeof v.settings === 'object' && !Array.isArray(v.settings)
       && v.profiles && typeof v.profiles === 'object' && !Array.isArray(v.profiles)) {
-      const savedSettings=v.settings;
-      db = v; db.settings = {...clone(defaults), ...Object.fromEntries(Object.keys(defaults).filter(key=>Object.hasOwn(savedSettings,key)).map(key=>[key,savedSettings[key]]))};
+      db = clone(v);const savedSettings=db.settings;
+      db.settings = {...clone(defaults), ...Object.fromEntries(Object.keys(defaults).filter(key=>Object.hasOwn(savedSettings,key)).map(key=>[key,savedSettings[key]]))};
       for (const key of Object.keys(defaults).filter(k=>typeof defaults[k]==='boolean')) if (typeof db.settings[key] !== 'boolean') db.settings[key] = defaults[key];
       for (const key of ['cutoffs','averageCutoffs']) if (!validCutoffs(db.settings[key])) db.settings[key] = clone(defaults[key]);
       if (!Array.isArray(db.settings.colors) || db.settings.colors.length !== 4 || db.settings.colors.some(c => !/^#[0-9a-f]{6}$/i.test(c))) db.settings.colors = clone(defaults.colors);
       if (typeof db.settings.profile !== 'string' || !db.settings.profile.trim()) db.settings.profile = defaults.profile;
-      if (typeof db.settings.year !== 'string' || !db.settings.year.trim()) db.settings.year = defaults.year;
+      if (typeof db.settings.year !== 'string' || db.settings.year.trim() && !/^\d{4}$/.test(db.settings.year.trim())) db.settings.year = defaults.year;
+      if (Object.keys(defaults).some(key => Object.hasOwn(savedSettings,key) && JSON.stringify(savedSettings[key]) !== JSON.stringify(db.settings[key]))) noteStorageRecovery();
+    } else if (v !== null && v !== undefined) {
+      storageLoadBlocked = true;
+      storageError = 'Saved settings have an unsupported or invalid format. This visit uses defaults without replacing them. Reload with a compatible script, or clear saved settings to replace them.';
     }
-  } catch { storageError = 'Could not load saved settings. This visit uses defaults.'; }
+  } catch {
+    db = {version:1, settings:clone(defaults), profiles:{}};storageLoadBlocked = true;
+    storageError = 'Could not load saved settings. This visit uses defaults without replacing them. Reload to retry, or clear saved settings to replace them.';
+  }
   // Older installs did not ask for schedule-network consent. An old enabled
   // widget is not consent; the user must enable it using the explained toggle.
   if(db.settings.scheduleNetworkConsent!==true)db.settings.nextClass=false;
@@ -1643,25 +1743,28 @@ const GradeDOM = (() => {
   }
   function validCutoffs(v) { return Array.isArray(v) && v.length === 3 && v.every(n => Number.isFinite(n) && n >= 0) && v[0] > v[1] && v[1] > v[2]; }
   let saveTimer,savePending=false;
-  function persist() {
+  function persist(replaceSaved = false) {
     clearTimeout(saveTimer);saveTimer=undefined;savePending=true;
+    if (storageLoadBlocked && replaceSaved !== true) {savePending=false;refreshStorageStatus();return false;}
     try {
       const stored=GM_getValue(AP_KEY,null);
       const marker=typeof stored?.resetMarker==='string'?stored.resetMarker:'';
-      if(marker!==observedResetMarker){
+      if(replaceSaved !== true && marker!==observedResetMarker){
         storageError='Saved settings were cleared in another tab. Reload this tab before saving.';
         savePending=false;return false;
       }
       GM_setValue(AP_KEY,clone(db));observedResetMarker=typeof db.resetMarker==='string'?db.resetMarker:'';
-      storageError='';savePending=false;return true;
+      storageError='';storageLoadBlocked=false;savePending=false;return true;
     } catch { storageError = 'Could not save to browser storage. Changes work for this visit only.'; return false; }
+    finally {refreshStorageStatus();}
   }
   function queueSave() { clearTimeout(saveTimer);savePending=true;saveTimer=setTimeout(persist,700); }
   function clearSavedSettings(){
     const previous=db;
     db={version:1,settings:{...clone(defaults),enabled:false},profiles:{},defaultsRevision:2,blankIconsRevision:1,
       resetMarker:Date.now()+'-'+Math.random().toString(36).slice(2)};
-    if(!persist()){db=previous;return false;}
+    if(!persist(true)){db=previous;return false;}
+    storageRecovery='';refreshStorageStatus();
     abortScheduleRequests();closeGradeLab();restoreTitles();selectedCourse='';detectedCourseKey='';
     annotationSources.clear();nativePageState=null;coursesFormDirty=false;
     scan();return true;
@@ -1681,9 +1784,9 @@ const GradeDOM = (() => {
   function profileKey() { return 'p:' + JSON.stringify([db.settings.profile.trim(),db.settings.year.trim()]); }
   function profile() {
     const k = profileKey();
-    if (!db.profiles[k] || typeof db.profiles[k] !== 'object' || Array.isArray(db.profiles[k])) db.profiles[k] = {};
+    if (!Object.hasOwn(db.profiles,k) || !storageRecord(db.profiles[k])) {db.profiles[k] = {};}
     const p = db.profiles[k];
-    if (!p.courses || typeof p.courses !== 'object' || Array.isArray(p.courses)) p.courses = {};
+    if (!Object.hasOwn(p,'courses') || !storageRecord(p.courses)) {if(p.courses !== undefined)noteStorageRecovery();p.courses = {};}
     for(const [key,saved] of Object.entries(p.courses)){
       const old=saved && typeof saved==='object' && !Array.isArray(saved)?saved:{};
       const base=courseDefaults(typeof old.title==='string'&&old.title.trim()?old.title:'Saved course');
@@ -1696,8 +1799,9 @@ const GradeDOM = (() => {
       if(typeof c.overallIncluded!=='boolean')c.overallIncluded=true;
       if(typeof c.gpaWeighted!=='boolean')c.gpaWeighted=false;
       c.schedulePeriod=CourseSchedule.normalize(c.schedulePeriod) || '';
+      normalizeSavedCourseRules(c);
       // Keep existing object identities: open course controls may reference them.
-      if(old===saved)Object.assign(old,c);else p.courses[key]=c;
+      if(old===saved){for(const field of ['gradingRules','gradingProfileDraft'])if(!Object.hasOwn(c,field))delete old[field];Object.assign(old,c);}else p.courses[key]=c;
     }
     return p;
   }
@@ -1834,13 +1938,15 @@ const GradeDOM = (() => {
       return points + (weighted === true && points >= 2 ? 1 : 0);
     }
     function summarize(courses, limits, numericGrades = false) {
-      const seen = new Set(), rows = [];
+      const indexes = new Map(), rows = [];
       for (const course of courses) {
-        if (seen.has(course.key)) continue;
-        seen.add(course.key);
         const score = numericGrades ? rating(course.value, course.cutoffs) : letterPoints(course.mark);
         const weightedScore = numericGrades ? score : letterPoints(course.mark, course.gpaWeighted);
-        rows.push({...course, score, weightedScore, counted: course.included !== false && score !== null});
+        const row = {...course, score, weightedScore, counted: course.included !== false && score !== null};
+        if (!indexes.has(course.key)) {indexes.set(course.key, rows.length);rows.push(row);}
+        // Responsive duplicates can expose a blank card before a usable one.
+        // Keep the first usable grade consistently and count the course once.
+        else if (rows[indexes.get(course.key)].score === null && score !== null) rows[indexes.get(course.key)] = row;
       }
       const counted = rows.filter(row => row.counted);
       const total = counted.reduce((sum, row) => sum + row.score, 0);
@@ -1969,7 +2075,7 @@ const GradeDOM = (() => {
       weighted.append(el('span', 'Weighted GPA', {class: 'score-label'}), el('div', weightedDisplay, {class: 'score', 'aria-label': weightedDescription, title: weightedDescription}));
       scores.append(unweighted, weighted); heading.append(scores);
     }
-    card.append(heading);
+    card.append(heading,storageStatusNote());
     const details = el('details'); details.open = wasOpen;
     details.append(el('summary', overallIsRating ? 'Calculation & included classes' : 'Calculation & GPA class selection'));
     const calculation = el('div', null, {class: 'calculation', tabindex: '0', role: 'region', 'aria-label': 'Overall calculation and included classes'});
@@ -2022,16 +2128,21 @@ const GradeDOM = (() => {
     @media print {[data-ap-owned="widget"],.ap-page-impact {display:none !important;} }
   `;
   document.head.append(pageStyle);
+  function restoreTitle(title,original) {
+    title.removeAttribute('data-ap-label');title.style.removeProperty('--ap-title-size');
+    for (const name of ['title','aria-label']) original[name]===null?title.removeAttribute(name):title.setAttribute(name,original[name]);
+  }
   function restoreTitles() {
-    for (const [title,original] of titleOriginals) {
-      title.removeAttribute('data-ap-label');title.style.removeProperty('--ap-title-size');
-      for (const name of ['title','aria-label']) original[name]===null?title.removeAttribute(name):title.setAttribute(name,original[name]);
-    }
+    for (const [title,original] of titleOriginals) restoreTitle(title,original);
     titleOriginals.clear();
   }
   function titleStyle(card,c) {
     const title=card.titleElement;
-    if (!db.settings.nicknames || !(c.nickname || c.icon)) return;
+    if (!db.settings.nicknames || !(c.nickname || c.icon)) {
+      const original=titleOriginals.get(title);
+      if(original){restoreTitle(title,original);titleOriginals.delete(title);}
+      return;
+    }
     if (!titleOriginals.has(title)) {
       titleOriginals.set(title,{title:title.getAttribute('title'),'aria-label':title.getAttribute('aria-label')});
       title.style.setProperty('--ap-title-size',getComputedStyle(title).fontSize);
@@ -2153,14 +2264,21 @@ const GradeDOM = (() => {
     return count;
   }
   function nativeCourseKey(current){
-    for(const key of Object.keys(profile().courses)){
+    const courses=profile().courses,canonical=GradeDOM.courseKey(current.title,current.link,current.period);
+    if(Object.hasOwn(courses,canonical))return canonical;
+    const compatible=[];
+    for(const key of Object.keys(courses)){
       if(!key.startsWith('url:'))continue;
       try{
         const params=new URL(key.slice(4),location.href).searchParams;
-        if(params.get('gradebooknumber')===current.gradebook && params.get('term')===current.term && (!params.has('sc') || params.get('sc')===current.school))return key;
+        // A legacy URL can differ in path, but its identity must be verifiable.
+        // Never choose the first of several courses or ignore a year/section.
+        const known=new Set(['gradebooknumber','term','sc']);
+        if([...params.keys()].some(name=>!known.has(name)) || ['gradebooknumber','term','sc'].some(name=>params.getAll(name).length>1))continue;
+        if(params.get('gradebooknumber')===current.gradebook && params.get('term')===current.term && params.get('sc')===current.school)compatible.push(key);
       }catch{/* Use the canonical native key below. */}
     }
-    return GradeDOM.courseKey(current.title,current.link,current.period);
+    return compatible.length===1?compatible[0]:canonical;
   }
   function showNativeStatus(info,text){
     nativeStatus={text};
@@ -2169,6 +2287,7 @@ const GradeDOM = (() => {
       nativeBanner.style.cssText='font:inherit;font-size:12px;line-height:1.5;padding:9px 12px;margin:8px 0;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#334155;';
       info.element.parentElement.insertBefore(nativeBanner,info.element);
     }
+    if(nativeBanner.parentElement!==info.element.parentElement)info.element.before(nativeBanner);
     if(nativeBanner.textContent!==text)nativeBanner.textContent=text;
   }
   function refreshNativeDetails(){
@@ -2194,7 +2313,7 @@ const GradeDOM = (() => {
     if(sameSource && (nativePageState.key!==key || nativePageState.partial!==partial)){
       // Retain the last accepted identity while waiting. Aeries can replace
       // just the rows; returning to the original selection can cancel a load.
-      nativePageState.waiting=true;closeGradeLab();clearAnnotations();
+      nativePageState.waiting=true;closeGradeLab();annotationSources.clear();clearAnnotations();
       clearWeightMapPage();clearCategorySpotlight();
       showNativeStatus(info,'Waiting for the selected gradebook or filter to finish loading…');return;
     }
@@ -2202,7 +2321,8 @@ const GradeDOM = (() => {
     if(parsed.rules.averageMaximum)courseFor({key,title:current.title,unit:'average'});
     refreshWeightMap(key,current,parsed,{partial});
     refreshCategorySpotlight(key,info,parsed);
-    annotationSources.set(key,parsed.assignments);
+    // Only the current native gradebook can receive labels or map jumps.
+    annotationSources.clear();annotationSources.set(key,parsed.assignments);
     const checked=GradeMath.fromAeries(parsed.assignments,parsed.rules,{partial});
     refreshGradeLab(info,key,current,parsed,checked,{partial});
     let impactText='Impact labels off',labelCount=0;
@@ -2245,7 +2365,7 @@ const GradeDOM = (() => {
     #ap-grade-lab summary:focus-visible{outline:3px solid #a78bfa;outline-offset:3px}
     #ap-grade-lab h3{font:inherit;font-size:14px;font-weight:700;color:#382961;margin:0 0 7px}
     #ap-grade-lab h4{font:inherit;font-weight:700;margin:12px 0 6px}
-    #ap-grade-lab .ap-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin:12px 0}
+    #ap-grade-lab .ap-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,185px),1fr));gap:12px;margin:12px 0}
     #ap-grade-lab .ap-plan-field{display:flex;flex-direction:column;gap:5px;color:#475569;font:inherit}
     #ap-grade-lab .ap-plan-field input,#ap-grade-lab .ap-plan-field select{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:#fff;color:#253858;border:1px solid #aaa3bb;border-radius:5px;padding:7px}
     #ap-grade-lab .ap-plan-field [aria-invalid=true]{border-color:#b42318}
@@ -2374,7 +2494,11 @@ const GradeDOM = (() => {
   }
   function planningRules(assignments=planningRows()){
     const saved=planningCourse().gradingRules;
-    const rules={...gradeLab.parsed.rules,...(saved||{})};
+    // Saved profiles supply policies only. Current posted totals and categories
+    // always come from the page, including when importing older settings.
+    const fields=['mode','weights','scale','averageMaximum','rounding','roundingDecimals','scoreFloor','scoreCeiling'];
+    const policy=saved?Object.fromEntries(fields.filter(key=>Object.hasOwn(saved,key)).map(key=>[key,saved[key]])):{};
+    const rules={...gradeLab.parsed.rules,...policy};
     rules.replacements=resolvePlanningRules(assignments).rules;
     return rules;
   }
@@ -2717,14 +2841,11 @@ const GradeDOM = (() => {
     copy.id = 'ap-profile-copy';
     function activeCategories() {
       const active = new Set();
-      const count = (assignment, draft) => {
-        const source = draft || assignment;
-        const earned = source.earned === '' || source.earned === null || source.earned === undefined ? null : Number(source.earned);
-        const possible = source.possible === '' || source.possible === null || source.possible === undefined ? null : Number(source.possible);
-        if (source.included !== false && Number.isFinite(earned) && Number.isFinite(possible) && possible > 0) active.add(normalizedCategory(assignment.category));
-      };
-      for (const assignment of context.parsed.assignments || []) count(assignment, context.edits?.get(assignment.id));
-      for (const assignment of context.added || []) count(assignment);
+      // Use the same scenario rows as the calculation, including counted ranges
+      // on assignments whose single-score draft is still blank.
+      const rows=context.active?labModel().assignments:context.parsed.assignments;
+      for(const assignment of rows || [])if(assignment.included !== false && Number.isFinite(assignment.earned) &&
+        Number.isFinite(assignment.possible) && assignment.possible > 0)active.add(normalizedCategory(assignment.category));
       return active;
     }
     function saveProfile(manual = false) {
@@ -2810,7 +2931,12 @@ const GradeDOM = (() => {
 
   function labContain(node){
     for(const type of ['click','dblclick','input','change','keyup','keypress','pointerdown'])node.addEventListener(type,e=>e.stopPropagation());
-    node.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')e.preventDefault();});
+    node.addEventListener('keydown',e=>{
+      e.stopPropagation();
+      // Keep Enter from submitting a native page form while preserving native
+      // keyboard activation for buttons and selectors inside the lab.
+      if(e.key==='Enter' && e.target?.matches?.('input:not([type="button"]):not([type="submit"]):not([type="reset"])'))e.preventDefault();
+    });
   }
   function applyLabActionTypography(ui,source){
     // Buttons and labels can have their own Aeries/browser font declarations.
@@ -2888,9 +3014,14 @@ const GradeDOM = (() => {
   function refreshGradeLab(info,key,current,parsed,checked,options){
     const signature=JSON.stringify([profileKey(),key,options.partial,parsed.assignments.map(a=>[a.id,a.name,a.category,a.earned,a.possible,a.included,a.status,a.rawEarned,a.rawPossible]),parsed.rules]);
     const same=gradeLab && gradeLab.signature===signature && gradeLab.info.element===info.element &&
-      [...gradeLab.overlays].every(([cell,saved])=>saved.original.parentNode===cell && saved.ui.parentNode===cell) &&
+      [...gradeLab.overlays].every(([cell,saved])=>cell.isConnected && saved.original.parentNode===cell && saved.ui.parentNode===cell) &&
       parsed.assignments.every((a,i)=>a.sourceRow===gradeLab.parsed.assignments[i]?.sourceRow
+        && (a.sourceRows||[]).length===(gradeLab.parsed.assignments[i]?.sourceRows||[]).length
+        && (a.sourceRows||[]).every((row,j)=>row===gradeLab.parsed.assignments[i]?.sourceRows?.[j])
+        && (a.sourceCells||[]).length===(gradeLab.parsed.assignments[i]?.sourceCells||[]).length
         && (a.sourceCells||[]).every((cell,j)=>cell===gradeLab.parsed.assignments[i]?.sourceCells?.[j])
+        && (a.sourceNameCells||[]).length===(gradeLab.parsed.assignments[i]?.sourceNameCells||[]).length
+        && (a.sourceNameCells||[]).every((cell,j)=>cell===gradeLab.parsed.assignments[i]?.sourceNameCells?.[j])
         && (a.rawScoreCells||[]).length===(gradeLab.parsed.assignments[i]?.rawScoreCells||[]).length
         && (a.rawScoreCells||[]).every((cell,j)=>cell===gradeLab.parsed.assignments[i]?.rawScoreCells?.[j]));
     const freshNotice=Boolean(gradeLab?.active && !same);
@@ -3109,12 +3240,13 @@ const GradeDOM = (() => {
     const raw=draft.scoreMode==='raw',text=raw?draft.rawEarned:draft.earned;
     const blank=String(text??'').trim()==='',possible=GradeMath.parseNumber(draft.possible);
     const rawTotal=GradeMath.parseNumber(draft.rawPossible),number=GradeMath.parseNumber(text);
-    const invalidEarned=!blank&&(number===null||number<0);
-    const invalidPossible=!blank&&(possible===null||possible<=0);
-    const invalidRawPossible=raw&&!blank&&(rawTotal===null||rawTotal<=0);
+    const counted=draft.included!==false;
+    const invalidEarned=counted&&!blank&&(number===null||number<0);
+    const invalidPossible=counted&&!blank&&(possible===null||possible<=0);
+    const invalidRawPossible=counted&&raw&&!blank&&(rawTotal===null||rawTotal<=0);
     const converted=raw&&!blank?GradeMath.convertRawScore(draft.rawEarned,draft.rawPossible,draft.possible):null;
     const earned=blank?null:raw?converted.earned:invalidEarned?null:number;
-    const error=invalidEarned||invalidRawPossible||(draft.included&&invalidPossible)||converted?.error;
+    const error=counted&&(invalidEarned||invalidRawPossible||invalidPossible||converted?.error);
     return {earned,possible,blank,invalidEarned,invalidPossible,invalidRawPossible,
       rawEarned:GradeMath.parseNumber(draft.rawEarned),rawPossible:rawTotal,rawDerived:Boolean(draft.rawDerived),
       error:error?(raw?'Enter a nonnegative number correct and positive totals.':'Enter a nonnegative score and a positive total.'):''};
@@ -3338,7 +3470,7 @@ const GradeDOM = (() => {
         return {id:a.id,name:a.name,category:a.category,earned,possible,included:true};
       }
       const state=labScoreState(draft),{earned,possible}=state;
-      if(a.id.startsWith('hypothetical:')&&earned!==null&&(!a.name.trim()||!a.category))errors.push('Give each scored hypothetical assignment a name and category.');
+      if(draft.included!==false&&a.id.startsWith('hypothetical:')&&earned!==null&&(!a.name.trim()||!a.category))errors.push('Give each scored hypothetical assignment a name and category.');
       if(state.error)errors.push(`“${a.name||'New assignment'}”: ${state.error}`);
       // Blank scores do not create an active category or an invalid denominator.
       return {id:a.id,name:a.name,category:a.category,earned,possible,included:draft.included&&earned!==null};
@@ -3401,7 +3533,7 @@ const GradeDOM = (() => {
       const modeled=lowAssignments.get(a.id),high=highAssignments.get(a.id),edited=gradeLab.edits.has(a.id)||gradeLab.ranges?.has(a.id);
       const percent=ranged&&error?null:assignmentPercent(modeled),highPercent=assignmentPercent(high);
       const unit=rules.averageMaximum?'average':'percent';
-      const color=ranged?neutral:percent===null?null:detailsColor(unit==='average'?percent*rules.averageMaximum/100:percent,unit);
+      const color=ranged?neutral:!db.settings.detailsColors||percent===null?null:detailsColor(unit==='average'?percent*rules.averageMaximum/100:percent,unit);
       for(const c of gradeLab.editors.get(a.id)||[]){c.undo.disabled=!edited;c.earned.style.color=c.rawEarned.style.color=color||'';}
       const percentCells=assignmentPercentCells(a),percentText=ranged&&!error?bounds(labGrade(percent),labGrade(highPercent)):labGrade(percent);
       for(const cell of percentCells)labValue(cell,percentText,color,undefined,true);
@@ -3431,7 +3563,7 @@ const GradeDOM = (() => {
       const pct=row.querySelector('[id$="_tdPCT"]');
       const old=GradeDOM.cleanText(pct);
       const unit=rules.averageMaximum?'average':'percent';
-      const color=ranged?neutral:value===null?null:detailsColor(unit==='average'?value*rules.averageMaximum/100:value,unit);
+      const color=ranged?neutral:!db.settings.detailsColors||value===null?null:detailsColor(unit==='average'?value*rules.averageMaximum/100:value,unit);
       const format=value=>total?planningFormat(value,rules,true):labGrade(value);
       labValue(pct,ranged&&!error?bounds(format(value),format(highValue)):format(value),color,old);
       labValue(row.querySelector('[id$="_tdMK"]'),'—',null);
@@ -3574,16 +3706,20 @@ const MVHSSchedule = (() => {
   function snapshot(days,weekdayMap,schedules) {
     const calendar = parseCalendar(days,weekdayMap);
     if (!objectData(schedules)) throw new Error('MVHS schedules are unavailable.');
-    const parsed = Object.create(null);
+    const parsed = Object.create(null), errors = Object.create(null);
     for (const name of new Set([...calendar.weekdays,...calendar.overrides.map(item => item.name)])) {
-      if (name !== 'none') parsed[name] = parsePeriods(schedules[name]);
+      if (name === 'none') continue;
+      // An unavailable historical or future definition must not hide a valid
+      // current day. Keep its error so any prediction needing that day stops.
+      try { parsed[name] = parsePeriods(schedules[name]); }
+      catch (error) { errors[name] = error.message || 'MVHS has not supplied this schedule.'; }
     }
-    return {calendar,schedules:parsed};
+    return {calendar,schedules:parsed,errors};
   }
   function dayFor(data,dateKey) {
     const selected = chooseSchedule(data.calendar,dateKey);
     const periods = selected.noSchool?[]:data.schedules[selected.name];
-    if (!Array.isArray(periods)) throw new Error('MVHS has not supplied this schedule.');
+    if (!Array.isArray(periods)) throw new Error(data.errors?.[selected.name] || 'MVHS has not supplied this schedule.');
     return {...selected,dateKey,periods};
   }
   function schoolTimestamp(dateKey,minutes) {
@@ -3780,28 +3916,34 @@ function requestScheduleJSON(kind, clockId) {
   const isClock=kind==='bellClock',isBell=kind==='bellSchedule' || isClock;
   if (isClock ? typeof clockId!=='string' || !/^aeries-clock-\d{1,16}$/.test(clockId) : clockId!==undefined)
     return Promise.reject(new Error('Invalid public clock request.'));
-  const url=scheduleEndpoints[kind],source=isBell?'bell.plus':'MVHS';
+  const url=scheduleEndpoints[kind],source=isBell?'bell.plus':'MVHS',timeout=isBell?10000:15000;
   const generation=scheduleRequestGeneration;
   return new Promise((resolve,reject) => {
     if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('Public schedule access needs userscript network permission.'));return;}
-    let handle=null,settled=false;
+    let handle=null,settled=false,watchdog=null,abortRequested=false;
     const finish=(error,value)=>{
       if (settled) return;
-      settled=true;activeScheduleRequests.delete(request);
+      settled=true;clearTimeout(watchdog);activeScheduleRequests.delete(request);
       if (generation!==scheduleRequestGeneration || !scheduleRequestsAllowed()) reject(new Error('Public schedule request canceled.'));
       else if (error) reject(error);
       else resolve(value);
     };
-    const request={abort(){
+    const abortTransfer=()=>{
+      try {handle?.abort();} catch {/* A failed abort cannot make a settled response usable. */}
+    };
+    const stop=error=>{
       if (settled) return;
-      finish(new Error('Public schedule request canceled.'));
-      try {handle?.abort();} catch {/* The response remains invalidated even if cancellation fails. */}
-    }};
+      abortRequested=true;finish(error);abortTransfer();
+    };
+    const request={abort(){stop(new Error('Public schedule request canceled.'));}};
     activeScheduleRequests.add(request);
+    // Some managers ignore fetch-mode timeouts. Settle locally even if they do,
+    // then ask the manager to stop the transfer; late callbacks stay unusable.
+    watchdog=setTimeout(()=>stop(new Error(source+' schedule request timed out.')),timeout);
     try {
-      handle=GM_xmlhttpRequest({method:isClock?'POST':'GET',url,anonymous:true,
+      handle=GM_xmlhttpRequest({method:isClock?'POST':'GET',url,anonymous:true,redirect:'error',
         headers:{Accept:'application/json',Referer:isBell?'https://bell.plus/mvhs':'https://mvhs.io/',...(isClock?{'Content-Type':'application/json'}:{})},
-        ...(isClock?{data:JSON.stringify({jsonrpc:'2.0',id:clockId,method:'timesync'})}:{}),timeout:isBell?10000:15000,
+        ...(isClock?{data:JSON.stringify({jsonrpc:'2.0',id:clockId,method:'timesync'})}:{}),timeout,
         onload:response=>{
           if (settled) return;
           if (generation!==scheduleRequestGeneration || !scheduleRequestsAllowed()) {finish(new Error('Public schedule request canceled.'));return;}
@@ -3811,8 +3953,10 @@ function requestScheduleJSON(kind, clockId) {
             finish(null,JSON.parse(response.responseText));
           } catch {finish(new Error(source+' returned unreadable or unexpected schedule data.'));}
         },onerror:()=>finish(new Error('Could not reach '+source+'.')),
-        ontimeout:()=>finish(new Error(source+' schedule request timed out.')),
+        ontimeout:()=>stop(new Error(source+' schedule request timed out.')),
         onabort:()=>finish(new Error(source+' schedule request interrupted.'))});
+      // Also honor cancellation if a manager calls back before returning its handle.
+      if (abortRequested) abortTransfer();
     } catch {finish(new Error('Could not start the '+source+' schedule request.'));}
   });
 }
@@ -3909,7 +4053,10 @@ function loadMVHSSchedule() {
   schedulePending=true;scheduleError='';
   Promise.all(['days','weekday-map','schedules'].map(requestMVHSPublic)).then(([days,map,schedules]) => {
     if (generation!==scheduleRequestGeneration || !scheduleRequestsAllowed()) return;
-    scheduleData=MVHSSchedule.snapshot(days,map,schedules);scheduleFetchedAt=Date.now();scheduleFetchedDate=requestedDate;scheduleRetryAt=0;
+    const data=MVHSSchedule.snapshot(days,map,schedules);
+    // A broken requested day still uses the normal failed-request retry path.
+    MVHSSchedule.dayFor(data,requestedDate);
+    scheduleData=data;scheduleFetchedAt=Date.now();scheduleFetchedDate=requestedDate;scheduleRetryAt=0;
   }).catch(error => {
     if (generation!==scheduleRequestGeneration || !scheduleRequestsAllowed()) return;
     scheduleError=error.message || 'The MVHS schedule is unavailable.';scheduleRetryAt=Date.now()+60*1000;
@@ -3944,17 +4091,20 @@ function refreshSchedule() {
     scheduleRoot=scheduleHost.attachShadow({mode:'open'});scheduleSignature='';
   }
   mountSummary(scheduleHost, section);
-  let clock=null,day=null,state=null,upcoming=null,problem='';
+  let clock=null,day=null,state=null,upcoming=null,problem='',upcomingProblem='';
   if (fresh) {
     try {
       clock=MVHSSchedule.schoolClock(new Date(now));day=MVHSSchedule.dayFor(scheduleData,clock.dateKey);
       state=MVHSSchedule.stateFor(day.periods,clock.minutes);
-      if (!state.nextClass) upcoming=MVHSSchedule.nextSchoolDay(scheduleData,clock.dateKey);
+      if (!state.nextClass) {
+        try { upcoming=MVHSSchedule.nextSchoolDay(scheduleData,clock.dateKey); }
+        catch (error) { upcomingProblem='Next school day unavailable. '+(error.message || 'Check mvhs.io.'); }
+      }
     } catch(error) {problem=error.message;}
   }
   const verification=day && state && !problem?verifiedBellSeconds(day,state,now,upcoming):{verified:false,status:''};
   const roster=visibleCards.map(card=>{const c=courseFor(card);return {key:card.key,title:card.title,nickname:c.nickname,period:c.schedulePeriod || card.schedulePeriod};});
-  const signature=JSON.stringify([profileKey(),clock?.dateKey,day,state && [state.phase,state.current,state.next,state.nextClass],upcoming,problem,Boolean(fresh),schedulePending,scheduleError,verification.verified,verification.status,db.settings.nicknames,
+  const signature=JSON.stringify([profileKey(),clock?.dateKey,day,state && [state.phase,state.current,state.next,state.nextClass],upcoming,problem,upcomingProblem,Boolean(fresh),schedulePending,scheduleError,verification.verified,verification.status,db.settings.nicknames,
     roster]);
   if (signature===scheduleSignature) {if(state)updateBellCountdowns(state,verification,upcoming,now);return;}scheduleSignature=signature;
   const wasOpen=Boolean(scheduleRoot.querySelector('details')?.open);
@@ -3985,7 +4135,8 @@ function refreshSchedule() {
     const dateLabel=new Intl.DateTimeFormat('en-US',{timeZone:'UTC',weekday:'short',month:'short',day:'numeric'}).format(new Date(upcoming.dateKey+'T12:00:00Z'));
     const line=el('div',`Next school day: ${dateLabel} · ${titleFor(upcoming.first)} · ${MVHSSchedule.formatTime(upcoming.first.start)} · `,{class:'next'});
     line.append(el('span',null,{'data-ap-countdown':'upcoming',style:'font-variant-numeric:tabular-nums'}));box.append(line);
-  } else if (!state.current)box.append(el('div','No upcoming class listed in the next two weeks.',{class:'next'}));
+  } else if (upcomingProblem)box.append(el('div',upcomingProblem,{class:'status'}));
+  else if (!state.current)box.append(el('div','No upcoming class listed in the next two weeks.',{class:'next'}));
   else box.append(el('div','No later class listed today.',{class:'next'}));
   if (day.periods.length) {
     const details=el('details'),summary=el('summary','Today’s full bell schedule'),table=el('table',null,{'aria-label':'Today’s MVHS bell schedule'}),tbody=el('tbody');details.open=wasOpen;
@@ -4007,7 +4158,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSch
 window.addEventListener('pageshow',refreshSchedule);
 window.addEventListener('pagehide',abortScheduleRequests);
 
+  function prunePageDecorations() {
+    const currentCards=new Set(cards.map(card=>card.element));
+    const currentTitles=new Set(cards.map(card=>card.titleElement));
+    for(const [card,w] of widgetHosts)if(!currentCards.has(card)){w.host.remove();widgetHosts.delete(card);}
+    for(const [title,original] of titleOriginals)if(!currentTitles.has(title)){restoreTitle(title,original);titleOriginals.delete(title);}
+  }
   function scan() {
+    if(pageSuspended)return;
     kbar.reconcile();
     syncAeriesFont();
     const current=db.settings.enabled?GradeDOM.currentCourse():null;
@@ -4025,7 +4183,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     refreshDashboardGrades();
     refreshSchedule();
     refreshOverallGrade();
-    for(const [card,w] of widgetHosts)if(!card.isConnected){w.host.remove();widgetHosts.delete(card);}
+    prunePageDecorations();
     if(!db.settings.enabled){restoreTitles();for(const w of widgetHosts.values())w.host.remove();widgetHosts.clear();clearAnnotations();return;}
     for(const card of cards){const c=courseFor(card);titleStyle(card,c);drawWidget(card,c);}
     if(status)status.textContent=nativeStatus ? nativeStatus.text : [`${cards.length} course cards detected`,db.settings.profile,db.settings.year?`${db.settings.year}–${Number(db.settings.year)+1}`:''].filter(Boolean).join(' · ');
@@ -4375,7 +4533,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
   dialog{margin:auto;padding:0;border:1px solid #d6e1ec;border-radius:20px;background:#fff;color:#1e293b;width:min(1050px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;box-shadow:0 22px 100px #102a4b45;font-family:inherit;font-size:14px;line-height:1.5}dialog::backdrop{background:#122a466b}
   .ap-top{padding:22px 26px 14px;display:flex;justify-content:space-between;align-items:start;gap:18px;border-bottom:1px solid #e2e8f0}.ap-eyebrow{text-transform:uppercase;letter-spacing:1.8px;font-size:10px;font-weight:700;color:#3d6590;margin:0 0 5px}h1{font-size:25px;margin:0;letter-spacing:-.6px}h2{font-size:20px;margin:0 0 8px}h3{font-size:15px;margin:0 0 9px}p{margin:8px 0} .ap-close{font-size:23px;border:0;background:#eef3f9;border-radius:50%;padding:0;width:34px;height:34px;flex-shrink:0}
   .ap-tabs{display:flex;gap:5px;padding:12px 26px 0;background:#fafcfe;flex-wrap:wrap}.ap-tabs button{border-color:transparent;background:transparent;padding:9px 13px}.ap-tabs button[aria-selected=true]{background:#e8f0fc;color:#1d4ed8;border-color:#c7dafb}.ap-content{padding:24px 26px;min-height:200px}.ap-footer{padding:11px 26px;background:#f7f9fc;border-top:1px solid #e2e8f0;font-size:11px;color:#55708d}
-  .ap-muted{color:#536981;font-size:12px}.ap-error{color:#b42318;font-size:12px;white-space:pre-wrap}.ap-primary{background:#245de8;color:#fff;border-color:#245de8}.ap-primary:hover{background:#1d4ed8}.ap-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.ap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}.ap-box{border:1px solid #dbe4ef;border-radius:12px;padding:16px;margin-bottom:15px;background:#fff}.ap-pill{display:inline-block;border:1px solid #bdd4f6;border-radius:99px;background:#eff6ff;padding:3px 8px;font-size:11px;color:#234d78}.ap-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#475d75}.ap-toggle{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 0}.ap-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:#50657c;font-size:11px;background:#f6f9fc}th,td{padding:9px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top}td input{max-width:100%}.ap-course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.ap-course-title{font-size:15px;font-weight:700;margin:0 0 5px}.ap-result{font-size:30px;font-weight:700;color:#234c7d;font-variant-numeric:tabular-nums}.ap-empty{padding:28px;border:1px dashed #bdcbdc;border-radius:12px;text-align:center;color:#536981}.ap-banner{padding:12px 15px;border-radius:10px;background:#eff6ff;border:1px solid #c9dcf8;margin-bottom:16px;font-size:12px}.ap-saving{min-height:18px}
+  .ap-muted{color:#536981;font-size:12px}.ap-error{color:#b42318;font-size:12px;white-space:pre-wrap}.ap-primary{background:#245de8;color:#fff;border-color:#245de8}.ap-primary:hover{background:#1d4ed8}.ap-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.ap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}.ap-box{min-width:0;overflow-wrap:anywhere;border:1px solid #dbe4ef;border-radius:12px;padding:16px;margin-bottom:15px;background:#fff}.ap-pill{display:inline-block;border:1px solid #bdd4f6;border-radius:99px;background:#eff6ff;padding:3px 8px;font-size:11px;color:#234d78}.ap-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#475d75}.ap-toggle{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 0}.ap-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:#50657c;font-size:11px;background:#f6f9fc}th,td{padding:9px 8px;border-bottom:1px solid #e2e8f0;vertical-align:top}td input{max-width:100%}.ap-course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.ap-course-title{font-size:15px;font-weight:700;margin:0 0 5px}.ap-result{font-size:30px;font-weight:700;color:#234c7d;font-variant-numeric:tabular-nums}.ap-empty{padding:28px;border:1px dashed #bdcbdc;border-radius:12px;text-align:center;color:#536981}.ap-banner{padding:12px 15px;border-radius:10px;background:#eff6ff;border:1px solid #c9dcf8;margin-bottom:16px;font-size:12px}.ap-saving{min-height:18px}
   @media(max-width:600px){.ap-top{padding:18px}.ap-content{padding:18px}.ap-tabs{padding:9px 12px 0}.ap-footer{padding:12px 18px}.ap-course-grid{grid-template-columns:1fr}dialog{width:calc(100vw - 12px);max-height:calc(100dvh - 12px)}.ap-grid{grid-template-columns:1fr}}
   @media print{:host{display:none!important}}
   `;
@@ -4383,7 +4541,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
   const top=el('div',null,{class:'ap-top'}),heading=el('div');heading.append(el('p','Your local dashboard toolkit',{class:'ap-eyebrow'}),el('h1','Aeries Playground',{id:'ap-title'}),note('Make your courses yours. Explore the numbers.'));
   const close=button('×',()=>dialog.close(),'ap-close');close.setAttribute('aria-label','Close Playground');top.append(heading,close);
   const tabs=el('div',null,{class:'ap-tabs',role:'tablist','aria-label':'Playground sections'});
-  const content=el('div',null,{class:'ap-content',role:'tabpanel',id:'ap-content'});
+  const content=el('div',null,{class:'ap-content',role:'tabpanel',id:'ap-content',tabindex:'0'});
   for(const event of ['input','change'])content.addEventListener(event,()=>{if(activeTab==='courses')coursesFormDirty=true;});
   const footer=el('div',null,{class:'ap-footer'}),status=el('span');footer.append(status);
   const tabsByName={courses:'Courses',weights:'Weight map',settings:'Settings'};
@@ -4423,12 +4581,24 @@ window.addEventListener('pagehide',abortScheduleRequests);
     let footer = null, frame = null, toggleButton = null, message = null;
     let ready = false, wanted = false, failed = false, listening = null, deadline = null;
     let playbackDeadline = null, pendingPlayback = null, generation = 0;
+    let settingsButton = null, settingsMessage = null, statusText = 'KBAR is stopped.';
 
     function paint(text) {
-      if (!toggleButton) return;
-      toggleButton.textContent = wanted ? 'Pause KBAR' : 'Play KBAR';
-      toggleButton.setAttribute('aria-pressed', String(wanted));
-      if (text !== undefined) message.textContent = text;
+      if (text !== undefined) statusText = text;
+      if (toggleButton) {
+        toggleButton.textContent = wanted ? 'Pause KBAR' : 'Play KBAR';
+        toggleButton.setAttribute('aria-pressed', String(wanted));
+      }
+      if (message) message.textContent = statusText;
+      if (settingsButton) {
+        settingsButton.textContent = wanted ? 'Pause KBAR (P)' : failed ? 'Retry KBAR (P)' : 'Play KBAR (P)';
+        settingsButton.setAttribute('aria-pressed', String(wanted));
+        settingsButton.disabled = !db.settings.enabled;
+      }
+      if (settingsMessage) settingsMessage.textContent = statusText;
+    }
+    function attachControls(control,status) {
+      settingsButton = control; settingsMessage = status; paint();
     }
     function post(data) {
       if (frame?.isConnected) frame.contentWindow?.postMessage(JSON.stringify(data), origin);
@@ -4446,7 +4616,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       clearTimeout(playbackDeadline);
       pendingPlayback = wanted ? 1 : 2;
       command(wanted ? 'playVideo' : 'pauseVideo');
-      paint(wanted ? 'Starting KBAR…' : 'Paused · P to resume');
+      paint(wanted ? 'Starting KBAR…' : 'Pausing KBAR…');
       playbackDeadline = setTimeout(() => {
         const wasStarting = wanted;
         pendingPlayback = null;
@@ -4473,6 +4643,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       if (data.event === 'onError') {
         clearLoading(); clearTimeout(playbackDeadline);
         pendingPlayback = null; wanted = false; failed = true;
+        command('pauseVideo');
         const errors = {
           2:'YouTube could not load this video.',
           5:'YouTube playback is unavailable in this browser.',
@@ -4481,15 +4652,21 @@ window.addEventListener('pagehide',abortScheduleRequests);
           150:'This video cannot be played here.',
           153:'YouTube could not verify this embed.'
         };
-        paint((errors[data.info] || 'YouTube could not play KBAR.') + ' Try again or open it on YouTube.');
+        const reason = Number.isInteger(data.info) && Object.hasOwn(errors,data.info) ? errors[data.info] : 'YouTube could not play KBAR.';
+        paint(reason + ' Try again or open it on YouTube.');
         return;
       }
       if (data.event === 'onAutoplayBlocked') {
         clearTimeout(playbackDeadline); pendingPlayback = null; wanted = false;
+        command('pauseVideo');
         paint('Browser blocked playback. Press P again or use Settings to retry.');
         return;
       }
       if (data.event !== 'onStateChange' || !Number.isInteger(data.info)) return;
+      // A late play acknowledgement must not undo a pause, timeout, or error.
+      // Retain the latest user intent and repeat pause if the player starts late.
+      if (data.info === 1 && !wanted) { command('pauseVideo'); return; }
+      if (!ready || failed) return;
       // An unstarted, ended, or cued player is also stopped. It need not
       // emit state 2 when P cancels playback before the first play begins.
       if (pendingPlayback === 2 && [-1,0,5].includes(data.info)) {
@@ -4520,6 +4697,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       footer = frame = toggleButton = message = null;
       pendingPlayback = null;
       ready = wanted = failed = false;
+      paint('KBAR is stopped.');
     }
     function create() {
       const instance = ++generation;
@@ -4553,7 +4731,9 @@ window.addEventListener('pagehide',abortScheduleRequests);
       frame.addEventListener('load', listen);
       frame.addEventListener('error', () => {
         if (instance !== generation) return;
-        clearLoading(); wanted = false; failed = true;
+        clearLoading(); clearTimeout(playbackDeadline); pendingPlayback = null;
+        wanted = false; failed = true;
+        command('pauseVideo');
         paint('YouTube could not load. Try again or open it on YouTube.');
       });
       toggleButton = button('Pause KBAR', toggle);
@@ -4574,7 +4754,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
         clearLoading(); wanted = false; failed = true;
         paint('YouTube is taking too long. Try again with P or the Settings playback control.');
       }, 15000);
-      paint();
+      paint('Loading KBAR…');
     }
     function toggle() {
       if (!db.settings.enabled) return;
@@ -4587,7 +4767,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     function reconcile() {
       if (!db.settings.enabled || (footer && !footer.isConnected)) destroy();
     }
-    return {toggle,destroy,reconcile};
+    return {toggle,destroy,reconcile,attachControls};
   })();
   function kbarShortcut(event) {
     if (event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.key?.toLowerCase() !== 'p') return;
@@ -4605,12 +4785,13 @@ window.addEventListener('pagehide',abortScheduleRequests);
     content.dataset.tab=name;
     for(const b of tabs.children){const chosen=b.dataset.tab===name;b.setAttribute('aria-selected',chosen?'true':'false');b.tabIndex=chosen?0:-1;}
     content.setAttribute('aria-labelledby','ap-tab-'+name);
-    if(storageError)content.append(note(storageError,'ap-error'));
+    content.append(storageStatusNote());
     if(!db.settings.enabled)content.append(note('Playground is paused. Enable it in Settings to show page enhancements.','ap-banner'));
     const features={weights:'weightMap'};
     const feature=features[name];
     if(feature && (!db.settings.enabled || !db.settings[feature])){
-      content.append(note(`${tabsByName[name]} is turned off. The enable button also resumes Playground if paused and can resume previously enabled schedules. Saved settings are kept.`, 'ap-empty'),button('Enable '+tabsByName[name],()=>{if(!db.settings.enabled)setToggle('enabled',true);setToggle(feature,true);renderTab(name);},'ap-primary'));
+      const enableLabel=db.settings.enabled?'Enable '+tabsByName[name]:'Enable Playground and '+tabsByName[name].toLowerCase();
+      content.append(note(`${tabsByName[name]} is turned off. The enable button also resumes Playground if paused and can resume previously enabled schedules. Saved settings are kept.`, 'ap-empty'),button(enableLabel,()=>{if(!db.settings.enabled)setToggle('enabled',true);setToggle(feature,true);renderTab(name);},'ap-primary'));
     }else if(name==='courses')renderCourses();
     else if(name==='weights')renderWeightMap();else renderSettings();
   }
@@ -4661,11 +4842,13 @@ window.addEventListener('pagehide',abortScheduleRequests);
     box.append(note('Leave 4/3/2/1 off to see both GPAs from posted letters. In the dashboard GPA details, choose included courses and check eligible Honors/AP courses. Both averages use equal course weights and ignore plus/minus: A/B/C/D/F = 4/3/2/1/0, or 5/4/3/1/0 for checked courses in weighted GPA. Turn 4/3/2/1 on for an average of custom class ratings; its color shows the overall band.'));
     box.append(note('Precise mode shows up to 8 decimals for supported calculated values and impacts. Native labels keep their posted formatting; matching on-page data may supply more precise input scores independently of this setting. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const musicBox=el('div',null,{class:'ap-box'});
-    musicBox.append(el('h3','KBAR music · P'),note('With Playground enabled and this dialog closed, press P outside editable controls to request play/pause. The looping English KBAR player is offscreen; this button does not confirm playback. If silent, close the player and retry or use Open on YouTube below.'));
+    musicBox.append(el('h3','KBAR music · P'),note('With Playground enabled and this dialog closed, press P outside editable controls to request play/pause. The looping English KBAR player is offscreen; its reported status appears below. If silent, close the player and retry or use Open on YouTube below.'));
     musicBox.append(note('Starting KBAR connects to YouTube. It may collect playback information and show ads. Playground sends no grades or course data. Close the player to stop and unload it; P pauses it.'));
-    const musicButton=button('Play / pause KBAR (P)',()=>kbar.toggle());musicButton.disabled=!db.settings.enabled;
+    const musicButton=button('Play KBAR (P)',()=>kbar.toggle()),musicStatus=note('');
+    musicStatus.setAttribute('role','status');musicStatus.setAttribute('aria-live','polite');
+    kbar.attachControls(musicButton,musicStatus);
     toggles.enabled.addEventListener('change',()=>{musicButton.disabled=!db.settings.enabled;});
-    musicBox.append(musicButton,button('Close KBAR player',()=>kbar.destroy()));
+    musicBox.append(musicButton,button('Close KBAR player',()=>kbar.destroy()),musicStatus);
     const musicSource=note('If playback is blocked or unavailable, open the original video on YouTube (opens a new tab): ');
     musicSource.append(el('a','Open on YouTube',{href:'https://www.youtube.com/watch?v=sasjlpt7zWM',
       target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer'}));
@@ -4681,8 +4864,8 @@ window.addEventListener('pagehide',abortScheduleRequests);
     const message=note('','ap-saving');content.append(button('Save settings',()=>{
       const cut=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.percent.value)),avg=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.avg.value));
       if(!validCutoffs(cut)||!validCutoffs(avg)||(yearInput.value.trim()&&!/^\d{4}$/.test(yearInput.value.trim()))){message.textContent='Use descending nonnegative thresholds and a four-digit year if supplied.';message.className='ap-error';return;}
-      const scopeChanged=draft.profile!==scopeInput.value.trim() || draft.year!==yearInput.value.trim();
-      db.settings={...draft,...Object.fromEntries(Object.entries(toggles).map(([k,n])=>[k,n.checked])),scheduleNetworkConsent:db.settings.scheduleNetworkConsent,cutoffs:cut,averageCutoffs:avg,colors:colorRows.map(r=>r.color.value),profile:scopeInput.value.trim(),year:yearInput.value.trim()};
+      const scopeChanged=db.settings.profile.trim()!==scopeInput.value.trim() || db.settings.year.trim()!==yearInput.value.trim();
+      db.settings={...db.settings,...Object.fromEntries(Object.entries(toggles).map(([k,n])=>[k,n.checked])),scheduleNetworkConsent:db.settings.scheduleNetworkConsent,cutoffs:cut,averageCutoffs:avg,colors:colorRows.map(r=>r.color.value),profile:scopeInput.value.trim(),year:yearInput.value.trim()};
       if(scopeChanged){closeGradeLab();selectedCourse='';detectedCourseKey='';annotationSources.clear();nativePageState=null;clearAnnotations();clearWeightMapPage();clearCategorySpotlight();}
       if(!db.settings.impacts)clearImpactLabels();
 
@@ -4695,22 +4878,47 @@ window.addEventListener('pagehide',abortScheduleRequests);
       else {clearMessage.className='ap-error';clearMessage.textContent=storageError;}
     }),clearMessage);content.append(local);
   }
-  let scanTimer;
-  const observer=new MutationObserver(mutations=>{
-    const useful=mutations.some(m=>{
-      const target=m.target.nodeType===Node.ELEMENT_NODE?m.target:m.target.parentElement;
-      if(target?.closest('[data-ap-owned]'))return false;
-      if(m.type==='childList'&&[...m.addedNodes,...m.removedNodes].length&&[...m.addedNodes,...m.removedNodes].every(n=>n.nodeType===Node.ELEMENT_NODE&&n.matches?.('[data-ap-owned]')))return false;
-      if(m.type==='attributes')return target?.matches('.classesSection') || Boolean(target?.querySelector('.classesSection'));
-      const tracked='.classesSection,table,select[id$="_dlGN"],input[id$="_chkMissingAssignmentOnly"]';
-      return target?.closest(tracked) || [...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===Node.ELEMENT_NODE&&(n.matches?.(tracked)||n.querySelector?.(tracked)));
-    });
-    if(useful){clearTimeout(scanTimer);scanTimer=setTimeout(scan,160);}
+  let scanTimer,pageSuspended=false;
+  function scheduleScan(){
+    if(pageSuspended)return;
+    clearTimeout(scanTimer);scanTimer=setTimeout(scan,160);
+  }
+  function pageMutationRelevant(m){
+    const target=m.target.nodeType===Node.ELEMENT_NODE?m.target:m.target.parentElement;
+    if(target?.closest('[data-ap-owned]'))return false;
+    if(m.type==='childList'&&[...m.addedNodes,...m.removedNodes].length&&[...m.addedNodes,...m.removedNodes].every(n=>n.nodeType===Node.ELEMENT_NODE&&n.matches?.('[data-ap-owned]')))return false;
+    if(m.type==='attributes'){
+      if(target?.matches('.classesSection') || target?.querySelector('.classesSection'))return true;
+      if(!target?.closest('.classesSection'))return false;
+      if(m.attributeName!=='style')return true;
+      // Visibility changes on individual cards affect the overall summary.
+      // Ignore our own color/font changes so scans cannot feed the observer.
+      const previous=document.createElement('span');previous.style.cssText=m.oldValue||'';
+      return ['display','visibility','content-visibility'].some(property=>
+        previous.style.getPropertyValue(property)!==target.style.getPropertyValue(property)
+        || previous.style.getPropertyPriority(property)!==target.style.getPropertyPriority(property));
+    }
+    const tracked='.classesSection,table,select[id$="_dlGN"],input[id$="_chkMissingAssignmentOnly"]';
+    return Boolean(target?.closest(tracked) || [...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===Node.ELEMENT_NODE&&(n.matches?.(tracked)||n.querySelector?.(tracked))));
+  }
+  const observer=new MutationObserver(mutations=>{if(mutations.some(pageMutationRelevant))scheduleScan();});
+  const observerOptions={childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true,attributeFilter:['class','style','hidden','aria-expanded']};
+  observer.observe(document.body,observerOptions);
+  window.addEventListener('resize',scheduleScan);
+  document.addEventListener('change',scheduleScan);
+  window.addEventListener('pagehide',()=>{
+    // A BFCache restore resumes this same JavaScript state. Discard transient
+    // scores now, restore the native nodes, and rebuild the lab on pageshow.
+    pageSuspended=true;observer.disconnect();clearTimeout(scanTimer);scanTimer=undefined;
+    panelReturnFocus=null;if(dialog.open)dialog.close();
+    closeGradeLab();clearAnnotations();restoreDetailsColors();clearCategorySpotlight();clearWeightMapPage();
+    nativePageState=null;nativeStatus=null;nativeBanner?.remove();nativeBanner=null;annotationSources.clear();
+    clearTimeout(saveTimer);if(savePending)persist();
   });
-  observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden','aria-expanded']});
-  window.addEventListener('resize',()=>{clearTimeout(scanTimer);scanTimer=setTimeout(scan,160);});
-  document.addEventListener('change',()=>{clearTimeout(scanTimer);scanTimer=setTimeout(scan,160);});
-  window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);if(savePending)persist();});
+  window.addEventListener('pageshow',()=>{
+    if(!pageSuspended)return;
+    pageSuspended=false;observer.observe(document.body,observerOptions);scan();
+  });
   try{GM_registerMenuCommand('Aeries Playground — open settings (S)',()=>openPanel('settings'));}catch{/* The S keyboard shortcut remains available. */}
   try{GM_registerMenuCommand('Aeries Playground — KBAR play/pause (P)',()=>kbar.toggle());}catch{/* The P shortcut remains available. */}
   scan();

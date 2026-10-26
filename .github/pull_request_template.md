@@ -14,13 +14,13 @@ Replace “Not run” with the result of each check you ran. For anything you co
 
 | Check | Result |
 | --- | --- |
-| `node --test tests/check-userscripts.test.mjs tests/check-documentation.test.mjs` | Not run |
+| `node --test tests/*.test.mjs` | Not run |
 | `node scripts/check-userscripts.mjs` | Not run |
 | `node scripts/check-documentation.mjs` | Not run |
 | `git diff --check` | Not run |
 | Affected behavior or rendered documentation | Describe the input/steps, expected result, and observed result. |
 
-Use the relevant [developer verification guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/DEVELOPMENT.md#verify-the-behavior-you-change). Distinguish formula examples, synthetic page fixtures, mocked requests/player checks, and live browser verification. Checker tests do not test Playground's features; the documentation checker does not validate external links, form schema, or rendering.
+Use the relevant [developer verification guide](https://github.com/sodium-qed/aeries-playground/blob/main/docs/DEVELOPMENT.md#verify-the-behavior-you-change). Distinguish formula examples, synthetic page fixtures, mocked requests/player checks, and live browser verification. Synthetic source regression tests cover feature behavior without a live browser; the documentation checker does not validate external links, form schema, or rendering.
 
 ## Documentation and remaining limits
 

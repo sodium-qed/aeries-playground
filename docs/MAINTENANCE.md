@@ -1,22 +1,31 @@
-# Maintenance and release plan
+# Maintenance and release status
 
-The stable **3.0.0** release work is planned for **Sunday, October 25, 2026 at 11:59 PM America/Los_Angeles**. The code audit starts then; publication follows implementation and verification of the fixes. A scheduled start is not a claim that the software has already passed that audit.
+The complete documentation redo was published in [`81d9114`](https://github.com/sodium-qed/aeries-playground/commit/81d9114d288bc7b38561da2f4f1ab311f9685744). The subsequent full code audit starts from that revision, preserves the documentation and existing license grants, and prepares stable **3.0.0**. Publication is not established until the tag, source, asset, stable state and Latest selection are verified.
 
-The October 25 documentation redo keeps the userscript at **2.4.0**. It covers every documentation-bearing file and embedded explanation, including the license, privacy policy, contribution flow, and guides. The public README notice governs contributor timing; it does not narrow the scope of either overhaul. That notice remains until the code audit, fixes, verification, and stable release finish. Already scheduled maintenance is exempt.
+The public README pause notice concerns contributor timing only; it never limits the scope of the audit. It remains until release verification succeeds. Scheduled maintenance is exempt. Historical releases including 2.3.0 and 2.4.0 remain untouched.
 
-## Current release state
+See the [code-audit coverage and verification record](AUDIT-3.0.0.md), [release notes](RELEASE-3.0.0.md), [developer checks](DEVELOPMENT.md#run-the-repository-checks), and [available downloads](FEATURES.md#available-release).
 
-The redo starts from [`b0dab82`](https://github.com/sodium-qed/aeries-playground/commit/b0dab82fa3451a8c619dfe667f6258d73fbdf671) on `main`. Release state was rechecked on October 25:
+## Documentation findings resolved in the audited source
 
-- [2.4.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0), published October 19, is the current prerelease. Its asset is the historical file; subsequent documentation and help-text changes on `main` do not replace that asset.
-- [2.0.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.0.0) remains stable **Latest**. Earlier prereleases, including 2.3.0, remain available under their original tags.
-- Stable 3.0.0 is planned, not published by the documentation work.
+| Carried-forward finding | Disposition |
+| --- | --- |
+| Posted rounding and decimal precision mismatches | Corrected reconciliation; raw mathematical results remain unrounded. |
+| Blank duplicate course cards discard a usable GPA grade | First usable record is retained once per course identity. |
+| Count-off invalid hypothetical rows block results | Excluded rows retain drafts but do not block totals with score/name/category validation. |
+| Range-only categories omitted from profile validation | Validation uses active scenario rows, including ranges. |
+| Hypothetical score colors ignore the preference | Existing rows, added rows and totals now honor the setting. |
+| Immediate save errors remain hidden | Live status appears in the current settings/GPA controls. |
+| Schedule manager timeouts may be ignored | Independent local watchdog settles promises and requests abort; browser throttling/manager limits remain. |
+| Browser-restored pages retain hypothetical scenarios | Pagehide clears transient state; pageshow reconstructs it. Synthetic lifecycle tested, real BFCache unverified. |
+| Weight-map enable also resumes Playground | Combined action is explicitly labeled while retaining its intended behavior. |
+| Hidden media errors | Settings now exposes provider-reported status; native iframe controls remain offscreen. |
 
-No historical release, tag, or asset is replaced by this documentation work. See [available downloads](FEATURES.md#available-release) before choosing an installation.
+The abbreviated feature issue remains uninterpreted; no feature was invented from that shorthand. Dashboard numeric ratings still replace the visible letter. Cross-tab consent still requires reload/close controls described in SECURITY.md. No real student data or exploitable security details belong in this public record.
 
-## Review coverage
+## Documentation review coverage
 
-Six parallel reviewers reread the current implementation and every assigned document, followed by integration and cross-file verification. The starting revision contained 21 tracked files and no `AGENTS.md`, package manifest, or additional documentation format. The [documentation index](README.md) is the user-facing entry point; this inventory records review ownership and outcomes.
+During the earlier documentation phase, six parallel reviewers reread the current implementation and every assigned document, followed by integration and cross-file verification. The starting revision contained 21 tracked files and no `AGENTS.md`, package manifest, or additional documentation format. The [documentation index](README.md) is the user-facing entry point; this inventory records review ownership and outcomes.
 
 | Documentation-bearing file or source area | Review owner | Outcome |
 | --- | --- | --- |
@@ -43,41 +52,8 @@ Six parallel reviewers reread the current implementation and every assigned docu
 | [.editorconfig](../.editorconfig), [.gitattributes](../.gitattributes), and [.gitignore](../.gitignore) | Contribution experience and coordinator | Formatting, line endings, ignored captures, and privacy-warning comments reviewed; retained. |
 | [docs/MAINTENANCE.md](MAINTENANCE.md) | Coordinator | Complete coverage, verification limits, and actionable audit handoff recorded. |
 
-## Code-audit handoff
+## Publication safeguards
 
-These findings are not fixed by the documentation publication. Synthetic examples use fictional data. Reproduce and evaluate the intended behavior during the October 25 audit before changing code.
+The publisher is frozen to one reviewed 3.0.0 source hash and byte count. Source-path filtering prevents documentation-only pushes from initiating publication. A nonmatching source push skips; manual recovery rejects a mismatch. Required checks run before release mutations. Historical tags are never moved and conflicting assets are never overwritten. Recovery verifies the original reviewed workflow commit, attached source bytes, stable metadata and Latest selection.
 
-| Finding | Source location by function | Evidence and next check |
-| --- | --- | --- |
-| Final rounding is not used for posted percentage reconciliation | `GradeMath.fromAeries` | Rows `90/100` and `40/50` calculate `86.666…%`; a posted `87%` still fails with a saved nearest-integer rounding rule. Decide how native policy and saved simulation rules should affect reconciliation. |
-| Percentage reconciliation does not adapt to displayed decimal places | `GradeMath.fromAeries` | The same rows with a posted `86.7%` fail the fixed `0.011` percentage-point tolerance. Average-scale labels use a different, decimal-aware tolerance. Test coarse percentage labels without accepting genuinely inconsistent totals. |
-| Duplicate course keys can discard a usable grade | `OverallMath.summarize` | A blank first card and an `A` second card with the same key yield zero included courses. Check actual duplicate layouts and select a consistent usable record without double-counting. |
-| Count-off rows can still block a scenario | `labScoreState`, `labModel` | Malformed score input remains invalid when Count is off; a scored hypothetical row without a name/category also blocks. Define and test whether exclusion should suppress this validation. |
-| Range-only categories can be missed by profile validation | `buildGradingProfileUI` / `activeCategories` | The active-category check inspects single-score drafts rather than enabled ranges, allowing a missing weight that the later range calculation rejects. Reproduce through the UI. |
-| Existing hypothetical-score colors disregard one display preference | `renderGradeLabResult` | Existing edited scores and totals receive threshold colors while `detailsColors` is off; added-row coloring checks the preference. Verify intended consistency in a browser. |
-| Immediate settings saves may not immediately surface failure | `setToggle`, GPA checkbox handlers, `persist`, `renderTab` | Some handlers ignore `persist()`'s return value; the stored error is shown when the dialog is rendered again. Test storage failure and reset-marker mismatch with the Settings tab already open. |
-| Schedule timeouts need manager/browser verification | `requestScheduleJSON` | The source requests timeouts with anonymous requests. Tampermonkey documents fetch-mode timeout limitations in Chrome; verify cancellation and hung transfers rather than assuming the timeout always fires. |
-| Browser back/forward restoration may retain an active scenario | `pagehide` handlers and grade-lab lifecycle | Navigation handlers abort schedules and close KBAR but do not explicitly clear grade-lab state. Check browser back/forward-cache restoration before promising that navigation discards hypothetical values. This is a source-level concern, not a reproduced browser result. |
-| Enabling the weight map can resume the master switch | `renderTab`, `setToggle`, `scheduleRequestsAllowed` | The disabled-map action first enables Playground, retaining any saved schedule consent. The revised help now discloses this; assess the control's label and expected behavior during the UI audit. |
-
-The hidden KBAR frame has no accessible native playback/status controls; Settings supplies separate controls and a YouTube fallback. Dashboard numeric ratings do not preserve the replaced letter in a visible tooltip. These are documented current limitations, not promised fixes. The open feature issue's abbreviated request requires clarification before implementing any inferred feature.
-
-Do not place exploitable vulnerability details or real Aeries records in this public handoff. Use the [private security-reporting route](../SECURITY.md#report-a-vulnerability-privately).
-
-## Publication safeguards and verification limits
-
-The current release workflow is still a recovery publisher for one frozen 2.4.0 artifact. An automatic push whose userscript does not match its approved SHA-256 and size exits successfully without creating a release, changing a tag, or uploading an asset. Manual recovery retains the strict mismatch failure. A later release requires an explicitly reviewed workflow/artifact update; changing a version label alone does not prepare a release.
-
-Verification completed before publication:
-
-- All **17 checker tests** passed on Node.js 24.22.1, and the userscript passed syntax/basic-metadata checking. `git diff --check` passed. The six new tests cover documentation-link checking, not browser behavior.
-- A fresh temporary source-function harness passed **111 arithmetic, parsing, and boundary cases**, including all worked examples and reproductions of existing limitations. Eight separate contribution-example assertions and synthetic request/storage checks also passed. These are review checks, not a newly committed calculation or browser regression suite.
-- All **256 local inline Markdown file/anchor links** resolved across twelve Markdown files. This checker now runs in CI. It does not check external URLs, reference-style links, issue-form schema, or rendered layout.
-- The issue forms and chooser separately passed YAML parsing, duplicate-key detection, and structural checks against GitHub's documented schema. Documented shell blocks passed shell syntax checks. Markdown structures were parsed; signed-in GitHub forms and browser layout were not exercised.
-- Both embedded licensing texts exactly match their files. The original Version 1.0 grant matches the initial repository commit byte for byte, and the README maintenance block matches the starting revision exactly.
-- Exact source comparison permits only the opening privacy/license comments and **27 reviewed text/comment substitutions**. All other executable source and metadata, including `@version` and `@license`, are unchanged.
-- The release workflow's Python is unchanged and compiles. Checks of the frozen original and current file confirm automatic-push skip and strict manual-recovery behavior before external commands or API writes. Only workflow display names changed to identify its recovery role.
-
-These checks do not exercise a signed-in Aeries page, browser layout, school-specific policies, live schedule feeds, media playback, or every userscript-manager implementation. They are not a security certification, legal determination, or proof of zero defects. The license rewrite preserves the existing grant; it does not relicense other contributors' work under new terms. See [licensing](LICENSING.md).
-
-The October 25 release work must fetch the latest `main`, reproduce the findings, implement and test fixes, reconcile any concurrent changes, prepare the actual stable artifact, and verify publication before removing the temporary README notice. If any required phase is blocked or incomplete, retain the notice and report the actual status.
+The complete tests and remaining limitations are recorded in [the audit](AUDIT-3.0.0.md). They are not a guarantee of zero bugs, live-browser compatibility, security certification, or legal determination.

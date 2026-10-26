@@ -77,7 +77,7 @@ The preview sizes work as if known possible points counted. It does not assign m
 | Raw conversion seems short by a hundredth | Raw marks convert to gradebook points rounded down to two decimals. For example, 2/3 of 10 is 6.66. Direct point entry is not deliberately truncated by that conversion. |
 | Complete shows an approximate equivalent | Entered/validated Score points are retained. Leaving the inferred raw equivalent unchanged does not convert it back through truncation. |
 | Score denominator is read-only | Recognized four-point gradebooks use a fixed detected denominator. A saved simulation scale does not rebuild the row controls. |
-| Count off does not remove an input error | Fix or reset malformed score/raw inputs. A scored hypothetical assignment still needs a name/category; Count is not a general validation bypass. |
+| An excluded row still contains unfinished inputs | Count off keeps the draft but skips its score, total, name, and category validation. Counted rows, the posted baseline, and active rules still need to be valid. Re-enable Count to validate that row again. |
 | A new assignment cannot use a new category | The selector contains categories already read from the gradebook, or Uncategorized if none exist. There is no arbitrary category-creation control. |
 | **Calculate required score** is disabled | Turn off the counted ranges. Uncounted ranges do not prevent single-score solving. |
 | Target result is unavailable | Enter a nonnegative target and maximum, a positive increment, and positive possible points. Finish/add or clear replacement fields, resolve unmatched saved rules, and check the baseline. |
@@ -92,6 +92,7 @@ The preview sizes work as if known possible points counted. It does not assign m
 | Copying Aeries values did not activate a profile | **Copy values shown by Aeries** copies detected fields and leaves rounding for you to choose. Complete the draft and inspect its status. |
 | Reset did not undo a policy change | Rule additions/removals save immediately. Scenario reset reloads saved rules; it does not roll them back or clear every unfinished planner field. |
 | Closing Settings did not end testing | Use **Exit grade testing** in the gradebook. Closing the dialog leaves the scenario active. |
+| Browser Back/Forward did not restore hypothetical scores | Expected: leaving the page clears the temporary scenario, including when the browser later restores that page from its navigation cache. Saved grading policies and replacement rules remain. |
 | A printed page contains hypothetical values | Exit testing before printing the posted gradebook. |
 
 For a fresh score scenario, use **Reset hypothetical changes**. To remove a saved calculation policy, use **Clear saved grading profile**; replacement rules are separate and remain. To restore the posted page without deleting saved policies, use **Exit grade testing**. See [the lab guide](FEATURES.md#grade-testing-lab) for the full workflow.
@@ -102,13 +103,13 @@ For a fresh score scenario, use **Reset hypothetical changes**. To remove a save
 | --- | --- |
 | Only one overall score appears | Turn **Show 4/3/2/1 on dashboard** off for the two letter-based GPAs. Keep **Overall grade / GPA above classes** on. |
 | The two GPAs match unexpectedly | Check **Honors/AP** on the included A/B/C courses eligible for the supported bonus. D/F gain no bonus. In Courses, select **Save course settings**; dashboard details save immediately. |
-| A course is absent from GPA | It must have a visible dashboard card, be included, and have a recognized A–F letter. Honors/AP does not override exclusion. Pass/fail, blanks, and numeric-only marks are skipped. |
+| A course is absent from GPA | It must have a visible dashboard card, be included, and have a recognized A–F letter. Honors/AP does not override exclusion. Pass/fail, blanks, and numeric-only marks are skipped. Duplicate course identities use the first usable letter and count once. |
 | Plus/minus marks do not change GPA | Expected: both GPA scales ignore plus/minus. They also ignore custom thresholds and hypothetical score edits. |
 | A numeric rating differs from the letter | Ratings use your thresholds, not the teacher's letter scale. Turn numeric display off to inspect the original mark; the replacement does not supply an original-letter tooltip. |
 | A nickname/icon does not appear | Enable **Course nicknames & icons**, save the Courses form, and check the selected profile/year. Clearing a name/icon restores/removes that customization. |
 | A bar is full before 100, or begins above zero | Inspect the course's bar minimum/maximum. Bars clip to their chosen display span; the posted number stays visible. |
 | No numeric bar appears | The card has no recognized numeric grade. A recognized letter may still count toward GPA. |
-| Some colors remain after a color toggle is off | Bars/map use the shared palette independently. Some existing lab overlays also remain colored; exit testing to inspect posted detail-color behavior. |
+| Some colors remain after a color toggle is off | Bars/map use the shared palette independently. **Grade colors on details page** controls threshold colors for posted and hypothetical grades; range values and Hypothetical badges retain their neutral/annotation styling. |
 
 The displayed GPAs are equal averages of selected visible letters, not transcript or credit-weighted GPAs. Hidden saved courses do not count. See [GPA details](FEATURES.md#weighted-and-unweighted-gpa-together).
 
@@ -118,11 +119,12 @@ The displayed GPAs are equal averages of selected visible letters, not transcrip
 | --- | --- |
 | Panel missing | Enable Playground and the explained **What class is next (MVHS)** toggle, then open a dashboard with visible course cards. The integration starts off. |
 | Schedule unavailable | Select **Retry schedule** when offered. Check userscript network permission and the linked public source; invalid or stale primary data is not used for a countdown. |
-| Loading does not finish | Turn the schedule toggle off, then on to request a fresh start in this tab, or reload. Manager/browser network failures can outlast the requested timeout. |
+| Loading does not finish | Requests have local deadlines of 15 seconds for MVHS and 10 seconds for bell.plus; a suspended browser can delay these timers. When the page is active again, use **Retry schedule**, or turn the schedule toggle off and on to start fresh in this tab. The manager may still fail to stop an underlying transfer. |
 | Countdown has minutes but no seconds | Minutes are the intended fallback when bell.plus clock/schedule checks are stale, unavailable, or disagree. A future date must agree too. |
 | Next class shows only a period | Open **Match classes to periods**, set an exact period such as `2A`, resolve duplicate matches, and save. Only visible dashboard cards are matched; unmatched periods are not skipped as free periods. |
 | Panel already counts down to another day during the last class | Expected: no later student slot remains today. The current class can still be shown alongside the next school day. |
 | No upcoming class after school | The search stops fourteen dates ahead and depends on the public calendar. It does not use a personal attendance schedule. |
+| Next school day unavailable, but today's bells remain visible | A future date has an unavailable schedule or conflicting calendar entries. Check mvhs.io and allow the cache to refresh. Playground stops at that uncertain date instead of guessing a later school day. |
 | Times differ from local device time | The panel uses America/Los_Angeles, including daylight-saving changes. It never changes the device clock. |
 | Another tab keeps requesting schedules after you turn them off | Reload or close the other Aeries tabs. Each retains its loaded consent/settings until refreshed. |
 
@@ -130,12 +132,12 @@ Public MVHS data is the primary schedule; bell.plus cross-checks it for seconds.
 
 ## KBAR playback
 
-1. Enable Playground. With its dialog closed, press **P** outside editable/lab controls, or use **Settings → Play / pause KBAR (P)** or the manager's KBAR command.
-2. If silent, use **Close KBAR player**, then retry once. Browser/media restrictions, networking, or YouTube embed behavior may prevent playback.
+1. Enable Playground. With its dialog closed, press **P** outside editable/lab controls, or use **Settings → Play KBAR (P)** or the manager's KBAR command. The Settings button changes to **Pause KBAR (P)** while playback is requested and **Retry KBAR (P)** after a load/player failure.
+2. If silent, read the status below the Settings playback control. If blocked or unavailable, retry once or use **Close KBAR player**, then start it again. Browser/media restrictions, networking, or YouTube embed behavior may prevent playback.
 3. If still unavailable, use **Open on YouTube** in Settings. Close the embed separately to avoid simultaneous playback.
 4. To stop and unload the embed, use **Close KBAR player**. **P** requests pause/resume and leaves the embed loaded.
 
-The player and its status/error text are offscreen. The visible Settings playback button does not confirm that audio started. The original-video link remains available with Playground paused or no embed loaded; opening it neither starts nor closes the embed.
+The player and its native controls remain offscreen. Settings exposes its reported status and errors; a playing message does not guarantee audible output. **Pausing** means the request is still awaiting acknowledgment. The original-video link remains available with Playground paused or no embed loaded; opening it neither starts nor closes the embed.
 
 If audio continues after a pause request, close the player. Master pause also unloads it in this tab; other tabs' players are separate. If the page gains blank scroll space after KBAR, keep one updated script enabled, reload, and [report a remaining layout problem](#report-a-reproducible-problem).
 
@@ -144,12 +146,14 @@ If audio continues after a pause request, close the player. Master pause also un
 | What happened | What to do |
 | --- | --- |
 | Course/form edits disappear on tab change | Save **Courses** or ordinary **Settings** fields before switching dialog tabs. These forms are not automatically saved. |
-| A toggle seems saved but returns after reload | Reopen the dialog for a storage error and check the manager's storage operation. Avoid saves from other tabs while checking. |
-| **Could not load saved settings. This visit uses defaults.** | Inspect the manager before customizing further; a later successful save may replace the stored configuration with this visit's state. |
+| A toggle seems saved but returns after reload | Check the storage error in the open dialog or dashboard summary, and inspect the manager's storage operation. Avoid saves from other tabs while checking. |
+| **Could not load saved settings** or **Saved settings have an unsupported or invalid format** | Ordinary saves are blocked and the stored data is retained. Recover the manager or use a compatible script, then reload. Explicitly clearing settings can replace the data if you intend a full reset and the write succeeds. |
+| **Some invalid saved settings were ignored** | Review course settings, grading profiles, and replacement rules. Invalid known entries are not applied; valid entries remain. This recovery notice is separate from a failed save. |
 | **Could not save to browser storage. Changes work for this visit only.** | Keep the tab open while checking the manager, then retry the relevant Save control. Do not rely on persistence until a save succeeds. |
 | **Saved settings were cleared in another tab. Reload this tab before saving.** | Reload promptly before making further changes. The old running state is not synchronized immediately. |
 | A change is overwritten by another tab | Use one tab for configuration, then reload the others. Ordinary saves replace the stored settings copy rather than merging fields. |
 | Wrong settings after changing student/year | Use the correct trimmed, case-sensitive profile/year pair and the [paused switch sequence](SETTINGS.md#select-a-profile-and-school-year). |
+| Saved course settings differ between dashboard and gradebook | Playground reuses an exact course identity or one unambiguous verified older URL key. If older keys conflict or include an unmatched year/section, it keeps a separate entry instead of guessing. Check the selected course and edit that entry in Courses. |
 | Scores/ranges disappear after exit or reload | Expected: scenarios are temporary. Saved grading rules do not save scenario scores. |
 | An in-app clear fails | The script restores the previous in-memory settings and reports an error. Check storage and retry only if you still intend to reset all configuration. |
 

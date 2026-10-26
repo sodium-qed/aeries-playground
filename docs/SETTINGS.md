@@ -17,7 +17,7 @@ Open Playground with **S** outside an editable control, or the manager's **Aerie
 
 Switching dialog tabs or reopening a form can discard unsaved Courses and ordinary Settings fields without a warning. **Save settings** does not save the Courses form, and **Save course settings** does not save a scenario. Closing the dialog alone leaves grade testing active.
 
-Automatic saving can fail. A change may work for the current visit even when it was not stored; check the form status or reopen the dialog for a storage-error message.
+Automatic saving can fail. A change may work for the current visit even when it was not stored. Storage errors update immediately in an open Playground dialog and the dashboard GPA/overall summary; grading-profile and replacement controls also report their own save status.
 
 ## Default toggles
 
@@ -32,7 +32,7 @@ These are fresh-install defaults, not a reset of an existing installation's choi
 | **What class is next (MVHS)** | Off | Public schedule/clock access after explicit opt-in |
 | **Course nicknames & icons** | On | Customized dashboard course titles/icons; nickname use in the next-class panel |
 | **Grade progress bars** | On | Dashboard bars with threshold markers |
-| **Grade colors on details page** | On | Recognized posted assignment/category/course colors |
+| **Grade colors on details page** | On | Threshold colors for posted and hypothetical assignment/category/course grades |
 | **Assignment impact labels on the page** | On | Calculated leave-one-out assignment impacts |
 | **Ridiculously precise mode** | On | Longer formatting for supported calculated values |
 | **Category filter on gradebook pages** | On | Local category buttons above assignments |
@@ -40,6 +40,8 @@ These are fresh-install defaults, not a reset of an existing installation's choi
 | **Show ungraded assignments**, in Weight map | Off | Ungraded-work weight preview |
 
 All these preferences are global across profiles and years. KBAR has no saved on/off preference: the player starts unloaded on every fresh page load. **Honors/AP** is a separate per-course choice and starts unchecked; summary inclusion starts checked.
+
+The **KBAR music** box has a playback button labeled **Play KBAR (P)**, **Pause KBAR (P)**, or **Retry KBAR (P)**, with visible status below it. Playback and pause requests do not need a Save button. The status reflects the player's messages, not a measurement of audible output. **Close KBAR player** unloads the embed, and **Open on YouTube** remains available even while Playground is paused.
 
 Existing valid preferences are generally retained on upgrade. The source migrates some former built-in defaults, including old average cutoffs, bar minima, a former third-band color, and automatically generated icons. An older enabled schedule widget without the explicit consent flag is forced off until the explained toggle is enabled.
 
@@ -56,7 +58,7 @@ In **Settings → Grade colors & thresholds**, set the three descending nonnegat
 
 **Courses → Custom thresholds for this course** overrides the matching global cutoff set. **Bar scale** chooses percentage or average display thresholds; it does not select the lab's calculation method. Bar range edits change the display span, normally 50–100 or 1–4. A detected average course can initialize or restore its average bar scale automatically.
 
-Colors, numeric ratings, bars, and calculation rules are separate controls. Changing cutoffs changes custom ratings and colors; it does not change letter-based GPA or a teacher's grade. Bars and map entries keep using the palette even when dashboard/detail color toggles are off. Some existing hypothetical score/total overlays also keep threshold colors with the details toggle off. Counted ranges use neutral colors.
+Colors, numeric ratings, bars, and calculation rules are separate controls. Changing cutoffs changes custom ratings and colors; it does not change letter-based GPA or a teacher's grade. Bars and map entries keep using the palette even when dashboard/detail color toggles are off. The details toggle also controls threshold colors on existing and added hypothetical scores and totals. Counted ranges use neutral colors.
 
 Precise mode generally uses up to eight decimal places instead of two for calculated grades and impacts, with trailing zeros removed. Summary GPA/rating displays and map weight percentages use up to two; map point details use up to four. Native posted text keeps its own formatting. Extra on-page score precision and raw-score conversion are separate from this setting; see [precision](FEATURES.md#fractional-score-precision).
 
@@ -73,7 +75,7 @@ Playground configuration is stored by the userscript manager under `aeries-playg
 | Course grading policy and unfinished profile-form draft | Saved per course/profile/year; invalid drafts retain the last valid policy, if any |
 | Replacement policy, cap, and assignment references | Saved per course/profile/year; references contain names, IDs, categories, and whether an assignment was hypothetical |
 | Posted scores, calculated GPA, impacts, weight previews | Not persisted by this source |
-| Hypothetical scores, added assignment cards, and ranges | Memory only; reset/exit/reload or a recognized gradebook/scope change clears them |
+| Hypothetical scores, added assignment cards, and ranges | Memory only; reset, exit, leaving/reloading the page, or a recognized gradebook/scope change clears them. Back/Forward restoration does not restore a scenario. |
 | Target inputs and calculated target result | Memory only; exit/reload clears them, and relevant scenario/input changes invalidate the result. **Reset hypothetical changes** is not a blanket reset of planner fields. |
 | Selected category, map selection, public schedule cache, KBAR playback | Page memory only |
 
@@ -88,7 +90,7 @@ Profile labels are organization aids, not separate private accounts. Saved names
 When changing students/accounts, use this order so the current page is not discovered under the new label:
 
 1. Close other Aeries tabs first, so they cannot later flush an older pending save.
-2. Turn **Enable Playground** off in the remaining tab. Reopen Settings and resolve any storage error before switching accounts.
+2. Turn **Enable Playground** off in the remaining tab. Check the displayed save status and resolve any storage error before switching accounts.
 3. Switch to the intended student/account in Aeries.
 4. Open Playground Settings while paused. Enter the intended **Settings profile** and **School-year starting year**, then select **Save settings** and check for success.
 5. Re-enable Playground and visit the intended dashboard or gradebook to discover that scope's courses.
@@ -101,9 +103,13 @@ There is no automatic account/student/year selection, profile picker, or individ
 
 Each tab loads its own settings copy. Ordinary saves write that copy in full; concurrent edits are last-write-wins, not merged. A later save can restore an older nickname, map preference, or schedule opt-in. Reload other Aeries tabs after important configuration changes, especially consent changes and master pause.
 
-A successful in-app clear writes a reset marker. An older tab with this source checks the marker before saving and can report **Saved settings were cleared in another tab. Reload this tab before saving.** This does not immediately stop its running features. Reload it; do not keep making changes in that stale tab. Older script copies without that check can still rewrite settings.
+A successful in-app clear writes a reset marker. An older tab with this source checks the marker before an ordinary save and can report **Saved settings were cleared in another tab. Reload this tab before saving.** This does not immediately stop its running features. Reload it; do not keep making changes in that stale tab. Older script copies without that check can still rewrite settings.
 
-If a save reports **Could not save to browser storage. Changes work for this visit only**, keep the tab open while checking the manager and retry the relevant save. For detailed recovery, see [settings do not survive reload](TROUBLESHOOTING.md#settings-do-not-survive-reload).
+If a save reports **Could not save to browser storage. Changes work for this visit only**, keep the tab open while checking the manager and retry the relevant save.
+
+Unreadable, malformed, or unsupported saved configuration uses temporary defaults and blocks ordinary saves, so those defaults do not overwrite the stored data. Recover the manager or use a compatible script, then reload. **Clear saved settings and pause** can replace that data only after you explicitly confirm and the storage operation succeeds.
+
+Invalid known course policies, replacement entries, or malformed profile drafts are ignored with a review notice; valid entries and unrelated older fields remain. Older policies may omit optional fields such as rounding. The script keeps that omission and continues using the native/default behavior. For detailed recovery, see [settings do not survive reload](TROUBLESHOOTING.md#settings-do-not-survive-reload).
 
 ## Pause, clear, or remove Playground
 
@@ -118,7 +124,7 @@ If a save reports **Could not save to browser storage. Changes work for this vis
 
 After an in-app clear, schedule consent and the ungraded map preview are off. Re-enable Playground when ready; schedules require their own opt-in again. A failed clear reports a storage error and restores the previous in-memory settings.
 
-Master pause keeps schedule consent, so re-enabling Playground can resume previously enabled schedule requests. The Weight map tab's **Enable Weight map** button can also re-enable the master switch. Reload other Aeries tabs after a pause, schedule revocation, or clear; those actions do not synchronize the tabs immediately.
+Master pause keeps schedule consent, so re-enabling Playground can resume previously enabled schedule requests. While paused, the Weight map tab labels its combined action **Enable Playground and weight map**. Reload other Aeries tabs after a pause, schedule revocation, or clear; those actions do not synchronize the tabs immediately.
 
 Clearing configuration is not a routine troubleshooting step. It does not delete manager sync/backups or YouTube-controlled storage. To erase configuration through the manager, close other Aeries tabs first and use the manager's storage controls; otherwise an open tab can write its copy again.
 

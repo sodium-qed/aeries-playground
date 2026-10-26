@@ -103,7 +103,7 @@ Blank scores in the lab remain ungraded even when **Count** is checked. They do 
 
 For example, **8/10** plus **blank/10** gives **80%** in Total points mode. Changing the blank to **0/10** gives **8/20 = 40%**. Excluding that zero returns the grade to **80%**. A blank, a counted zero, and an excluded zero are three different states.
 
-**Current validation limitation:** malformed score text can still block the lab after Count is turned off. A scored hypothetical assignment without a name or category can also block it while unchecked. Correct or blank the malformed score, finish the assignment, or remove the hypothetical row. Count is not a way to retain an invalid draft and obtain a total.
+Turning Count off also omits that draft's score, denominator, range, name, and category validation. Its entered values remain available to edit or re-enable; they do not block the remaining scenario. Turning Count back on restores the normal validation, so an unfinished or malformed scored assignment must be corrected before it can contribute to a result.
 
 ### Minimum and maximum assignment percentages
 
@@ -180,7 +180,7 @@ With the original **18/20 Homework** row as the only counted score, its effectiv
 
 The native adapter chooses weighted mode when it reads category weights from Aeries totals; otherwise it uses points mode. It does not infer an unseen teacher policy. A custom profile requires weights for currently counted categories, with at least one positive weight among them. If no category currently counts, at least one entered category weight must be positive. This validation differs from the calculation engine, which can recognize an Aeries baseline containing only zero-weight categories and report that no grade exists yet.
 
-**Current profile limitation:** its active-category check reads single-score drafts and can miss a category that counts only through a range. Supply a weight for every category you intend to use in ranges or the target solver. A saved profile is not proof that every later scenario has the weights it needs.
+The profile's active-category check includes counted, valid ranges even when their single-score draft is blank. Supply a weight for every category you intend to use in ranges or the target solver. A saved profile is not proof that every later scenario has the weights it needs.
 
 ### Four-point averages and other display scales
 
@@ -223,7 +223,7 @@ For an unrounded average of **3.456/4**, two-place nearest and up rounding both 
 
 ## Display ratings and GPA
 
-The dashboard summary uses currently visible course cards, with duplicate course identities counted once. The first visible occurrence of an identity is retained; later duplicates are not merged or used to fill a missing mark. Included courses have equal weight. Saved courses that are not visible are not added to the calculation.
+The dashboard summary uses currently visible course cards, with duplicate course identities counted once. It retains the first usable grade for the selected summary: a recognized letter for GPA or a numeric grade for ratings. A later usable card can replace an earlier blank or unreadable duplicate, while conflicting usable duplicates keep the first one. Included courses have equal weight. Saved courses that are not visible are not added to the calculation.
 
 With **Show 4/3/2/1 on dashboard** on, compare each course's posted numeric percentage or average to that course's three descending cutoffs:
 
@@ -460,13 +460,13 @@ Before showing posted impacts or the weight map, the adapter reconstructs the lo
 | Category totals | At least one recognized category total is required. Every counted category must match a reported category. |
 | Percentage/point category totals | Reconstructed effective earned and possible totals must each differ from the reported values by no more than **0.011 points**. |
 | Category totals recognized as averages | Compare the reconstructed average to the displayed average, using tolerance `max(0.011, half of the last displayed decimal unit + 0.000000001)`. These books can report a zero points denominator. A blank grade has no recognized average unit and falls back to the earned/possible points check. |
-| Overall percentage | Must be numeric and within **0.011 percentage points** of the reconstructed unrounded percentage. |
+| Overall percentage | Must be numeric and match the reconstructed result after any supplied final-grade rounding, within `max(0.011, half of the last displayed decimal unit + 0.000000001)` percentage points. |
 | Overall average | Uses the same display-decimal-based tolerance as average categories, in average points. |
 | Categories present only in the assignment model | Block reconstruction; they are missing from the reported totals. |
 
-**Percentage tolerance is fixed even when Aeries shows fewer decimals.** The total-points example reconstructs **86.6666…%** and matches a posted **86.67%**, but a posted **86.7%** is outside the current 0.011 tolerance. Average-gradebook tolerances do account for displayed decimal places. This limitation can make an otherwise understandable percentage total unavailable.
+Percentage and average comparisons account for displayed decimal places. The total-points example reconstructs **86.6666…%** and can match **86.67%**, **86.7%**, or **87%**, while **86.6%**, **86%**, and **88%** remain inconsistent. The existing **0.011** allowance remains the minimum tolerance; labels with fewer decimal places use half of their last displayed unit plus a small floating-point allowance. Category point totals must still pass their separate check. Nonfinite grades or invalid precision metadata cannot satisfy reconciliation.
 
-A saved grading profile or resolved replacement rules can reconcile original posted rows with adjusted totals, but the retry still uses **posted scores only**. Editing hypothetical scores cannot make a bad baseline valid. Saved final-grade rounding is currently **not applied during this reconciliation check**: for example, rows totaling **86.6666…%** do not match posted **87%** merely because the profile specifies nearest-whole-percent rounding. The profile's rounding is used for hypothetical results after a baseline is accepted.
+A saved grading profile or resolved replacement rules can reconcile original posted rows with adjusted totals, but the retry still uses **posted scores only**. Editing hypothetical scores cannot make a bad baseline valid. When a profile supplies final-grade rounding, the overall reconciliation check applies it in the course's display scale before comparing with Aeries. For example, **86.1%** with whole-percent rounding up can match **87%**; whole-percent rounding down cannot. Category totals, the arithmetic breakdown, and assignment impacts retain their unrounded values. Without a supplied rounding policy, the check compares the unrounded result using the displayed precision allowance; it does not infer a teacher's rounding policy.
 
 Posted impacts and the map use only the native posted-rule check; a custom simulation profile that makes the lab available does not automatically make those posted tools available. **Explain my grade** can show category arithmetic beside an unmatched-total warning. That breakdown is not a reconciled overall result.
 

@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile, realpath } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -84,7 +84,7 @@ async function markdownFiles(root) {
 
 /** Check local inline links; no network requests or browser rendering. */
 export async function checkDocumentation(root) {
-  root = resolve(root);
+  root = await realpath(resolve(root));
   const files = await markdownFiles(root);
   const documents = new Map(await Promise.all(files.map(async file => [file, await readFile(file, 'utf8')])));
   const anchors = new Map([...documents].map(([file, text]) => [file, headingAnchors(text)]));
@@ -108,9 +108,13 @@ export async function checkDocumentation(root) {
       if (destination !== root && !destination.startsWith(root + sep)) {
         errors.push(`${label}: outside repository`); continue;
       }
-      try { await stat(destination); }
+      let canonical;
+      try { canonical = await realpath(destination); }
       catch { errors.push(`${label}: missing file or directory`); continue; }
-      if (fragment && anchors.has(destination) && !anchors.get(destination).has(fragment)) errors.push(`${label}: missing heading or explicit anchor`);
+      if (canonical !== root && !canonical.startsWith(root + sep)) {
+        errors.push(`${label}: outside repository through a symlink`); continue;
+      }
+      if (fragment && anchors.has(canonical) && !anchors.get(canonical).has(fragment)) errors.push(`${label}: missing heading or explicit anchor`);
     }
   }
   return { files: files.length, checked, errors };

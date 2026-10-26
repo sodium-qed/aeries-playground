@@ -6,7 +6,7 @@ Start with [Contributing](../CONTRIBUTING.md) for suggestions, bug reports, or a
 
 ## Set up a working copy
 
-You need Git, an editor, and **Node.js 24**, the version used by repository CI. The installable program is a single classic JavaScript userscript. The repository checkers use Node's built-in modules; there is no package installation, dependency download, or build step.
+You need Git, an editor, **Node.js 24**, and **Python 3**, as supplied by repository CI. The installable program is a single classic JavaScript userscript. The repository checkers use Node's built-in modules; publication tests also use Python's standard library. There is no package installation, dependency download, or build step.
 
 1. Fork [sodium-qed/aeries-playground](https://github.com/sodium-qed/aeries-playground) on GitHub.
 2. Clone your fork and add the original repository as `upstream`. Replace `YOUR-USERNAME` with your GitHub username:
@@ -38,7 +38,7 @@ This starts your work from the original repository's current `main`, even if you
 | Settings and media | `persist`, `clearSavedSettings`, `renderTab`, `kbar`, and `kbarShortcut`. |
 | Reader-facing instructions | [README](../README.md), [feature guide](FEATURES.md), [Contributing](../CONTRIBUTING.md), and [security policy](../SECURITY.md). |
 | License and review permission | [LICENSE](../LICENSE) and [licensing guide](LICENSING.md). Preserve applicable notices in copied or modified source. |
-| Checkers and their tests | [scripts](../scripts) and [tests](../tests). These test repository validation, not the userscript's features. |
+| Checkers and regression suites | [scripts](../scripts) and [tests](../tests). The suites cover repository validation, synthetic feature behavior, and mocked release recovery. |
 | GitHub contribution prompts | [Issue forms](../.github/ISSUE_TEMPLATE) and [pull request template](../.github/pull_request_template.md). |
 | CI and publishing | [Repository checks](../.github/workflows/checks.yml), [release workflow](../.github/workflows/release.yml), and [maintenance handoff](MAINTENANCE.md). |
 
@@ -49,7 +49,7 @@ Keep the metadata block first and preserve the userscript's filename, name, name
 From the repository root, run:
 
 ```sh
-node --test tests/check-userscripts.test.mjs tests/check-documentation.test.mjs
+node --test tests/*.test.mjs
 node scripts/check-userscripts.mjs
 node scripts/check-documentation.mjs
 git diff --check
@@ -57,12 +57,12 @@ git diff --check
 
 | Check | What passing establishes | What it does not establish |
 | --- | --- | --- |
-| `node --test …` | The userscript and documentation checkers pass their regression tests. | Grade formulas, page controls, storage, schedules, or playback work. |
-| `check-userscripts.mjs` | Discovered regular `.user.js` files compile as classic JavaScript and have a first-position metadata block with nonempty `name`, `version`, `description`, and `match` or `include` entries. | The URL rules or permissions are correct, or any userscript behavior is safe. The checker does not execute the userscript. |
-| `check-documentation.mjs` | Supported local inline Markdown links resolve to existing paths and, when present, local ATX heading or explicit anchors. | External URLs work, Markdown renders correctly, prose matches source, or issue-form YAML meets GitHub's schema. Fenced examples and reference-style links are outside its scope. |
+| `node --test …` | Every discovered regression suite passes its checker, extracted-source, synthetic fixture, or mocked integration cases. Publication tests exercise the real publisher against a local GitHub/CLI model. | Actual Aeries page layouts, userscript managers, live schedule services, media playback, or GitHub publication work in every environment. |
+| `check-userscripts.mjs` | Discovered regular `.user.js` files compile as classic JavaScript and have a first-position comment-only metadata block with unique, nonempty `name`, `version`, and `description`, plus a `match` or `include` entry. | The URL rules or permissions are correct, or any userscript behavior is safe. The checker does not execute the userscript. |
+| `check-documentation.mjs` | Supported local inline Markdown links resolve inside the repository, including through symlinks, and match local ATX heading or explicit anchors when applicable. | External URLs work, Markdown renders correctly, prose matches source, or issue-form YAML meets GitHub's schema. Fenced examples and reference-style links are outside its scope. |
 | `git diff --check` | The diff has no detected whitespace errors or conflict markers. | The content, formulas, or links are correct. |
 
-[Repository checks](../.github/workflows/checks.yml) runs the test command and both checkers on pushes, pull requests, and manual dispatch using Node.js 24. Run `git diff --check` locally as well. There is no committed browser integration or calculation regression suite. A green CI run is not a release-readiness or security certification.
+[Repository checks](../.github/workflows/checks.yml) runs all `tests/*.test.mjs` suites and both checkers on pushes, pull requests, and manual dispatch using Node.js 24. Run `git diff --check` locally as well. Synthetic feature tests and mocked integration tests are committed; they do not exercise a signed-in Aeries session or real media playback. A green CI run is not a release-readiness or security certification.
 
 The userscript checker searches from the current directory. It skips dependency, Git, coverage, and designated private-capture directories, and does not follow symlinks. Its `--allow-empty` option is for bootstrapping an empty repository; do not use it to validate this project. A nonempty metadata field is not a complete metadata specification check.
 
@@ -114,6 +114,7 @@ Choose the relevant checks below. Record the input and rules, expected result, o
 - Check explicit opt-in, including an upgrade with an old enabled widget but no saved consent. Test disabled/master-paused states, hidden-page refresh behavior, consent revocation, cancellation, and late responses in the current tab.
 - Cover malformed or stale data, wrong status/final URL, oversized responses, request failures, clock disagreement, conflicting schedules, and minutes-only fallback. Mocked cancellation cannot establish whether a real manager aborts a transfer or honors the requested timeout.
 - For countdown changes, cover bell boundaries, after school, weekends/no-school days, the 14-day search limit, and Pacific daylight-saving transitions. A future countdown needs the future date's schedule verified before showing seconds.
+- Verify that unrelated bad schedule definitions do not hide a valid current day. An uncertain next school day must stop that prediction and show an explanation while preserving today's known bells.
 - Keep schedule requests on the fixed public endpoints with no course/account data added. Review request changes with [SECURITY.md](../SECURITY.md); cookie omission, timeout, and cancellation behavior need manager/browser verification.
 
 ### Saved settings and other tabs
@@ -127,6 +128,7 @@ Choose the relevant checks below. Record the input and rules, expected result, o
 
 - Verify no player before interaction and no saved playback state. **P** must ignore editable controls, Ctrl/Alt/Command-modified shortcuts, and an open Playground dialog. Settings and manager-menu playback controls should work while Playground is enabled.
 - Test pause versus close, blocked playback, loading failures, rapid play/pause requests, and teardown. Pause keeps the embed loaded; close, master pause, a successful reset, and page exit remove it in that tab. Other tabs' players are separate.
+- Check the Settings **Play KBAR (P)**, **Pause KBAR (P)**, and **Retry KBAR (P)** states with their visible status. A late playing message must not reverse a pause request or revive failed playback; a later deadline must not replace a useful load error. Provider-reported status is not evidence of audible output.
 - Check the exact origin and current iframe window for incoming messages, bounded JSON parsing, and fixed player parameters with no grade/account data. Keep the hidden player from adding scroll space.
 - **Settings → Open on YouTube** must remain visible, keyboard-accessible, and user-activated when the embed is closed, blocked, never ready, or Playground is paused. It opens a separate tab without referrer or opener access and does not close an existing embed.
 
@@ -140,13 +142,19 @@ For a UI change, check keyboard focus, **S** outside editable controls, dialog o
 
 Write repository prose in English. Keep the README focused on setup and the overview; use the [feature guide](FEATURES.md#available-release) for release-specific availability and the [maintenance handoff](MAINTENANCE.md) for planned work. Do not add a README version history or a CHANGELOG. A future plan remains planned until publication is verified.
 
-The source's metadata remains **2.4.0** during this documentation work. A source comment, help explanation, license notice, or document edit does not release a new userscript. Separate those edits from executable changes, and keep current `main` distinct from frozen tagged assets.
+The source's **3.0.0** metadata identifies the audited release candidate. A version label, source edit, or document edit does not prove publication. Keep current `main` distinct from frozen tagged assets and check the release itself before claiming availability.
 
-The [release workflow](../.github/workflows/release.yml) belongs to one prepared **2.4.0 prerelease artifact**, with a fixed version, fingerprint, tag, and release state. It is not a general publisher for the next version. A source-path push with a different size/hash skips before release writes; manual recovery rejects the mismatch. The exact original artifact can still enter the guarded recovery path. Its time check does not schedule a run, and the workflow runs its own checks independently of Repository checks.
+The [release workflow](../.github/workflows/release.yml) and [publisher](../scripts/publish-release.py) belong to one prepared **3.0.0 stable artifact**. They require a fixed version, SHA-256, byte size, tag `v3.0.0`, title `Aeries Playground 3.0.0`, and [reviewed release notes](RELEASE-3.0.0.md). Fill the publisher's fingerprint only after integrating all source changes. The not-before time is **October 26, 2026 at 06:59 UTC**; that guard does not schedule a run.
 
-Review triggers and guards before changing publication code. Documentation work must not create, move, replace, or republish tags or assets, or weaken checks to make a documentation run pass. Comment and line-ending edits change a file's hash. Do not use an earlier asset's fingerprint or verification as evidence for a future release.
+Only a userscript-path push to this repository's `main` branch, or a manual run on `main`, can enter publication. A push with a different source size/hash exits without release writes; manual recovery rejects a mismatch. Before any API mutation, the publisher runs every regression suite, both repository checkers, and `git diff --check`. It independently checks the repository source at the triggering commit, existing tags, release metadata, Latest selection, and any existing asset. Repository checks and release validation are separate jobs; passing one does not bypass the other.
 
-Future release preparation needs the exact merged source, appropriate checks, the intended stable/prerelease state, and verified tag/asset contents. Preserve newer fixes already on `main`, including the KBAR Settings fallback. If page access, permissions, storage, external requests, updates, or safeguards change, update the opening source explanation and affected guides together.
+Publication first creates a missing tag at the exact triggering commit, creates or recovers a draft, and uploads only a missing asset. It downloads and hashes the asset before setting `draft: false`, `prerelease: false`, and `make_latest: true`. It then verifies the stable state, exact tag commit, source bytes, downloaded asset, and Latest. Earlier releases and their tags/assets are never changed. An existing conflicting tag, draft target, or asset stops the run; matching userscript bytes at another commit do not authorize moving or reusing that tag.
+
+If publication stops after creating a tag, draft, or upload, inspect the error and **rerun the original workflow run at its original commit** after resolving a transient service failure. Recovery reuses matching objects and can add a missing asset; it never deletes a tag or uses an overwrite option. If `main` has advanced, a new manual run can conflict with the original tag even when the userscript is unchanged. Do not move the tag or change the approved fingerprint to force recovery. A conflicting artifact or target needs review. A new release requires new, explicitly reviewed constants and notes.
+
+The publisher refuses to replace another release's Latest selection when it observes one, including during final verification. GitHub does not provide an atomic transaction for the whole publication sequence, so keep other release publishing paused during this run and investigate a reported race. Do not repeat publication blindly after such a report.
+
+Review triggers and guards before changing publication code. Documentation work must not create, move, replace, or republish tags or assets, or weaken checks to make a documentation run pass. Comment and line-ending edits change a file's hash. Do not use an earlier asset's fingerprint or verification as evidence for a future release. Preserve newer fixes already on `main`, including the KBAR Settings fallback. If page access, permissions, storage, external requests, updates, or safeguards change, update the opening source explanation and affected guides together.
 
 ## Prepare a pull request
 

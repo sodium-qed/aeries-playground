@@ -17,15 +17,16 @@ For installation and supported pages, start with the [README](../README.md). For
 
 ## Available release
 
-This guide describes the repository source, whose userscript metadata remains **2.4.0**. Choose the file you intend to install; the stable shortcut and the current source are different downloads.
+This guide describes the **3.0.0** source prepared for stable publication. Until publication is verified, use the release page to check availability; the moving `main` source and a tagged asset are distinct downloads.
 
 | Download | What it selects |
 | --- | --- |
-| [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) · [2.4.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v2.4.0/aeries-playground.user.js) | The published **prerelease** for the feature set described here. |
-| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **2.0.0**; it does not contain every feature in this guide. Check that release's description before installing. |
-| [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source, including documentation and embedded-help revisions made after the published asset. |
+| [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The stable release target for the audited source. Verify publication before downloading. |
+| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | GitHub's currently published stable download. |
+| [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source; later documentation edits do not replace tagged assets. |
+| [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) | The historical prerelease, preserved under its original tag. |
 
-**3.0.0** is planned, not published by this documentation update. The [maintenance plan](MAINTENANCE.md) tracks release readiness. Review the exact replacement file and [update steps](SETTINGS.md#update-the-userscript); a release number in this guide does not update an installed copy.
+The [audit record](AUDIT-3.0.0.md) describes coverage and verification limits. Review the exact replacement file and [update steps](SETTINGS.md#update-the-userscript); publication does not update an installed copy automatically.
 
 <a id="weight-map-prerelease"></a>
 <a id="weighted-gpa-prerelease"></a>
@@ -39,7 +40,7 @@ Older links to the weight-map and weighted-GPA prerelease notes lead here. Use t
 3. Use **Courses** for course customization, **Weight map** for the open gradebook, or **Settings** for global features and profile/year labels.
 4. On a recognized gradebook, use the toolbar above the assignments: **Start grade testing**, **Add hypothetical assignment**, **Course grading profile**, and **Explain my grade**. **Assignment weight map** opens the map directly.
 
-There is no floating Playground launcher. The Weight map tab needs an open recognized gradebook; it is not a saved list of every course's assignments. If Playground or the map is off, the tab offers **Enable Weight map**. That button also re-enables Playground, which can resume a previously enabled schedule integration.
+There is no floating Playground launcher. The Weight map tab needs an open recognized gradebook; it is not a saved list of every course's assignments. If only the map is off, the tab offers **Enable Weight map**. While Playground is paused, it offers **Enable Playground and weight map**; this resumes the master switch and can resume a previously enabled schedule integration.
 
 Save **Courses** and ordinary **Settings** form fields before changing dialog tabs or reopening the dialog. Toggles and grading-rule forms have different save behavior; use the [save-control reference](SETTINGS.md#which-save-control-do-i-use) when unsure.
 
@@ -51,6 +52,7 @@ Save **Courses** and ordinary **Settings** form fields before changing dialog ta
 | **P** | Requests KBAR play/pause when Playground is enabled and its dialog is closed. It also ignores editable controls, sliders/spinbuttons, repeats, composition, and Ctrl/Alt/Meta combinations. |
 | **Tab / Shift+Tab** | Moves through available controls. The open dialog uses the browser's modal focus behavior. |
 | **Left / Right**, **Home / End** on dialog tabs | Changes tabs and moves focus to the chosen tab. |
+| **Enter** on a grade-testing button | Activates the button. Enter inside a score or other text input stays local and does not submit the native Aeries form. |
 | **×** or **Escape** | Closes the dialog. Focus returns to the opener when it still exists, except after a successful **Show in gradebook** jump. |
 | **Show in gradebook** | Closes the map, focuses the visible native assignment row, scrolls to it, and briefly highlights it. |
 
@@ -93,7 +95,7 @@ Global defaults are:
 
 Set global colors and cutoffs in **Settings → Grade colors & thresholds**, then select **Save settings**. Course cutoffs override global defaults. The color palette is shared by dashboard grades, progress bars, detail-page grades, and graded weight-map entries. Dashboard/detail color toggles do not disable the bar or map palette.
 
-**Grade colors on details page** colors recognized posted assignment names/scores, category totals, and the course total. In the current lab, some existing hypothetical score/total overlays still receive threshold colors with this toggle off. Active score ranges use neutral colors because an interval has no single grade band.
+**Grade colors on details page** controls threshold colors for recognized posted assignment names/scores, category totals, the course total, and hypothetical score/total overlays. Turning it off removes those threshold colors from both existing and added hypothetical assignments. Active score ranges use neutral colors because an interval has no single grade band.
 
 ### Progress bars and precision
 
@@ -105,14 +107,14 @@ Display precision, the [fractional-score adapter](#fractional-score-precision), 
 
 ### Overall grade and current-year GPA
 
-**Overall grade / GPA above classes** starts on. To see GPA, leave **Show 4/3/2/1 on dashboard** off and open the dashboard. To see an average of custom ratings instead, turn that toggle on. Both modes use the currently visible dashboard cards, deduplicated by course identity.
+**Overall grade / GPA above classes** starts on. To see GPA, leave **Show 4/3/2/1 on dashboard** off and open the dashboard. To see an average of custom ratings instead, turn that toggle on. Both modes use the currently visible dashboard cards, deduplicated by course identity. If a duplicate card is blank, the first usable grade for that identity is used; the course still counts once.
 
 | **Show 4/3/2/1 on dashboard** | Summary | Details control |
 | --- | --- | --- |
 | On | **Playground overall score**: equal average of each included course's threshold-based 1–4 rating. | **Calculation & included classes** |
 | Off | **Current-year GPA**: estimated unweighted and weighted averages of posted A–F letters. | **Calculation & GPA class selection** |
 
-The class-inclusion checkbox saves immediately and affects both summary modes. Numeric mode skips courses without a recognized numeric grade. The result stays an average, such as **3.5**; only its color indicates a band, using **Settings → Average ≥** cutoffs. An empty set displays a dash rather than zero.
+The class-inclusion checkbox attempts to save immediately and affects both summary modes. A failed save appears in the summary and any open Playground dialog. Numeric mode skips courses without a recognized numeric grade. The result stays an average, such as **3.5**; only its color indicates a band, using **Settings → Average ≥** cutoffs. An empty set displays a dash rather than zero.
 
 “Current-year” describes the courses shown on the dashboard. Playground does not retrieve a transcript, previous years, course credits, or a complete annual course list. Hidden courses do not count just because they have saved settings.
 
@@ -252,9 +254,9 @@ Blank is ungraded; zero is a real score. Scores and bounds must be nonnegative, 
 
 Recognized four-point books use point controls and read-only Score denominators; added assignments also start with the detected four-point denominator. Selecting a different saved simulation scale does not change how the posted row editors were detected.
 
-A scored or ranged hypothetical assignment needs a name and a category. Its category selector uses those already found in the gradebook, with an Uncategorized fallback when none exist; it cannot create an arbitrary new category. Names can contain up to 120 characters.
+A counted scored or ranged hypothetical assignment needs a name and a category. Its category selector uses those already found in the gradebook, with an Uncategorized fallback when none exist; it cannot create an arbitrary new category. Names can contain up to 120 characters.
 
-As you edit, Playground overlays assignment grades, category totals, and the hypothetical overall result. The toolbar remains marked as testing, edited rows have **Hypothetical** badges, and the posted overall grade remains available for comparison. It does not generate a hypothetical teacher letter grade. **Count** removes a contribution but does not suppress every input error: malformed single-score/raw inputs can still block the scenario, so fix or reset them.
+As you edit, Playground overlays assignment grades, category totals, and the hypothetical overall result. The toolbar remains marked as testing, edited rows have **Hypothetical** badges, and the posted overall grade remains available for comparison. It does not generate a hypothetical teacher letter grade. Turning **Count** off excludes that row from the total and from score, total, name, and category validation. Its typed scores and bounds stay in the draft; turning Count back on validates them again. Other counted rows and the posted baseline must still be valid.
 
 Printing while testing is active can include hypothetical values. Exit testing first when you want to print the posted gradebook.
 
@@ -264,7 +266,7 @@ Printing while testing is active can include hypothetical values. Exit testing f
 | --- | --- |
 | **Reset hypothetical changes** | Clears score edits, ranges, and added assignments; reloads the currently saved replacement-rule list. Testing stays on. |
 | **Exit grade testing** | Clears the temporary scenario and restores native posted nodes/values. |
-| Reload, change gradebook/term, save another profile/year, or detect refreshed gradebook rows | Clears the scenario. A gradebook/filter transition waits for fresh rows before rebuilding tools. |
+| Leave or reload the page, change gradebook/term, save another profile/year, or detect refreshed gradebook rows | Clears the scenario. Returning with browser Back/Forward starts with posted values even when the browser restores a cached page. A gradebook/filter transition waits for fresh rows before rebuilding tools. |
 | Turn off **Enable Playground** | Exits testing and pauses page enhancements. |
 | Close the Playground dialog | Leaves the page's current scenario running. |
 
@@ -286,7 +288,7 @@ Open **Course grading profile**, even before starting testing. A new form is bla
 
 Edits save automatically per course/profile/year. Complete, valid rules apply immediately. Incomplete or invalid edits are saved as a draft and retain the last valid policy, if one exists. **Save course grading profile** explicitly validates/saves and focuses the first invalid field.
 
-**Copy values shown by Aeries** supplies only detected values and leaves rounding for you to choose; it can leave a draft rather than a new active policy. Check weights for categories activated only by a new score or range, since a previously valid profile may not cover them.
+**Copy values shown by Aeries** supplies only detected values and leaves rounding for you to choose; it can leave a draft rather than a new active policy. Profile validation includes categories activated only by counted ranges, even when their single scores are blank. A previously valid profile may still need new weights after you change the scenario; check the resulting calculation status.
 
 **Clear saved grading profile** removes the policy and its form draft. The lab then uses parsed Aeries rules; replacement rules are separate and remain saved. The course's dashboard **Bar scale** is a different setting.
 
@@ -356,13 +358,13 @@ Times use **America/Los_Angeles (Pacific time)**. Course names come only from vi
 
 Whenever no later student slot remains today, including during the last class, the panel looks up the next school day's first student slot and counts down to it. It searches at most fourteen dates ahead, respects public no-school/weekend entries, and converts Pacific wall time across daylight-saving changes.
 
-The countdown uses days, hours, and minutes as appropriate. If no student slot is listed within that window, it says so. It does not search a personal attendance calendar or guarantee that a public calendar includes every future change.
+The countdown uses days, hours, and minutes as appropriate. If no student slot is listed within that window, it says so. If a future date has conflicting calendar entries or an unavailable schedule, the search stops there and reports **Next school day unavailable** while keeping today's valid bells visible. It does not skip an uncertain date to predict a later class. It does not search a personal attendance calendar or guarantee that a public calendar includes every future change.
 
 ### Schedule verification and network controls
 
 mvhs.io's public Firebase schedule is the primary source. Public bell.plus schedule and clock data cross-check it before seconds are shown. Seconds need fresh same-date data, acceptable clock checks, matching periods, and agreement about the current bell boundary. A next-school-day countdown also needs agreement for that future date.
 
-If bell.plus is stale, unavailable, or disagrees, the primary countdown falls back to **minutes**. Missing, invalid, or stale primary schedule data instead produces loading/unavailable status and **Retry schedule**. Check the linked public source and the school's announcement when schedules differ.
+If bell.plus is stale, unavailable, or disagrees, the primary countdown falls back to **minutes**. Missing, invalid, or stale primary data needed for today produces loading/unavailable status and **Retry schedule**. An unavailable historical or future schedule definition does not hide a valid current day; it blocks a prediction only when that definition is needed. Check the linked public source and the school's announcement when schedules differ.
 
 The freshness window is five minutes. Visible countdowns update about once per second from in-memory data; they do not make a request each second. Hidden tabs stop refresh ticks/new refresh work until visible again, but hiding a tab does not itself cancel an already-started transfer.
 
@@ -377,12 +379,12 @@ KBAR starts off on every page load and saves no playback preference. It requests
 | Control | Effect |
 | --- | --- |
 | **P**, with the dialog closed | Creates the player and requests playback on first use; then requests pause/resume. |
-| **Settings → Play / pause KBAR (P)** | Requests the same toggle while Settings is open. Disabled when Playground is paused. |
+| **Settings → Play KBAR (P)**, **Pause KBAR (P)**, or **Retry KBAR (P)** | Requests playback, pause, or a fresh player after failure. The label follows the requested state; the status below reports progress. Disabled when Playground is paused. |
 | **Settings → Close KBAR player** | Stops and removes the hidden embed. |
 | Manager **Aeries Playground — KBAR play/pause (P)** | Requests playback/toggle through the userscript manager. |
 | **Settings → Open on YouTube** | Opens the original video in a new tab. Works with Playground paused or no embed loaded. Does not close or start the embed. |
 
-The iframe is kept offscreen, outside normal layout, to avoid adding visible page space. Its internal status/error text is hidden too; the visible Settings button does not report whether playback actually started. Browser restrictions, networking, embed restrictions, or changes to YouTube's player interface can make a playback request fail. If you hear nothing, use **Close KBAR player**, retry once, or use **Open on YouTube**. Close the embed separately to avoid simultaneous playback.
+The iframe and its native controls stay offscreen, outside normal layout, to avoid adding visible page space. Settings shows loading, playback, pause, blocked-playback, and error messages; **Pausing** means a request is awaiting acknowledgment. These messages reflect the player's reports and do not guarantee audible output. Browser restrictions, networking, embed restrictions, or changes to YouTube's player interface can make a playback request fail. If you hear nothing, read the Settings status, use **Close KBAR player**, retry once, or use **Open on YouTube**. Close the embed separately to avoid simultaneous playback.
 
 Starting connects to `www.youtube-nocookie.com`. Privacy-enhanced embedding is not anonymous: YouTube receives connection/playback information, may use browser storage, can make its own media/advertising requests, and may show ads. Playground's player parameters/control messages contain no grades, assignments, course names, profiles, or Aeries account data. The embed receives the site origin rather than the full gradebook URL.
 

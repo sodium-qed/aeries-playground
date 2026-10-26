@@ -55,6 +55,19 @@ test('requires non-empty project metadata fields', () => {
   }
 });
 
+test('rejects duplicate required metadata while allowing multiple URL rules', () => {
+  for (const key of ['name', 'version', 'description']) {
+    const text = valid.replace('// ==/UserScript==', `// @${key} duplicate\n// ==/UserScript==`);
+    assert.ok(checkSource(text).some(error => error.includes(`Duplicate @${key}`)), key);
+  }
+  assert.deepEqual(checkSource(valid.replace('// ==/UserScript==', '// @match https://second.example.invalid/*\n// ==/UserScript==')), []);
+});
+
+test('rejects executable content hidden inside the metadata block', () => {
+  const text = valid.replace('// @name Example', "globalThis.example = true;\n// @name Example");
+  assert.ok(checkSource(text).some(error => error.includes('only line comments')));
+});
+
 test('reports a JavaScript syntax error', () => {
   assert.ok(checkSource(valid + '\nconst = ;').some((error) => error.includes('syntax')));
 });

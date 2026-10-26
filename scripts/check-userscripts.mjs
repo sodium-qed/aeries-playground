@@ -18,12 +18,18 @@ export function checkSource(source, filename = 'example.user.js') {
     errors.push('A complete userscript metadata header must be the first content.');
   } else {
     const entries = new Map();
+    const counts = new Map();
     for (const line of header[1].split('\n')) {
+      if (line.trim() && !line.startsWith('//')) {
+        errors.push('The userscript metadata header may contain only line comments.');
+      }
       const entry = line.match(/^\/\/[ \t]*@(\S+)(?:[ \t]+(.*))?$/);
+      if (entry) counts.set(entry[1], (counts.get(entry[1]) || 0) + 1);
       if (entry && entry[2]?.trim()) entries.set(entry[1], entry[2].trim());
     }
     for (const key of ['name', 'version', 'description']) {
       if (!entries.has(key)) errors.push(`Missing non-empty @${key}.`);
+      if (counts.get(key) > 1) errors.push(`Duplicate @${key} makes userscript metadata ambiguous.`);
     }
     if (!entries.has('match') && !entries.has('include')) {
       errors.push('Missing a non-empty @match or @include URL rule.');

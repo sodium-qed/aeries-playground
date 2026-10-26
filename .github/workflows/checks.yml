@@ -27,8 +27,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Test the repository checkers
-        run: node --test tests/check-userscripts.test.mjs tests/check-documentation.test.mjs
+      - name: Run all repository and behavior regression suites
+        run: node --test tests/*.test.mjs
       - name: Validate userscript metadata and syntax
         run: node scripts/check-userscripts.mjs
       - name: Check local documentation links

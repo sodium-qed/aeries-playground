@@ -53,3 +53,16 @@ test('external URLs are not fetched and ignored directories and symlinks are not
   assert.equal(result.checked, 0);
   assert.deepEqual(result.errors, []);
 }));
+
+test('linked targets cannot escape through symlinks and internal aliases check real anchors', { skip: process.platform === 'win32' }, async () => fixture(async root => fixture(async outside => {
+  await writeFile(join(outside, 'secret.md'), '# Secret');
+  await symlink(outside, join(root, 'escape'));
+  await writeFile(join(root, 'guide.md'), '# Real');
+  await symlink(join(root, 'guide.md'), join(root, 'alias.md'));
+  await writeFile(join(root, 'README.md'), '[outside](escape/secret.md#secret) [valid](alias.md#real) [broken](alias.md#absent)');
+  const result = await checkDocumentation(root);
+  assert.equal(result.files, 2);
+  assert.equal(result.errors.length, 2);
+  assert.ok(result.errors.some(error => error.includes('outside repository through a symlink')));
+  assert.ok(result.errors.some(error => error.includes('missing heading')));
+})));
