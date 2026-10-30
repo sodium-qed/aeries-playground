@@ -20,7 +20,7 @@ Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/).
 | Download | What you are choosing |
 | --- | --- |
 | [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. The current stable release is **3.0.0**; planned Developer additions are identified separately. |
-| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source. It currently carries the audited **3.0.0** userscript; a later integration commit can change this link before a new stable asset is verified. |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source. The scheduled integration introduces **3.1.0** source; source availability can precede verification of its stable release asset. Use a tagged download for a fixed version. |
 
 Check [available downloads and feature differences](docs/FEATURES.md#available-release) before choosing. GitHub's stable **Latest** and **Pre-release** are separate choices.
 
