@@ -4,6 +4,8 @@ Start with the [project README](../README.md) to install Aeries Playground and t
 
 Playground supports the MVLA Aeries student portal. Its optional schedule panel is for Mountain View High School. It changes your local display and calculations, without submitting grade changes to Aeries.
 
+The Developer and public editions are being prepared for one maintained 3.1.0 edition. See the [November 1 merge plan](MERGE-PLAN.md) for the scheduled time, feature differences, upgrade guidance, checks, and rollback. Planned features are not yet part of the published 3.0.0 asset.
+
 ## Use Playground
 
 | Task | Guide |
@@ -32,6 +34,7 @@ For a calculation discrepancy, start with [reconciliation and incomplete data](C
 | Share source, obtain paid/AI review, or understand distribution obligations | [Licensing guide](LICENSING.md) — current permissions, source-sharing conditions, outside material, and preserved grants. |
 | Verify the original controlling grant | [Original Version 1.0 grant](../LICENSES/LicenseRef-Aeries-Playground-Open-Source-1.0.txt) — the exact text that continues to control permissions and conditions. |
 | Inspect documentation coverage or planned audit follow-up | [Maintenance and release preparation](MAINTENANCE.md) — verified state, remaining work, and verification limits. |
+| Follow the Developer/public integration | [Merge plan](MERGE-PLAN.md) — scope, schedule, migration, release gates, and rollback. |
 
 The installable [userscript](../aeries-playground.user.js) also contains metadata, an opening privacy explanation, the complete effective license, and help text beside the relevant implementation. Review the exact file you intend to install or redistribute; a moving branch and a published release asset can differ.
 

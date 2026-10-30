@@ -1,5 +1,13 @@
 # Maintenance and release status
 
+## Active Developer and public merge preparation
+
+The next planned change is the Developer/public integration tracked in [issue #8](https://github.com/sodium-qed/aeries-playground/issues/8). Merge execution is scheduled for **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**). The [merge plan](MERGE-PLAN.md) is the current runbook for scope, candidate verification, migration, publication, and recovery.
+
+Public **3.0.0** remains the stable release during preparation. The supplied Developer **2.X** build predates its audit and will be integrated selectively, preserving newer public fixes. The planned **3.1.0** release needs its own frozen source fingerprint and guarded publisher; the 3.0.0 publisher must not be reused with an unverified replacement. Documentation preparation does not merge the runtime candidate or publish a release.
+
+## Verified 3.0.0 publication
+
 The complete documentation redo was published in [`81d9114`](https://github.com/sodium-qed/aeries-playground/commit/81d9114d288bc7b38561da2f4f1ab311f9685744). The full code audit was integrated and published in [`4de1703`](https://github.com/sodium-qed/aeries-playground/commit/4de17030f9e2ca5eb48f72d0026b7695a4e40af8), preserving the documentation and existing license grants.
 
 [Stable 3.0.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) was published **October 26, 2026 at 00:18:43 America/Los_Angeles**. The tag targets the reviewed commit, the downloaded userscript matches its approved bytes/hash, and GitHub reports published, stable, and Latest. Both Repository checks and the guarded publisher succeeded. Historical releases including 2.3.0 and 2.4.0 remain untouched.
