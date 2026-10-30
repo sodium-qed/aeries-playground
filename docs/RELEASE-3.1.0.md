@@ -1,10 +1,10 @@
-# Aeries Playground 3.1.0 — planned unified release
+# Aeries Playground 3.1.0 — unified release
 
-These notes describe the prepared release candidate that combines the Developer and public editions. The target is **Sunday, November 1, 2026 at 11:59 PM America/Los_Angeles (PST)**, equivalent to **November 2 at 07:59 UTC**. The merge and publication remain pending until their results are verified; a scheduled task, source change, or version label does not establish that a release is available.
+This version combines the Developer and public editions into one maintained userscript. Its launch is guarded until **Sunday, November 1, 2026 at 11:59 PM America/Los_Angeles (PST)**, equivalent to **November 2 at 07:59 UTC**. Use the published GitHub release and attached asset to confirm availability; source notes, a schedule, and a version label alone do not establish publication.
 
 The integration starts from the audited public 3.0.0 source and carries forward its numerical, storage, interface, request-transport, schedule, and KBAR fixes. It does not replace that source wholesale with the earlier personal `2.X` build.
 
-## Planned additions
+## Additions
 
 - Saved assignment weights for supported numeric `/4` gradebooks, plus temporary **Counts as** multipliers in grade testing. Multipliers apply to earned and possible points while scores remain on their original scale. The integration covers replacements, score limits, ranges, targets, impact labels, and the posted assignment weight map. Saved references and multipliers are configuration; hypothetical scores remain temporary.
 - **Show regression predictions** displays available native Aeries forecasts beside trend icons. It reads existing page values without recalculating forecasts, requesting separate predictions, or saving them. Missing forecasts remain absent.
