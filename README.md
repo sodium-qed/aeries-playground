@@ -7,14 +7,20 @@ It is an independent, unofficial project. Hypothetical edits change the local di
 
 [Install](#install) · [Get started](#get-started) · [Find a feature](#features) · [Update](#update-manually) · [All documentation](docs/README.md)
 
+## Developer and public editions are being unified
+
+The Developer **2.X** build and public **3.0.0** edition are planned to become one maintained **3.1.0** edition. Merge execution is scheduled for **Sunday, November 1, 2026, at 11:59 p.m. Pacific Standard Time** (`America/Los_Angeles`; November 2 at 07:59 UTC), subject to the prepared candidate passing its checks. The merge and release have not happened yet; the existing stable download remains available.
+
+The integration brings over Developer assignment multipliers, native forecast display, additional validated score-precision recovery, and conservative rounding estimates while retaining the public edition's audited fixes. See the [merge plan, upgrade steps, and verification status](docs/MERGE-PLAN.md). Keep one installation enabled; no settings reset is required just to prepare for the merge.
+
 ## Install
 
 Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/). The script supports the dashboard and recognized gradebook table/card views at `https://mvla.aeries.net/student/*`. Other Aeries domains and the native mobile app are outside its scope.
 
 | Download | What you are choosing |
 | --- | --- |
-| [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. This published stable edition does not include every feature described below. |
-| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The source described by these guides. It currently installs a prerelease, and the link follows changes to `main`. |
+| [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. The current stable release is **3.0.0**; planned Developer additions are identified separately. |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source. It currently carries the audited **3.0.0** userscript; a later integration commit can change this link before a new stable asset is verified. |
 
 Check [available downloads and feature differences](docs/FEATURES.md#available-release) before choosing. GitHub's stable **Latest** and **Pre-release** are separate choices.
 

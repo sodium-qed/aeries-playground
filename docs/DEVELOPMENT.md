@@ -142,6 +142,8 @@ For a UI change, check keyboard focus, **S** outside editable controls, dialog o
 
 Write repository prose in English. Keep the README focused on setup and the overview; use the [feature guide](FEATURES.md#available-release) for release-specific availability and the [maintenance handoff](MAINTENANCE.md) for planned work. Do not add a README version history or a CHANGELOG. A future plan remains planned until publication is verified.
 
+The [Developer/public merge plan](MERGE-PLAN.md) coordinates the next 3.1.0 integration. Build from audited public source and port Developer additions selectively. Keep the candidate on its preparation branch until the scheduled merge, preserve concurrent public fixes, and rerun checks on the actual head/base combination. The prepared 3.1.0 publisher must use a new fingerprint, notes, tag, and a not-before guard of **2026-11-02T07:59:00Z**; the guard itself does not schedule a merge. The 3.0.0 details below describe the existing published artifact.
+
 The source's **3.0.0** metadata identifies the audited stable release, published October 26, 2026. A version label, source edit, or document edit does not prove publication. Keep current `main` distinct from frozen tagged assets and check the release itself before claiming availability.
 
 The [release workflow](../.github/workflows/release.yml) and [publisher](../scripts/publish-release.py) belong to one prepared **3.0.0 stable artifact**. They require a fixed version, SHA-256, byte size, tag `v3.0.0`, title `Aeries Playground 3.0.0`, and [reviewed release notes](RELEASE-3.0.0.md). Fill the publisher's fingerprint only after integrating all source changes. The not-before time is **October 26, 2026 at 06:59 UTC**; that guard does not schedule a run.

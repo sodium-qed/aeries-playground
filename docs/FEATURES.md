@@ -28,6 +28,21 @@ This guide describes the published **3.0.0 stable release**, verified as Latest 
 
 The [audit record](AUDIT-3.0.0.md) describes coverage and verification limits. Review the exact replacement file and [update steps](SETTINGS.md#update-the-userscript); publication does not update an installed copy automatically.
 
+### Planned Developer and public integration
+
+The supplied Developer **2.X** build and public **3.0.0** edition are being unified for **3.1.0**, with merge execution scheduled for **November 1, 2026, at 11:59 p.m. America/Los_Angeles (PST)**. This is a plan, not a published download. See the [merge plan](MERGE-PLAN.md) for candidate status and upgrade instructions.
+
+| Feature | Public 3.0.0 | Planned unified 3.1.0 |
+| --- | --- | --- |
+| Saved assignment multipliers and temporary **Counts as** for numeric `/4` gradebooks | Not available | Positive multipliers affect earned and possible points; original score scale stays intact. |
+| Native regression forecast text beside trend icons | Not available | Display Aeries' existing forecast without inventing or recalculating one; a Settings toggle controls it. |
+| Matched embedded score precision | RecentAssignments recovery | Retain existing checks and add validated same-assignment card/raw sources. |
+| Bounded recovery from rounded visible scores | Audited posted-precision and final-rounding checks | Add explicitly marked estimates and conservative target calculations when valid bounds can be established. |
+| Ungraded weight preview, GPA, next-school-day countdown, and KBAR fallback | Available | Retained; these are already shared features. |
+| Audited storage, UI lifecycle, network timeout, and media fixes | Available | Retained while integrating Developer additions. |
+
+Do not install both editions simultaneously. Version **2.X** is a personal build label, not a newer public release number or a substitute for the audited 3.0.0 source.
+
 <a id="weight-map-prerelease"></a>
 <a id="weighted-gpa-prerelease"></a>
 
