@@ -20,10 +20,10 @@ spec.loader.exec_module(p)
 scenario = sys.argv[2]
 commit = 'a' * 40
 other_commit = 'b' * 40
-source = b'// ==UserScript==\n// @name Synthetic\n// @version 3.0.0\n// @description Fictional release fixture\n// @match https://example.invalid/*\n// ==/UserScript==\n(() => {})();\n'
-if scenario == 'wrong-version': source = source.replace(b'@version 3.0.0', b'@version 2.4.0')
-if scenario == 'comment-version': source = source.replace(b'@version 3.0.0', b'@version 2.4.0') + b'// @version 3.0.0\n'
-if scenario == 'duplicate-version': source = source.replace(b'// ==/UserScript==', b'// @version 3.0.0\n// ==/UserScript==')
+source = b'// ==UserScript==\n// @name Synthetic\n// @version 3.1.1\n// @description Fictional release fixture\n// @match https://example.invalid/*\n// ==/UserScript==\n(() => {})();\n'
+if scenario == 'wrong-version': source = source.replace(b'@version 3.1.1', b'@version 2.4.0')
+if scenario == 'comment-version': source = source.replace(b'@version 3.1.1', b'@version 2.4.0') + b'// @version 3.1.1\n'
+if scenario == 'duplicate-version': source = source.replace(b'// ==/UserScript==', b'// @version 3.1.1\n// ==/UserScript==')
 p.EXPECTED_SHA256 = hashlib.sha256(source).hexdigest()
 p.EXPECTED_SIZE = len(source)
 expected_body = '# Synthetic release\n\nVerified userscript: ' + str(len(source)) + ' bytes; SHA-256 ' + chr(96) + p.EXPECTED_SHA256 + chr(96) + '.\n'
@@ -33,10 +33,10 @@ for key, value in {'wrong-repo': ('GITHUB_REPOSITORY', 'somebody/fork'), 'wrong-
 if scenario == 'unprepared': p.EXPECTED_SHA256 = 'REPLACE_WITH_FINAL_SHA256'
 if scenario == 'push-mismatch': os.environ['GITHUB_EVENT_NAME'] = 'push'
 now = p.LAUNCH_TIME
-if scenario == 'before-time': now = datetime(2026, 10, 26, 6, 58, 59, tzinfo=timezone.utc)
+if scenario == 'before-time': now = datetime(2026, 11, 9, 7, 58, 59, tzinfo=timezone.utc)
 
-stable = {'id': 1, 'tag_name': 'v2.0.0', 'draft': False, 'prerelease': False}
-newer = {'id': 9, 'tag_name': 'v3.1.0', 'draft': False, 'prerelease': False}
+stable = {'id': 1, 'tag_name': 'v3.1.0', 'draft': False, 'prerelease': False}
+newer = {'id': 9, 'tag_name': 'v3.2.0', 'draft': False, 'prerelease': False}
 existing_scenarios = {'recovery-draft', 'recovery-missing-asset', 'recovery-draft-missing-tag', 'recovery-annotated-tag', 'recovery-prerelease', 'already-published', 'tag-conflict', 'tag-race', 'tag-tree', 'tag-loop', 'draft-target-conflict', 'asset-size-conflict', 'asset-digest-conflict', 'asset-bytes-conflict', 'asset-state-conflict', 'duplicate-assets', 'duplicate-drafts', 'published-missing-tag', 'second-page-draft', 'second-page-asset-conflict', 'upload-failure', 'download-failure'}
 release = None
 assets = []
@@ -87,7 +87,7 @@ def mock_run(args, check=False, **kwargs):
             method = args[args.index('--method') + 1]
             payload = json.loads(kwargs['input'])
             if route.endswith('/git/refs'):
-                assert method == 'POST' and payload == {'ref': 'refs/tags/v3.0.0', 'sha': commit}, (route, payload)
+                assert method == 'POST' and payload == {'ref': 'refs/tags/v3.1.1', 'sha': commit}, (route, payload)
                 assert tag is None, 'Existing tag must never be overwritten'
                 tag = {'object': {'type': 'commit', 'sha': commit}}
                 writes.append(['tag', payload])
@@ -102,7 +102,7 @@ def mock_run(args, check=False, **kwargs):
             latest = newer if scenario == 'latest-after-publish' else release
             writes.append(['publish', payload])
             return result(release)
-        if route.endswith('/releases/tags/v2.0.0'):
+        if route.endswith('/releases/tags/v3.1.0'):
             if scenario == 'api-auth-error': return result(status=1, stderr='not authorized (HTTP 403)')
             return result(stable)
         if route.endswith('/releases/latest'):
@@ -120,7 +120,7 @@ def mock_run(args, check=False, **kwargs):
             return result(tag) if tag else result(status=1, stderr='not found (HTTP 404)')
         if '/git/tags/' in route:
             return result({'object': {'type': 'tag', 'sha': 'c' * 40} if scenario == 'tag-loop' else {'type': 'commit', 'sha': commit}})
-        if route.endswith('/releases/tags/v3.0.0'):
+        if route.endswith('/releases/tags/v3.1.1'):
             if scenario == 'api-rate-error': return result(status=1, stderr='rate limited (HTTP 429)')
             return result(release) if release and not release['draft'] else result(status=1, stderr='not found (HTTP 404)')
         if route.endswith('/releases?per_page=100'):
@@ -201,12 +201,30 @@ function publication(scenario) {
   return JSON.parse(result.stdout);
 }
 
+test('bonus release configuration uses the following Sunday deadline and preserves unified 3.1.0', () => {
+  const inspect = String.raw`
+import importlib.util, json, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location('publisher', sys.argv[1])
+p = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(p)
+print(json.dumps({'version': p.VERSION, 'tag': p.TAG, 'title': p.TITLE, 'previous': p.PREVIOUS_STABLE_TAG, 'notes': str(p.NOTES), 'launch': p.LAUNCH_TIME.isoformat()}))
+`;
+  const result = spawnSync('python3', ['-c', inspect, publisher], { encoding: 'utf8', timeout: 10000 });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    version: '3.1.1', tag: 'v3.1.1', title: 'Aeries Playground 3.1.1',
+    previous: 'v3.1.0', notes: 'docs/RELEASE-3.1.1.md',
+    launch: '2026-11-09T07:59:00+00:00',
+  });
+});
+
 for (const scenario of ['fresh', 'recovery-draft', 'recovery-missing-asset', 'recovery-draft-missing-tag', 'recovery-annotated-tag', 'recovery-prerelease', 'already-published', 'second-page-draft']) {
   test(`stable publication safely completes ${scenario}`, () => {
     const result = publication(scenario);
     assert.deepEqual(result.errors, []);
-    assert.equal(result.release.tag_name, 'v3.0.0');
-    assert.equal(result.release.name, 'Aeries Playground 3.0.0');
+    assert.equal(result.release.tag_name, 'v3.1.1');
+    assert.equal(result.release.name, 'Aeries Playground 3.1.1');
     assert.equal(result.release.draft, false);
     assert.equal(result.release.prerelease, false);
     assert.equal(result.latest.id, result.release.id);
@@ -257,7 +275,7 @@ for (const scenario of ['asset-missing-after-upload', 'latest-after-upload']) {
 test('a concurrent Latest selection after publication is reported and preserved', () => {
   const result = publication('latest-after-publish');
   assert.equal(result.errors.length, 1);
-  assert.equal(result.latest.tag_name, 'v3.1.0');
+  assert.equal(result.latest.tag_name, 'v3.2.0');
   assert.equal(result.writes.filter(write => write[0] === 'publish').length, 1);
 });
 

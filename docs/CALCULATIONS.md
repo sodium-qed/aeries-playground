@@ -13,6 +13,8 @@ Use these sections for the most common questions:
 - [Replacements](#replacement-rules), [required scores](#target-score-calculation), and [score ranges](#score-range-calculation)
 - [Why a calculation can be unavailable](#reconciliation-and-incomplete-data)
 
+This reference retains the public 3.0.0 calculation behavior, describes the prepared [3.1.0 integration additions](#planned-310-assignment-multipliers), and identifies the separate planned 3.1.1 bonus band. Check [release availability](FEATURES.md#available-release); a calculation description is not evidence of stable publication.
+
 ## Inputs and interpretation
 
 Different tools use different inputs:
@@ -137,7 +139,7 @@ Points entered directly are not deliberately rounded to hundredths. Their linked
 
 The score controls accept ordinary signed decimal notation, then enforce nonnegative earned values and positive denominators. Use plain numbers such as `6.5`, rather than `65%`, a comma-formatted value, or scientific notation in these controls. Formatting in the original Aeries page is parsed separately.
 
-There is no general snapping of entered scores to whole points or to integer 4/3/2/1 ratings. Raw conversion, the target solver's chosen increment, final-grade rounding, and display formatting are separate operations. Switching range display units also retains each endpoint's entered basis until that endpoint is edited.
+There is no general snapping of entered scores to whole points or to integer dashboard ratings. Raw conversion, the target solver's chosen increment, final-grade rounding, and display formatting are separate operations. Switching range display units also retains each endpoint's entered basis until that endpoint is edited.
 
 ## Total-points and weighted-category grades
 
@@ -225,24 +227,29 @@ For an unrounded average of **3.456/4**, two-place nearest and up rounding both 
 
 The dashboard summary uses currently visible course cards, with duplicate course identities counted once. It retains the first usable grade for the selected summary: a recognized letter for GPA or a numeric grade for ratings. A later usable card can replace an earlier blank or unreadable duplicate, while conflicting usable duplicates keep the first one. Included courses have equal weight. Saved courses that are not visible are not added to the calculation.
 
-With **Show 4/3/2/1 on dashboard** on, compare each course's posted numeric percentage or average to that course's three descending cutoffs:
+In the separate **planned 3.1.1** source, **Show 5/4/3/2/1 on dashboard** first compares each posted numeric grade with the global bonus cutoff for its scale. Only a grade strictly above that cutoff receives 5. Otherwise, compare it with the course's three ordinary descending cutoffs:
 
 | Condition | Rating |
 | --- | --- |
-| Grade at least the highest cutoff | 4 |
+| Grade strictly above its global bonus cutoff | 5 |
+| Grade at least the highest ordinary cutoff, without a bonus match | 4 |
 | Grade at least the middle cutoff, below the highest | 3 |
 | Grade at least the lowest cutoff, below the middle | 2 |
 | Grade below all three cutoffs | 1 |
 
-The default percentage cutoffs are **95 / 85 / 75**; the default average cutoffs are **3.7 / 3.1 / 2.5**. Equality belongs to the higher band. A posted numeric zero is still a usable numeric grade and receives rating 1 with these cutoffs. A missing numeric grade is omitted. Course-specific cutoffs override defaults.
+The earlier 3.0.0 and prepared 3.1.0 editions keep their original 1–4 ratings and **Show 4/3/2/1 on dashboard** label. The bonus row is not part of the November 1 integration.
+
+The default bonus cutoffs are **100%** and **4** average points, using strict **>**. Thus exactly **100%** or **4** is not a bonus match. The ordinary percentage cutoffs are **95 / 85 / 75**; ordinary average cutoffs are **3.7 / 3.1 / 2.5**. Equality at an ordinary cutoff belongs to its higher band. A posted numeric zero is still a usable numeric grade and receives rating 1 with these cutoffs. A missing numeric grade is omitted. Course-specific cutoffs override the ordinary defaults only; the bonus row stays global.
 
 Average the ratings of included visible courses. Ratings **4, 4, 3, 3** give **14/4 = 3.5**. The displayed number remains **3.5**; the default overall-average cutoffs make its color band 3. The overall color does not round the average to an integer. Honors/AP choices have no effect in this mode.
+
+Bonus ratings also participate in that arithmetic: ratings **5** and **4** average to **4.5**. The numeric summary uses the configured **Average >** cutoff for its own bonus color, so 4.5 is purple with the default cutoff 4; exactly 4 uses an ordinary color. Changing display bands does not change posted scores, gradebook calculations, or letter-based GPA.
 
 With numeric display off, the summary uses the original posted A/B/C/D/F letters and shows both GPAs below. It does not infer letters from percentages, custom bands, four-point averages, or hypothetical assignment results. For example, **A, B+, F** give unweighted **(4 + 3 + 0)/3 = 2.3333…**, displayed as **2.33**.
 
 ### Weighted GPA
 
-The summaries appear when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off. The class inclusion checkbox determines membership in **both** GPAs. **Honors/AP** changes the weighted grade points for a counted A, B, or C; it does not change course weight or override exclusion.
+The summaries appear when **Overall grade / GPA above classes** is on and **Show 5/4/3/2/1 on dashboard** is off. The class inclusion checkbox determines membership in **both** GPAs. **Honors/AP** changes the weighted grade points for a counted A, B, or C; it does not change course weight or override exclusion.
 
 | Posted letter, ignoring plus/minus | Unweighted points | Weighted when unchecked | Weighted when Honors/AP is checked |
 | --- | --- | --- | --- |
@@ -476,3 +483,28 @@ There are two deliberately limited empty-course cases:
 - **Ungraded weight preview:** an empty current grade can be accepted when its category totals pass the map's reconciliation checks and the overall grade is absent or zero. Categories without a recognized numeric average still need usable earned/possible totals, normally zero; missing totals are not automatically accepted. This includes blank category grades in a native four-point book.
 
 These checks do not infer arbitrary drop-lowest rules, hidden exclusions, different assignment weighting inside a four-point rubric, zero-point extra-credit policies, or additional teacher adjustments. Course-title recognition and native page selectors also have limits. Load the complete grading period and inspect the visible scores and known policy before changing a profile to explain a discrepancy. When a policy cannot be represented, the official gradebook remains authoritative.
+
+## Planned 3.1.0 assignment multipliers
+
+The [merge candidate](MERGE-PLAN.md) adds explicit assignment multipliers to recognized numeric `/4` gradebooks. A positive **Counts as** value changes an assignment's contribution within its category without changing its score scale or the category's configured percentage weight. The ordinary value is **1**; positive fractional values are allowed. Missing or guessed teacher weights are not inferred automatically.
+
+After applying a replacement and score limits, the calculation multiplies both that assignment's earned and possible points by its multiplier. For two fictional assignments in one category, with no replacements or limits:
+
+| Assignment | Score | Counts as | Weighted earned / possible |
+| --- | --- | --- | --- |
+| Quiz A | 3 / 4 | 2× | 6 / 8 |
+| Quiz B | 4 / 4 | 1× | 4 / 4 |
+
+The category average is `(6 + 4) / (8 + 4) × 4 = 3.333333… / 4`. The individual scores stay **3/4** and **4/4**. Within this category, their possible-point shares are **2/3** and **1/3**; circle area in the weight map follows those weighted shares. Other category weights still apply at the category level.
+
+A replacement changes the target assignment's earned value first; the target retains its own denominator and multiplier. Range endpoints and target calculations use the same multiplier rules. A weight change does not turn a blank into a counted zero, include an excluded row, or alter the raw-to-points conversion. **Saved assignment weights** affect reconstruction and testing; temporary **Counts as** edits affect the active scenario and reset to the saved/default weight. See [save behavior](SETTINGS.md#planned-310-settings).
+
+## Planned 3.1.0 precision and bounded estimates
+
+The candidate keeps validated `RecentData` restoration and adds eligible card/raw values already present in the loaded page. A supplied precise value must agree with the current assignment identity, visible denominator, and displayed score information. An ambiguous or contradictory match is not a basis for inventing additional digits. These are read-only page adapters, not requests for hidden records.
+
+When only rounded posted scores remain, a separate fallback can label the reconstruction **approximate** if display-derived bounds are consistent with the reported category and overall totals. This applies to eligible complete percentage gradebooks; it cannot explain a missing assignment denominator, an incomplete grading period, malformed metadata, or an unsupported policy. It preserves the public edition's explicit final-grade rounding policy and displayed-precision checks. Passing bounded reconciliation does not identify each exact hidden score or prove every teacher rule is known.
+
+The target planner uses the lower permitted bounds of uncertain original scores for a **conservative** result. Under the supported nondecreasing calculation rules, that result meets the modeled target even at those lower bounds; the exact minimum could be lower. An entered hypothetical score remains the entered value, rather than being replaced by the original posted score's uncertainty bound. Ordinary reconstructed grades and impacts remain labeled estimates while this fallback is active. Display precision, teacher final-rounding policy, uncertainty in original inputs, and the chosen target increment are separate concepts.
+
+Native regression predictions are a separate display feature: the candidate shows the existing Aeries tooltip value without recalculating it. A forecast is not a target calculation, posted grade, or extra input to these formulas.

@@ -99,13 +99,18 @@ For a fresh score scenario, use **Reset hypothetical changes**. To remove a save
 
 ## GPA and dashboard display
 
+The bonus-band rows and **Show 5/4/3/2/1 on dashboard** label below concern the separate planned **3.1.1** follow-up. Public 3.0.0 and the unchanged 3.1.0 candidate keep **Show 4/3/2/1 on dashboard** and have no bonus-band row.
+
 | Symptom | Recovery or explanation |
 | --- | --- |
-| Only one overall score appears | Turn **Show 4/3/2/1 on dashboard** off for the two letter-based GPAs. Keep **Overall grade / GPA above classes** on. |
+| Only one overall score appears | Turn **Show 5/4/3/2/1 on dashboard** off for the two letter-based GPAs. Keep **Overall grade / GPA above classes** on. |
 | The two GPAs match unexpectedly | Check **Honors/AP** on the included A/B/C courses eligible for the supported bonus. D/F gain no bonus. In Courses, select **Save course settings**; dashboard details save immediately. |
 | A course is absent from GPA | It must have a visible dashboard card, be included, and have a recognized A–F letter. Honors/AP does not override exclusion. Pass/fail, blanks, and numeric-only marks are skipped. Duplicate course identities use the first usable letter and count once. |
 | Plus/minus marks do not change GPA | Expected: both GPA scales ignore plus/minus. They also ignore custom thresholds and hypothetical score edits. |
 | A numeric rating differs from the letter | Ratings use your thresholds, not the teacher's letter scale. Turn numeric display off to inspect the original mark; the replacement does not supply an original-letter tooltip. |
+| A grade above 100% is not purple | In the planned 3.1.1 source, check **Settings → Grade colors & thresholds → 5 · bonus band**, its saved color and **Percentage >** cutoff, and the applicable color toggle. A custom bonus cutoff can differ from 100. Numeric dashboard mode is not required for color. |
+| Exactly 100% or 4 has no bonus color | Expected with default bonus cutoffs: the test is strictly greater than 100% or average 4. Equality uses the ordinary thresholds, normally band 4. |
+| Bonus color or rating 5 did not increase GPA | Expected: the display band is separate from the A–F and Honors/AP calculations used by letter-based GPA. |
 | A nickname/icon does not appear | Enable **Course nicknames & icons**, save the Courses form, and check the selected profile/year. Clearing a name/icon restores/removes that customization. |
 | A bar is full before 100, or begins above zero | Inspect the course's bar minimum/maximum. Bars clip to their chosen display span; the posted number stays visible. |
 | No numeric bar appears | The card has no recognized numeric grade. A recognized letter may still count toward GPA. |
@@ -164,6 +169,24 @@ See [save scopes](SETTINGS.md#what-changes-and-what-stays-saved) before attempti
 Disable duplicate or older copies first. To compare with the original page, disable the userscript in the manager and reload every affected Aeries tab. This retains saved Playground configuration. If native Aeries is also affected, the problem may be in the page or another extension; if only Playground is affected, note the control and steps that trigger it.
 
 Aeries layout changes can invalidate parsing. Pause/disable Playground if the local display becomes confusing, then use posted Aeries values until the issue is understood. Avoid collecting a real page export merely to demonstrate the problem.
+
+## Planned 3.1.0 weights and predictions
+
+These checks concern the [Developer/public integration candidate](MERGE-PLAN.md). A public 3.0.0 installation does not gain these controls from a documentation update.
+
+| Symptom | Check |
+| --- | --- |
+| **Saved assignment weights** or **Counts as** is missing | Verify the exact installed source and open a recognized numeric `/4` gradebook. These controls are not a general percentage-course weighting editor. Keep only one Playground copy enabled and reload after replacing it. |
+| A saved weight is waiting for an assignment | Matching requires the assignment ID, name, category, and due date in the selected course/profile/year. Load the intended full grading period. An unmatched reference remains inactive rather than attaching to a similar name. |
+| A weight is invalid or ambiguous | Use a finite positive number. Duplicate or conflicting references cannot safely select a weight. Review the matching assignment and save its intended value; **Reset saved weights to 1×** removes this course's overrides if that is the intended recovery. |
+| A temporary multiplier disappeared | Scenario reset restores the saved/default weight; exit/reload discards temporary testing. Use **Saved assignment weights** only when the multiplier is a persistent course policy. |
+| Saving a weight ended the current test | Expected: the saved baseline changed. Start a new hypothetical scenario after confirming the reconstructed totals. |
+| A save failed | Read the current storage message. A failed saved-weight write must not be treated as persisted. Resolve the manager/storage problem and retry; clearing all configuration is not required. |
+| Grade results say **approximate**, or the target is conservative | Some original scores are available only rounded. The candidate bounds their uncertainty and uses lower bounds for targets. This is not a claim that hidden scores were recovered. Read [bounded estimates](CALCULATIONS.md#planned-310-precision-and-bounded-estimates). |
+| Totals still fail to reconcile | Confirm the complete assignment list, exclusions, denominator totals, and known policy. Bounded rounding does not repair missing work or justify guessing teacher rules. |
+| A regression prediction is absent | Enable **Show regression predictions** and Playground. The native trend icon must supply one usable, unambiguous forecast; absent, invalid, or conflicting values are skipped. Playground does not calculate a substitute forecast. |
+
+Use the [migration and rollback steps](SETTINGS.md#planned-310-migration-and-rollback) for an upgrade problem. Report only fictional examples and relevant version/control details; saved weight references can contain identifiable assignment information.
 
 ## Report a reproducible problem
 

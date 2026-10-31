@@ -43,6 +43,10 @@ The supplied Developer **2.X** build and public **3.0.0** edition are being unif
 
 Do not install both editions simultaneously. Version **2.X** is a personal build label, not a newer public release number or a substitute for the audited 3.0.0 source.
 
+### Separate 3.1.1 bonus-band follow-up
+
+The configurable purple **5 · bonus band** is planned separately for **Sunday, November 8, 2026, at 11:59 p.m. America/Los_Angeles (PST)**, equivalent to **November 9 at 07:59 UTC**. It is not included in the November 1 **3.1.0** integration. The [bonus controls](#bonus-band-planned-for-311) below describe the future 3.1.1 source; public 3.0.0 and the prepared 3.1.0 source retain their original four bands. See [3.1.1 release notes](RELEASE-3.1.1.md) for scope and verification limits.
+
 <a id="weight-map-prerelease"></a>
 <a id="weighted-gpa-prerelease"></a>
 
@@ -93,24 +97,41 @@ Select **Save course settings** to apply the form. All displayed course entries 
 
 Period matching uses the visible dashboard roster. A missing or duplicate match leaves a generic period label; Playground does not infer a free period or a personal attendance schedule.
 
-### Colors and 4/3/2/1 ratings
+<a id="colors-and-4321-ratings"></a>
 
-**Dashboard grade colors** and **Show 4/3/2/1 on dashboard** are separate Settings toggles. Numeric display replaces a recognized dashboard mark with a custom 4, 3, 2, or 1 based on that course's numeric grade and cutoffs. Its posted percentage or average stays visible. Turn numeric display off to recover the original mark.
+### Colors and 5/4/3/2/1 ratings
+
+The bonus row and five-band labels in this section apply to the **planned 3.1.1** source. The 3.1.0 integration remains unchanged and keeps **Show 4/3/2/1 on dashboard**.
+
+**Dashboard grade colors** and **Show 5/4/3/2/1 on dashboard** are separate Settings toggles. Numeric display replaces a recognized dashboard mark with a custom 5, 4, 3, 2, or 1 based on its numeric grade, the global bonus cutoff, and the course's ordinary cutoffs. Its posted percentage or average stays visible. Turn numeric display off to recover the original mark.
 
 These are unofficial ratings, not the teacher's A–F scale. The current replacement does not add a tooltip identifying the original letter; turn numeric display off when you need to inspect that letter. A card whose mark cannot be recognized may retain its native display.
 
-Global defaults are:
+The planned 3.1.1 source has these global defaults:
 
 | Rating | Percentage | Average points | Color |
 | --- | --- | --- | --- |
-| **4** | At least 95 | At least 3.7 | Dark blue, `#1f1f7f` |
+| **5 · bonus band** | Strictly above 100 | Strictly above 4 | Purple, `#7c3aed` |
+| **4** | At least 95, unless the bonus band applies | At least 3.7, unless the bonus band applies | Dark blue, `#1f1f7f` |
 | **3** | At least 85, below 95 | At least 3.1, below 3.7 | Dark green, `#1f7f1f` |
 | **2** | At least 75, below 85 | At least 2.5, below 3.1 | Orange, `#c05600` |
 | **1** | Below 75 | Below 2.5 | Dark red, `#7f1f1f` |
 
-Set global colors and cutoffs in **Settings → Grade colors & thresholds**, then select **Save settings**. Course cutoffs override global defaults. The color palette is shared by dashboard grades, progress bars, detail-page grades, and graded weight-map entries. Dashboard/detail color toggles do not disable the bar or map palette.
+Set global colors and cutoffs in **Settings → Grade colors & thresholds**, then select **Save settings**. Course cutoffs override the ordinary three-cutoff defaults; the bonus cutoff remains global. The color palette is shared by dashboard grades, progress bars, detail-page grades, and graded weight-map entries. Dashboard/detail color toggles do not disable the bar or map palette.
 
 **Grade colors on details page** controls threshold colors for recognized posted assignment names/scores, category totals, the course total, and hypothetical score/total overlays. Turning it off removes those threshold colors from both existing and added hypothetical assignments. Active score ranges use neutral colors because an interval has no single grade band.
+
+<a id="bonus-band-in-the-unified-source"></a>
+
+### Bonus band planned for 3.1.1
+
+The **5 · bonus band** row in **Settings → Grade colors & thresholds** has an editable color and separate **Percentage >** and **Average >** fields. Defaults are purple (`#7c3aed`), **100**, and **4**. Select **Save settings** to apply the row. Public 3.0.0 and the prepared 3.1.0 source have only the original four bands; this addition belongs to the separate planned 3.1.1 source.
+
+The comparison is strictly greater than the configured cutoff. With defaults, **100%** uses ordinary band 4, while **100.01%** uses bonus band 5; **4** uses ordinary band 4, while **4.01** uses band 5. Custom ordinary cutoffs still determine the non-bonus rating. A course-specific threshold override does not replace the global bonus boundary.
+
+Bonus colors follow each feature's existing color controls and do not require numeric dashboard mode. With **Show 5/4/3/2/1 on dashboard** on, qualifying courses receive rating **5**, and the numeric overall summary averages the 1–5 ratings. Letter-based weighted and unweighted GPA keep their existing A–F calculation and Honors/AP rules; the display bonus is not another GPA bonus.
+
+A native forecast above the configured percentage bonus cutoff also uses the bonus color when **Dashboard grade colors** is enabled. Other forecast badges keep their existing blue styling; their displayed native values are not changed.
 
 ### Progress bars and precision
 
@@ -122,14 +143,14 @@ Display precision, the [fractional-score adapter](#fractional-score-precision), 
 
 ### Overall grade and current-year GPA
 
-**Overall grade / GPA above classes** starts on. To see GPA, leave **Show 4/3/2/1 on dashboard** off and open the dashboard. To see an average of custom ratings instead, turn that toggle on. Both modes use the currently visible dashboard cards, deduplicated by course identity. If a duplicate card is blank, the first usable grade for that identity is used; the course still counts once.
+**Overall grade / GPA above classes** starts on. To see GPA, leave **Show 5/4/3/2/1 on dashboard** off and open the dashboard. To see an average of custom ratings instead, turn that toggle on. Both modes use the currently visible dashboard cards, deduplicated by course identity. If a duplicate card is blank, the first usable grade for that identity is used; the course still counts once.
 
-| **Show 4/3/2/1 on dashboard** | Summary | Details control |
+| **Show 5/4/3/2/1 on dashboard** | Summary | Details control |
 | --- | --- | --- |
-| On | **Playground overall score**: equal average of each included course's threshold-based 1–4 rating. | **Calculation & included classes** |
+| On | **Playground overall score**: equal average of each included course's threshold-based 1–5 rating. | **Calculation & included classes** |
 | Off | **Current-year GPA**: estimated unweighted and weighted averages of posted A–F letters. | **Calculation & GPA class selection** |
 
-The class-inclusion checkbox attempts to save immediately and affects both summary modes. A failed save appears in the summary and any open Playground dialog. Numeric mode skips courses without a recognized numeric grade. The result stays an average, such as **3.5**; only its color indicates a band, using **Settings → Average ≥** cutoffs. An empty set displays a dash rather than zero.
+The class-inclusion checkbox attempts to save immediately and affects both summary modes. A failed save appears in the summary and any open Playground dialog. Numeric mode skips courses without a recognized numeric grade. The result stays an average, such as **3.5**; only its color indicates a band. Its color first checks the global **Average >** bonus cutoff, then the ordinary **Settings → Average ≥** cutoffs. An empty set displays a dash rather than zero.
 
 “Current-year” describes the courses shown on the dashboard. Playground does not retrieve a transcript, previous years, course credits, or a complete annual course list. Hidden courses do not count just because they have saved settings.
 
@@ -420,7 +441,7 @@ Use the [settings guide](SETTINGS.md) for the full defaults, save behavior, and 
 
 ### Default toggles
 
-A new install enables the grade tools, colors, bars, overall summary, and precise formatting. Numeric 4/3/2/1 display, schedule access, and the map's ungraded preview start off. KBAR starts unloaded. See the [complete default table](SETTINGS.md#default-toggles).
+A new install of the planned 3.1.1 source enables the grade tools, colors, bars, overall summary, and precise formatting. Numeric 5/4/3/2/1 display, schedule access, and the map's ungraded preview start off. KBAR starts unloaded. See the [complete default table](SETTINGS.md#default-toggles).
 
 ### What changes and what stays saved
 
