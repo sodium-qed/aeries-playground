@@ -39,12 +39,15 @@ if scenario == 'wrong-head': pr['head']['sha'] = other
 if scenario == 'foreign-head': pr['head']['repo']['full_name'] = 'somebody/fork'
 if scenario == 'wrong-head-branch': pr['head']['ref'] = 'unrelated'
 if scenario == 'wrong-base-branch': pr['base']['ref'] = 'other'
-release = {'id': 31, 'tag_name': p.TAG, 'draft': False, 'prerelease': False,
+stable = {'id': 30, 'tag_name': p.STABLE_TAG, 'draft': False, 'prerelease': False}
+if scenario == 'stable-draft': stable['draft'] = True
+if scenario == 'stable-prerelease': stable['prerelease'] = True
+release = {'id': 31, 'tag_name': p.TAG, 'draft': False, 'prerelease': True,
            'published_at': '2026-11-02T08:00:00Z',
            'assets': [{'id': 41, 'name': p.SOURCE_NAME, 'state': 'uploaded',
                        'size': source_size, 'digest': 'sha256:' + source_hash}]}
 if scenario == 'draft': release['draft'] = True
-if scenario == 'prerelease': release['prerelease'] = True
+if scenario == 'unexpected-stable-release': release['prerelease'] = False
 if scenario == 'wrong-release-tag': release['tag_name'] = 'v4.0.0'
 if scenario == 'early-publication': release['published_at'] = '2026-11-02T07:58:59Z'
 if scenario == 'missing-publication-time': release.pop('published_at')
@@ -118,9 +121,11 @@ def api(route, method='GET', payload=None):
         result = copy.deepcopy(release)
         if scenario == 'late-asset' and release_reads >= 2: result['assets'][0]['digest'] = 'sha256:' + '0' * 64
         return result
+    if route == prefix + '/releases/tags/' + p.STABLE_TAG:
+        return copy.deepcopy(stable)
     if route == prefix + '/releases/latest':
         latest_reads += 1
-        result = copy.deepcopy(release)
+        result = copy.deepcopy(stable)
         if scenario == 'not-latest' or scenario == 'late-latest' and latest_reads >= 2: result.update(id=90, tag_name='v4.0.0')
         return result
     if route.startswith(prefix + '/contents/' + p.SOURCE_NAME + '?ref='):
@@ -229,7 +234,7 @@ for (const name of ['fresh', 'annotated-tag']) {
     assert.equal(result.issue_attempts, 1);
     assert.match(result.docs['README.md'], /editions are unified/);
     assert.doesNotMatch(result.docs['README.md'], /merge and release have not happened/);
-    assert.match(result.docs['docs/FEATURES.md'], /3\.1\.0 unified stable release/);
+    assert.match(result.docs['docs/FEATURES.md'], /3\.1\.0 unified prerelease/);
     assert.match(result.docs['docs/MERGE-PLAN.md'], /Original schedule and preparation record/);
     assert.match(result.docs['docs/MERGE-PLAN.md'], /195\/195 tests/);
     assert.match(result.docs['docs/MERGE-PLAN.md'], /November 1, 2026, 11:59 p\.m\. PST/);
@@ -240,6 +245,11 @@ for (const name of ['fresh', 'annotated-tag']) {
     ]) assert.ok(result.docs[path].includes(preserved));
     assert.match(result.docs['docs/MERGE-RESULT.md'], /aeries-playground-3\.1\.0-result/);
     assert.match(result.docs['docs/MERGE-RESULT.md'], /does not invent a new test count/);
+    assert.match(result.docs['docs/MERGE-RESULT.md'], /prerelease: true/);
+    assert.match(result.docs['docs/MERGE-RESULT.md'], /3\.0\.0 remains the stable Latest/);
+    assert.match(result.docs['README.md'], /3\.1\.0 prerelease/);
+    assert.match(result.docs['README.md'], /3\.0\.0.*stable Latest/);
+    assert.doesNotMatch(result.docs['README.md'], /3\.1\.0.*unified stable/);
     assert.equal(result.issue.body, 'Synthetic original tracking body.\n');
     assert.equal(result.issue.state, 'closed');
     assert.equal(result.issue.state_reason, 'completed');
@@ -262,7 +272,7 @@ for (const name of ['before-time', 'not-actions', 'wrong-repository', 'wrong-ref
 for (const name of ['wrong-pr', 'not-merged', 'wrong-merge', 'wrong-head', 'foreign-head',
   'wrong-head-branch', 'wrong-base-branch', 'wrong-parent', 'squash-parent',
   'invalid-base-parent', 'wrong-commit-response', 'wrong-tag', 'tag-is-tree', 'tag-loop',
-  'draft', 'prerelease', 'wrong-release-tag', 'early-publication', 'missing-publication-time',
+  'draft', 'unexpected-stable-release', 'stable-draft', 'stable-prerelease', 'wrong-release-tag', 'early-publication', 'missing-publication-time',
   'no-asset', 'duplicate-assets', 'wrong-asset-size', 'wrong-asset-digest',
   'asset-not-uploaded', 'missing-asset-digest', 'not-latest', 'source-mismatch',
   'main-source-mismatch', 'source-symlink', 'main-diverged', 'wrong-merge-base',

@@ -115,11 +115,11 @@ def api(route, method='GET', payload=None, paginate=False):
         if scenario == 'already-merged-squash': parents.pop()
         return {'sha': merged_sha, 'parents': parents}
     if route.endswith('/releases/tags/v3.0.0'):
-        return {'id': 1, 'tag_name': 'v3.0.0', 'draft': scenario == 'previous-stable-draft', 'prerelease': False}
+        return {'id': 1, 'tag_name': 'v3.0.0', 'draft': scenario == 'previous-stable-draft', 'prerelease': scenario == 'previous-stable-prerelease'}
     if route.endswith('/releases/latest'):
         latest_reads += 1
         other_latest = scenario == 'latest-changed' or scenario == 'late-latest-change' and latest_reads >= 2
-        return {'id': 9 if other_latest else 1, 'tag_name': 'v4.0.0' if other_latest else 'v3.0.0', 'draft': False, 'prerelease': False}
+        return {'id': 9 if other_latest else 1, 'tag_name': 'v4.0.0' if other_latest else 'v3.0.0', 'draft': False, 'prerelease': scenario == 'latest-prerelease'}
     if route.endswith('/releases?per_page=100'):
         assert paginate
         return [[], [{'id': 3, 'tag_name': 'v3.1.0', 'draft': True}]] if scenario == 'existing-release' else [[]]
@@ -204,7 +204,7 @@ for (const scenario of ['fresh', 'manual-recovery-late', 'approved-later', 'dism
   });
 }
 
-for (const scenario of ['wrong-repository', 'wrong-event', 'wrong-ref', 'not-actions', 'unpinned', 'unprepared-source', 'wrong-head', 'wrong-branch', 'foreign-head-repo', 'draft', 'closed', 'conflict', 'pending-mergeability', 'source-mismatch', 'changes-requested', 'comment-does-not-clear-review', 'missing-check', 'failed-check', 'pending-check', 'foreign-check', 'skipped-check', 'failed-status', 'pending-status', 'wrong-status-sha', 'combined-tests-fail', 'head-race', 'base-race', 'late-check', 'late-review', 'already-merged-wrong-head', 'previous-stable-draft', 'latest-changed', 'late-latest-change', 'existing-release', 'existing-tag', 'already-merged-wrong-parent', 'already-merged-squash', 'concurrent-wrong-base']) {
+for (const scenario of ['wrong-repository', 'wrong-event', 'wrong-ref', 'not-actions', 'unpinned', 'unprepared-source', 'wrong-head', 'wrong-branch', 'foreign-head-repo', 'draft', 'closed', 'conflict', 'pending-mergeability', 'source-mismatch', 'changes-requested', 'comment-does-not-clear-review', 'missing-check', 'failed-check', 'pending-check', 'foreign-check', 'skipped-check', 'failed-status', 'pending-status', 'wrong-status-sha', 'combined-tests-fail', 'head-race', 'base-race', 'late-check', 'late-review', 'already-merged-wrong-head', 'previous-stable-draft', 'previous-stable-prerelease', 'latest-prerelease', 'latest-changed', 'late-latest-change', 'existing-release', 'existing-tag', 'already-merged-wrong-parent', 'already-merged-squash', 'concurrent-wrong-base']) {
   test(`scheduled merge blocks ${scenario} without a merge or publication`, () => {
     const result = python(harness, scenario);
     assert.equal(result.errors.length, 1, JSON.stringify(result));
@@ -278,7 +278,7 @@ def run(args, check=True, **kwargs):
         env = kwargs['env']
         entry['env'] = {key: env.get(key) for key in ['GITHUB_REPOSITORY', 'GITHUB_REF', 'GITHUB_EVENT_NAME', 'GITHUB_SHA', 'SYNTHETIC_INHERITED_SETTING']}
     calls.append(entry)
-    if args == ['python3', 'scripts/publish-release.py'] and scenario == 'publication-fails':
+    if args == ['python3', 'scripts/publish-scheduled-prereleases.py'] and scenario == 'publication-fails':
         raise subprocess.CalledProcessError(1, args, stderr='synthetic publication failure')
     if args[:2] == ['python3', 'scripts/record-merge-completion.py'] and scenario == 'completion-fails':
         raise subprocess.CalledProcessError(1, args, stderr='synthetic completion failure')
@@ -340,7 +340,7 @@ test('inline publication checks out the exact merged commit and records completi
   assert.deepEqual(result.calls.map(call => call.args), [
     ['git', 'fetch', '--no-tags', 'https://github.com/sodium-qed/aeries-playground.git', 'c'.repeat(40)],
     ['git', 'checkout', '--detach', '--force', 'c'.repeat(40)],
-    ['python3', 'scripts/publish-release.py'],
+    ['python3', 'scripts/publish-scheduled-prereleases.py'],
     ['python3', 'scripts/record-merge-completion.py', 'c'.repeat(40),
       createHash('sha256').update('// Synthetic reviewed source\n').digest('hex'), '29'],
   ]);
@@ -359,7 +359,7 @@ test('failed publication cannot record successful completion or close the tracki
   const result = python(helperHarness, 'publication-fails');
   assert.equal(result.errors.length, 1);
   assert.equal(result.calls.length, 3);
-  assert.deepEqual(result.calls.at(-1).args, ['python3', 'scripts/publish-release.py']);
+  assert.deepEqual(result.calls.at(-1).args, ['python3', 'scripts/publish-scheduled-prereleases.py']);
 });
 
 test('completion failure reports the verified release as a partial outcome without merging again', () => {
@@ -367,7 +367,7 @@ test('completion failure reports the verified release as a partial outcome witho
   assert.equal(result.errors.length, 1);
   assert.match(result.errors[0], /Merge and release verified, but completion documentation\/issue updates remain pending/);
   assert.equal(result.calls.length, 4);
-  assert.equal(result.calls.filter(call => call.args[1] === 'scripts/publish-release.py').length, 1);
+  assert.equal(result.calls.filter(call => call.args[1] === 'scripts/publish-scheduled-prereleases.py').length, 1);
   assert.equal(result.calls.filter(call => call.args[1] === 'scripts/record-merge-completion.py').length, 1);
 });
 
@@ -381,6 +381,7 @@ test('scheduled workflow uses the intended UTC cron, safe recovery, and inline p
   assert.match(workflow, /persist-credentials: false/);
   assert.match(workflow, /node-version: '24'/);
   assert.match(workflow, /issues: write/);
+  assert.match(workflow, /actions: read/);
   assert.match(workflow, /run: python3 scripts\/merge-prepared-release\.py/);
   assert.doesNotMatch(workflow, /pull_request_target|secrets\.|--admin|--clobber/);
 });

@@ -25,6 +25,7 @@ jobs:
       issues: write
       checks: read
       statuses: read
+      actions: read
     steps:
       - name: Check out the scheduling revision
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -36,7 +37,7 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Validate and merge the approved PR, then publish its exact commit
+      - name: Validate and merge the approved PR, then publish its exact commit as a prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/merge-prepared-release.py

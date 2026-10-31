@@ -1,5 +1,7 @@
 # Developer and public edition merge
 
+> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+
 The supplied Developer **2.X** build and public **3.0.0** edition are being prepared as one maintained **3.1.0** edition. This document records the planned transition; it does not claim that a merge or publication has already succeeded.
 
 ## Schedule and current status
