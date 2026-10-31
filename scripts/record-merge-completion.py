@@ -21,6 +21,7 @@ PR_NUMBER = 10
 HEAD_BRANCH = 'release/unify-developer-public-3.1.0'
 EXPECTED_HEAD_SHA = '858a0a1fac820163d1185664baa039624767928e'
 TAG = 'v3.1.0'
+STABLE_TAG = 'v3.0.0'
 ISSUE_NUMBER = 8
 SOURCE_NAME = 'aeries-playground.user.js'
 LAUNCH_TIME = datetime(2026, 11, 2, 7, 59, tzinfo=timezone.utc)
@@ -114,14 +115,18 @@ def verify_release(merge_sha, source_hash, source_size):
     if tag.get('type') != 'commit' or tag.get('sha') != merge_sha:
         raise RuntimeError('The release tag does not resolve to the verified merge commit.')
     release = api(f'repos/{REPOSITORY}/releases/tags/{TAG}')
+    stable = api(f'repos/{REPOSITORY}/releases/tags/{STABLE_TAG}')
     latest = api(f'repos/{REPOSITORY}/releases/latest')
     release_id = release.get('id')
     if (not isinstance(release_id, int) or release_id <= 0
             or release.get('tag_name') != TAG or release.get('draft') is not False
-            or release.get('prerelease') is not False
-            or latest.get('id') != release_id or latest.get('tag_name') != TAG
+            or release.get('prerelease') is not True
+            or not isinstance(stable.get('id'), int) or stable['id'] <= 0
+            or stable.get('tag_name') != STABLE_TAG or stable.get('draft') is not False
+            or stable.get('prerelease') is not False
+            or latest.get('id') != stable['id'] or latest.get('tag_name') != STABLE_TAG
             or latest.get('draft') is not False or latest.get('prerelease') is not False):
-        raise RuntimeError('The intended release is not published, stable, and Latest.')
+        raise RuntimeError('The intended prerelease is not published or the stable Latest selection changed.')
     published_at = release.get('published_at')
     if not isinstance(published_at, str):
         raise RuntimeError('GitHub supplied no release publication timestamp.')
@@ -138,7 +143,8 @@ def verify_release(merge_sha, source_hash, source_size):
         raise RuntimeError('The public asset metadata does not match the verified bytes and digest.')
     verify_source(merge_sha, source_hash, source_size)
     return {'merge_sha': merge_sha, 'source_sha256': source_hash, 'source_size': source_size,
-            'published_at': published_at, 'release_id': release_id, 'asset_id': asset['id']}
+            'published_at': published_at, 'release_id': release_id, 'asset_id': asset['id'],
+            'stable_release_id': stable['id']}
 
 
 def replace_once(text, old, new, label):
@@ -152,7 +158,7 @@ def replace_once(text, old, new, label):
 
 def contextualize_guide(text, path):
     target = 'docs/MERGE-RESULT.md' if path == 'SECURITY.md' else 'MERGE-RESULT.md'
-    note = f'{PUBLICATION_NOTE_MARKER}\n\n**Publication update:** Unified **3.1.0** has been published and verified; see [the merge result]({target}). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions now included in 3.1.0. Statements about the 3.0.0 baseline remain historical comparisons, not the current release status. The recorded browser-verification limits still apply.\n\n'
+    note = f'{PUBLICATION_NOTE_MARKER}\n\n**Publication update:** Unified **3.1.0** has been published and verified as a **prerelease**; see [the merge result]({target}). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions included in that prerelease. **3.0.0 remains the stable Latest release.** The recorded browser-verification limits still apply.\n\n'
     if PUBLICATION_NOTE_MARKER in text:
         if text.count(PUBLICATION_NOTE_MARKER) != 1 or text.count(note) != 1:
             raise RuntimeError(f'{path} has an unfamiliar publication note; review before changing it.')
@@ -168,14 +174,15 @@ def result_document(facts):
 
 {RESULT_MARKER}
 
-The Developer and public editions were unified in **3.1.0**. GitHub evidence was checked before this record was written.
+The Developer and public editions were unified in the **3.1.0 prerelease**. GitHub evidence was checked before this record was written. **3.0.0 remains the stable Latest release.**
 
 | Evidence | Verified value |
 | --- | --- |
 | Integration PR | [#{PR_NUMBER}]({ROOT_URL}/pull/{PR_NUMBER}) |
 | Approved integration head | `{EXPECTED_HEAD_SHA}` |
 | Merge commit | [`{facts['merge_sha']}`]({ROOT_URL}/commit/{facts['merge_sha']}) |
-| Stable release | [{TAG}]({RELEASE_URL}) — published, not a prerelease, selected as Latest at verification |
+| Prerelease | [{TAG}]({RELEASE_URL}) — published with `prerelease: true`; not selected as stable Latest |
+| Stable Latest | [{STABLE_TAG}]({ROOT_URL}/releases/tag/{STABLE_TAG}) — unchanged; release ID `{facts['stable_release_id']}` |
 | Publication timestamp reported by GitHub | `{facts['published_at']}` |
 | Release / asset IDs | `{facts['release_id']}` / `{facts['asset_id']}` |
 | Userscript bytes | `{facts['source_size']}` |
@@ -183,7 +190,7 @@ The Developer and public editions were unified in **3.1.0**. GitHub evidence was
 
 The scheduled merger and guarded publisher run the complete regression suite, userscript syntax/basic-metadata checker, local documentation-link checker, and whitespace checks before publication. The [workflow runs]({ROOT_URL}/actions/workflows/scheduled-merge.yml) contain execution evidence. The [original preparation record](MERGE-PLAN.md#original-schedule-and-preparation-record) preserves its historical test counts; this completion record does not invent a new test count.
 
-This recorder independently checked the merged PR and approved head, merge parents, exact tag target, public stable/Latest state, unique asset size and SHA-256 metadata, and repository source bytes. The publisher separately downloads and hashes the asset before requesting this record. Live Aeries rendering, actual userscript-manager migration, live schedule accuracy, and audible media remain unverified.
+This recorder independently checked the merged PR and approved head, merge parents, exact tag target, public prerelease state, unchanged 3.0.0 stable Latest selection, unique asset size and SHA-256 metadata, and repository source bytes. The publisher separately downloads and hashes the asset before requesting this record. Live Aeries rendering, actual userscript-manager migration, live schedule accuracy, and audible media remain unverified.
 
 Install one copy using the [manual update instructions](SETTINGS.md#update-the-userscript). Historical releases and their tags/assets remain preserved.
 '''
@@ -197,51 +204,51 @@ def render_documents(originals, facts):
     readme = originals['README.md']
     readme = replace_once(readme, OLD_README_HEADING, '## Developer and public editions are unified', 'README announcement heading')
     readme = replace_once(readme, OLD_README_PARAGRAPH,
-        f'The Developer **2.X** build and public **3.0.0** edition are now one maintained **3.1.0** edition. [Stable 3.1.0]({RELEASE_URL}) has been published and verified. See the [merge result](docs/MERGE-RESULT.md) for the exact commit, artifact fingerprint, and verification limits.', 'README announcement')
+        f'The Developer **2.X** build and public **3.0.0** edition are now unified in the [3.1.0 prerelease]({RELEASE_URL}), which has been published and verified. **3.0.0 remains the stable Latest release.** See the [merge result](docs/MERGE-RESULT.md) for the exact commit, artifact fingerprint, and verification limits.', 'README announcement')
     readme = replace_once(readme, OLD_README_DETAILS,
         "The integration adds Developer assignment multipliers, native forecast display, additional validated score-precision recovery, and conservative rounding estimates while retaining the public edition's audited fixes. Follow the [upgrade steps](docs/MERGE-PLAN.md#upgrade-from-either-edition), keep one installation enabled, and review the saved settings after updating. An ordinary update does not require clearing settings.", 'README integration details')
     readme = replace_once(readme, OLD_STABLE_CHOICE,
-        f'| [Stable release]({ROOT_URL}/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. **3.1.0** is the verified unified stable release; use its tagged download for a fixed version. |', 'README stable download')
+        f'| [Stable release]({ROOT_URL}/releases/latest) | **3.0.0** remains the verified stable Latest release. Open **Assets** and choose `aeries-playground.user.js`. |\n| [3.1.0 prerelease]({RELEASE_URL}) | The unified edition is available separately as a prerelease; use its tagged asset for a fixed version. |', 'README stable download')
     readme = replace_once(readme, OLD_SOURCE_CHOICE,
-        f'| [Install current source]({ROOT_URL}/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the unified **3.1.0** integration. Later development can differ from the tagged stable asset. |', 'README source download')
+        f'| [Install current source]({ROOT_URL}/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the unified **3.1.0** integration. Later development can differ from the tagged prerelease asset. |', 'README source download')
     features = originals['docs/FEATURES.md']
     features = replace_once(features, OLD_FEATURE_INTRO,
-        'This guide includes the published **3.1.0 unified stable release**. See the [verified merge result](MERGE-RESULT.md) for publication and artifact evidence. The earlier 3.0.0 stable verification on October 26, 2026 remains historical audit evidence. The moving `main` source and a tagged asset remain distinct downloads.', 'Feature release introduction')
-    new_release_rows = f'| [3.1.0 release]({RELEASE_URL}) · [3.1.0 userscript]({ROOT_URL}/releases/download/{TAG}/{SOURCE_NAME}) | The verified unified stable artifact. |\n' + OLD_FEATURE_RELEASE_ROW.replace('The published stable artifact for the audited source.', 'The preserved earlier audited stable artifact.')
+        'This guide includes the published **3.1.0 unified prerelease**. See the [verified merge result](MERGE-RESULT.md) for publication and artifact evidence. **3.0.0 remains the stable Latest release**; its October 26, 2026 verification remains valid audit evidence. The moving `main` source and a tagged asset remain distinct downloads.', 'Feature release introduction')
+    new_release_rows = f'| [3.1.0 prerelease]({RELEASE_URL}) · [3.1.0 userscript]({ROOT_URL}/releases/download/{TAG}/{SOURCE_NAME}) | The verified unified prerelease artifact. |\n' + OLD_FEATURE_RELEASE_ROW.replace('The published stable artifact for the audited source.', 'The audited stable artifact, still selected as Latest.')
     features = replace_once(features, OLD_FEATURE_RELEASE_ROW, new_release_rows, 'Feature release rows')
-    features = replace_once(features, OLD_LATEST_ROW, OLD_LATEST_ROW.replace('**3.0.0**', '**3.1.0**'), 'Feature Latest row')
+    features = replace_once(features, OLD_LATEST_ROW, f'| [Latest stable release]({ROOT_URL}/releases/latest) | **3.0.0** remains the stable Latest release after 3.1.0 prerelease publication. |', 'Feature Latest row')
     features = replace_once(features, '### Planned Developer and public integration',
         '<a id="planned-developer-and-public-integration"></a>\n\n### Developer and public integration in 3.1.0', 'Feature integration heading')
     features = replace_once(features, OLD_FEATURE_PLAN,
-        'The supplied Developer **2.X** build and public **3.0.0** edition have been unified in **3.1.0**. The [verified merge result](MERGE-RESULT.md) records publication; the [merge plan](MERGE-PLAN.md) retains the original November 1, 2026, 11:59 p.m. America/Los_Angeles (PST) schedule and upgrade instructions.', 'Feature integration status')
+        'The supplied Developer **2.X** build and public **3.0.0** edition have been unified in the **3.1.0 prerelease**. The [verified merge result](MERGE-RESULT.md) records publication; the [merge plan](MERGE-PLAN.md) retains the original November 1, 2026, 11:59 p.m. America/Los_Angeles (PST) schedule and upgrade instructions.', 'Feature integration status')
     features = replace_once(features, '| Feature | Public 3.0.0 | Planned unified 3.1.0 |',
         '| Feature | Public 3.0.0 | Unified 3.1.0 |', 'Feature comparison heading')
     plan = originals['docs/MERGE-PLAN.md']
     plan = replace_once(plan, OLD_PLAN_INTRO,
-        'The supplied Developer **2.X** build and public **3.0.0** edition were unified as **3.1.0**. The completion evidence below is current; the original schedule, preparation counts, and execution instructions remain preserved as a historical record.', 'Merge plan introduction')
+        'The supplied Developer **2.X** build and public **3.0.0** edition were unified as the **3.1.0 prerelease**. **3.0.0 remains stable Latest.** The completion evidence below is current; the original schedule, preparation counts, and execution instructions remain preserved as a historical record.', 'Merge plan introduction')
     outcome = f'''## Verified completion
 
 {COMPLETION_MARKER}
 
-[PR #{PR_NUMBER}]({ROOT_URL}/pull/{PR_NUMBER}) merged as [`{facts['merge_sha']}`]({ROOT_URL}/commit/{facts['merge_sha']}). [{TAG}]({RELEASE_URL}) was published at `{facts['published_at']}` and verified as stable and Latest. The userscript is **{facts['source_size']} bytes**, SHA-256 `{facts['source_sha256']}`. The guarded workflow runs its full checks before publication; original preparation test counts below remain unchanged. See [the result and evidence limits](MERGE-RESULT.md).
+[PR #{PR_NUMBER}]({ROOT_URL}/pull/{PR_NUMBER}) merged as [`{facts['merge_sha']}`]({ROOT_URL}/commit/{facts['merge_sha']}). [{TAG}]({RELEASE_URL}) was published at `{facts['published_at']}` and verified as a prerelease. **3.0.0 remains the stable Latest release.** The userscript is **{facts['source_size']} bytes**, SHA-256 `{facts['source_sha256']}`. The guarded workflow runs its full checks before publication; original preparation test counts below remain unchanged. See [the result and evidence limits](MERGE-RESULT.md).
 
 ## Original schedule and preparation record'''
     plan = replace_once(plan, '## Schedule and current status', outcome, 'Merge plan completion status')
     hub = replace_once(originals['docs/README.md'], OLD_HUB_STATUS,
-        'The Developer and public editions are unified in the published **3.1.0** release. See the [verified merge result](MERGE-RESULT.md) for artifact evidence and the [original merge plan](MERGE-PLAN.md) for the preserved schedule, upgrade guidance, checks, and rollback. The 3.0.0 asset remains available as a historical release.', 'Documentation hub status')
+        'The Developer and public editions are unified in the published **3.1.0 prerelease**. See the [verified merge result](MERGE-RESULT.md) for artifact evidence and the [original merge plan](MERGE-PLAN.md) for the preserved schedule, upgrade guidance, checks, and rollback. **3.0.0 remains the stable Latest release.**', 'Documentation hub status')
     maintenance = replace_once(originals['docs/MAINTENANCE.md'],
         '## Active Developer and public merge preparation', '## Verified Developer and public integration', 'Maintenance status heading')
     maintenance = replace_once(maintenance, OLD_MAINT_STATUS,
-        f'The Developer/public integration tracked in [issue #8]({ROOT_URL}/issues/8) has completed. [Stable 3.1.0]({RELEASE_URL}) and its exact artifact were verified; see the [merge result](MERGE-RESULT.md). The original scheduled start was **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**); the [merge plan](MERGE-PLAN.md) preserves preparation and recovery details.', 'Maintenance integration status')
+        f'The Developer/public integration tracked in [issue #8]({ROOT_URL}/issues/8) has completed. The [3.1.0 prerelease]({RELEASE_URL}) and its exact artifact were verified; **3.0.0 remains stable Latest**. See the [merge result](MERGE-RESULT.md). The original scheduled start was **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**); the [merge plan](MERGE-PLAN.md) preserves preparation and recovery details.', 'Maintenance integration status')
     maintenance = replace_once(maintenance, OLD_MAINT_BASELINE,
-        'Public **3.1.0** is the verified unified stable release. The supplied Developer **2.X** features were integrated selectively into the audited public base, preserving newer fixes. Its publisher uses the frozen 3.1.0 fingerprint and retained safeguards. The original 3.0.0 tag, asset, and audit remain historical evidence; the preparation test count below remains the count recorded on its original date.', 'Maintenance stable baseline')
+        'Public **3.0.0** remains the stable Latest release. The **3.1.0 prerelease** selectively integrates Developer **2.X** features into the audited public base, preserving newer fixes. Its publisher uses the frozen 3.1.0 fingerprint and retained safeguards. The 3.0.0 tag, asset, and audit remain unchanged; the preparation test count below remains the count recorded on its original date.', 'Maintenance stable baseline')
     result = {'README.md': readme, 'docs/FEATURES.md': features,
               'docs/MERGE-PLAN.md': plan, RESULT_PATH: record,
               'docs/README.md': hub, 'docs/MAINTENANCE.md': maintenance}
     result['CONTRIBUTING.md'] = replace_once(originals['CONTRIBUTING.md'], OLD_CONTRIBUTING_STATUS,
-        'Developer and public editions are unified in verified stable **3.1.0**. The [merge result](docs/MERGE-RESULT.md) records the completed integration; the [merge plan](docs/MERGE-PLAN.md) preserves its original schedule and recovery instructions. Continue using focused pull requests and retain the public audit fixes when resolving conflicts.', 'Contribution integration status')
+        'Developer and public editions are unified in the verified **3.1.0 prerelease**. **3.0.0 remains stable Latest.** The [merge result](docs/MERGE-RESULT.md) records the completed integration; the [merge plan](docs/MERGE-PLAN.md) preserves its original schedule and recovery instructions. Continue using focused pull requests and retain the public audit fixes when resolving conflicts.', 'Contribution integration status')
     result['docs/DEVELOPMENT.md'] = replace_once(originals['docs/DEVELOPMENT.md'], OLD_DEVELOPMENT_STATUS,
-        'The **3.1.0** source metadata identifies the published Developer/public integration; its stable publication is verified in the [merge result](MERGE-RESULT.md). The earlier **3.0.0** stable release was published October 26, 2026 and remains historical audit evidence. A version label alone does not prove publication. Keep current `main` distinct from frozen tagged assets and check the release itself before claiming availability.', 'Development stable status')
+        'The **3.1.0** source metadata identifies the published Developer/public integration prerelease, verified in the [merge result](MERGE-RESULT.md). **3.0.0**, published October 26, 2026, remains the stable Latest release. A version label alone does not prove publication. Keep current `main` distinct from frozen tagged assets and check the release itself before claiming availability.', 'Development release status')
     result.update({path: contextualize_guide(originals[path], path) for path in PUBLICATION_GUIDES})
     return result
 

@@ -1,5 +1,7 @@
 # Feature guide
 
+> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+
 Use Playground on a recognized Aeries dashboard or gradebook to customize the display, inspect assignment weights, and try possible scores. The changes are local: a hypothetical score never submits a grade or creates an assignment in Aeries.
 
 | What you want to do | Start here |

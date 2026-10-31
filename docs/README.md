@@ -1,5 +1,7 @@
 # Documentation
 
+> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+
 Start with the [project README](../README.md) to install Aeries Playground and try a gradebook. The guides here describe the **current source**; check [available downloads](FEATURES.md#available-release) if a control is missing from your installed copy.
 
 Playground supports the MVLA Aeries student portal. Its optional schedule panel is for Mountain View High School. It changes your local display and calculations, without submitting grade changes to Aeries.

@@ -1,5 +1,7 @@
 # Maintenance and release status
 
+> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+
 ## Active Developer and public merge preparation
 
 The next planned change is the Developer/public integration tracked in [issue #8](https://github.com/sodium-qed/aeries-playground/issues/8). Merge execution is scheduled for **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**). The [merge plan](MERGE-PLAN.md) is the current runbook for scope, candidate verification, migration, publication, and recovery.

@@ -1,0 +1,39 @@
+name: Publish frozen scheduled prereleases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aeries-playground.user.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeries-playground-3-1-release
+  cancel-in-progress: false
+
+jobs:
+  prerelease:
+    if: github.repository == 'sodium-qed/aeries-playground' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+    steps:
+      - name: Check out the exact triggering commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Run every regression suite and guarded prerelease publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish-scheduled-prereleases.py

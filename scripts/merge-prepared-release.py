@@ -1,4 +1,4 @@
-"""Merge one reviewed 3.1.0 PR at its deadline and publish its exact merge commit.
+"""Merge one reviewed 3.1.0 PR at its deadline and publish its exact merge commit as a prerelease.
 
 The annual Actions cron is bounded to the intended 2026 launch window. A manual
 run can recover a delayed/partial run. GITHUB_TOKEN merges do not start another
@@ -131,7 +131,8 @@ def preflight_release():
     if stable.get('tag_name') != 'v3.0.0' or stable.get('draft') is not False or stable.get('prerelease') is not False:
         raise RuntimeError('The previous stable release is missing or has unexpected metadata.')
     latest = api(f'repos/{REPOSITORY}/releases/latest')
-    if latest.get('id') != stable.get('id') or latest.get('tag_name') != 'v3.0.0':
+    if (latest.get('id') != stable.get('id') or latest.get('tag_name') != 'v3.0.0'
+            or latest.get('draft') is not False or latest.get('prerelease') is not False):
         raise RuntimeError('Latest changed before integration; preserve that release and review the plan.')
     releases = entries(f'repos/{REPOSITORY}/releases?per_page=100')
     if any(release.get('tag_name') == 'v3.1.0' for release in releases):
@@ -187,11 +188,11 @@ def validate_combination(base_sha, head_sha):
 def publish_merged(merge_sha):
     checkout_commit(merge_sha)
     verify_source_file()
-    # GITHUB_TOKEN does not start release.yml after merge. Its publisher runs at
+    # GITHUB_TOKEN does not start a push workflow after merge. The prerelease publisher runs at
     # the exact merge commit here, never by dispatching a moving main reference.
     env = dict(os.environ, GITHUB_REPOSITORY=REPOSITORY, GITHUB_SHA=merge_sha,
                GITHUB_REF='refs/heads/main', GITHUB_EVENT_NAME='workflow_dispatch')
-    result = run(['python3', 'scripts/publish-release.py'], env=env, timeout=900)
+    result = run(['python3', 'scripts/publish-scheduled-prereleases.py'], env=env, timeout=900)
     if result.stdout:
         print(result.stdout, end='')
     try:

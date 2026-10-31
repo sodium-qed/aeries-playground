@@ -1,5 +1,7 @@
 # Developing Aeries Playground
 
+> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+
 Start with [Contributing](../CONTRIBUTING.md) for suggestions, bug reports, or a first documentation edit. This guide is for a local working copy and changes that need more detailed verification. Check the [README maintenance notice](../README.md) before making commits; already scheduled maintenance is exempt from the contributor pause.
 
 [Set up](#set-up-a-working-copy) · [Find the code](#find-the-right-file) · [Run checks](#run-the-repository-checks) · [Verify a feature](#verify-the-behavior-you-change) · [Prepare a pull request](#prepare-a-pull-request)
