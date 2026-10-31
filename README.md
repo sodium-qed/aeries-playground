@@ -113,11 +113,9 @@ Aeries Playground is not affiliated with Aeries, MVLA, or any school. Follow you
 
 ## Student resources
 
-Additional resources for students, separate from Aeries Playground:
+- [Updated Quick Resource Guide (MVLA Google Sheets)](https://docs.google.com/spreadsheets/d/10g4LLv5AOhWcniwcIK2TnkI5EGB2crG-RGEZL3Z7liM/edit?usp=drivesdk) — student and community support resources.
 
-- [Wellness resources (Google Doc)](https://docs.google.com/document/d/1iHnxRoOJwPHqy5xq2I-gEraLhsMKL3QWjfPvOPmoqog/edit) — an external resource collection.
-
-These links are provided for convenience and are not part of Aeries Playground or official school guidance. Check each resource's sharing permissions and contents before distributing it.
+This external guide is separate from Aeries Playground and is not maintained by this repository. Access depends on the source document's sharing permissions.
 
 ## Help and feedback
 
