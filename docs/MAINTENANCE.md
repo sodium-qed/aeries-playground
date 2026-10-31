@@ -6,6 +6,8 @@ The next planned change is the Developer/public integration tracked in [issue #8
 
 Public **3.0.0** remains the stable release during preparation. The supplied Developer **2.X** build predates its audit and will be integrated selectively, preserving newer public fixes. The planned **3.1.0** release needs its own frozen source fingerprint and guarded publisher; the 3.0.0 publisher must not be reused with an unverified replacement. Documentation preparation does not merge the runtime candidate or publish a release.
 
+The prepared integration passed **195/195 tests** on October 29, 2026, including new forecast, assignment-weight, precision, and bounded-rounding fixtures. Userscript syntax/basic metadata and documentation links also pass. The frozen candidate source is **379864 bytes**, SHA-256 `5e37b76082308c0eb0f2bc1e472cb33bc4bd3b360a713ddbf8e192c655b33773`. Live Aeries rendering, actual manager migration, live schedules, and audible media remain unverified. The scheduled merger revalidates the exact combined candidate/base before writing the merge.
+
 ## Verified 3.0.0 publication
 
 The complete documentation redo was published in [`81d9114`](https://github.com/sodium-qed/aeries-playground/commit/81d9114d288bc7b38561da2f4f1ab311f9685744). The full code audit was integrated and published in [`4de1703`](https://github.com/sodium-qed/aeries-playground/commit/4de17030f9e2ca5eb48f72d0026b7695a4e40af8), preserving the documentation and existing license grants.
@@ -64,6 +66,6 @@ During the earlier documentation phase, six parallel reviewers reread the curren
 
 ## Publication safeguards
 
-The publisher is frozen to one reviewed 3.0.0 source hash and byte count. Source-path filtering prevents documentation-only pushes from initiating publication. A nonmatching source push skips; manual recovery rejects a mismatch. Required checks run before release mutations. Historical tags are never moved and conflicting assets are never overwritten. Recovery verifies the original reviewed workflow commit, attached source bytes, stable metadata and Latest selection.
+The integration candidate prepares a publisher frozen to its own 3.1.0 source hash and byte count; the original 3.0.0 release and audit evidence remain preserved. Source-path filtering prevents documentation-only pushes from initiating publication. A nonmatching source push skips; manual recovery rejects a mismatch. Required checks run before release mutations. Historical tags are never moved and conflicting assets are never overwritten. Recovery verifies the original reviewed workflow commit, attached source bytes, stable metadata and Latest selection. The timed merge uses the same publisher at the exact resulting merge commit; a schedule is not a substitute for those checks.
 
 The complete tests and remaining limitations are recorded in [the audit](AUDIT-3.0.0.md). They are not a guarantee of zero bugs, live-browser compatibility, security certification, or legal determination.
