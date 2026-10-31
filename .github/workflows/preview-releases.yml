@@ -1,0 +1,48 @@
+name: Publish or recover the approved 3.1 previews
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preview-releases.yml'
+      - 'scripts/publish-previews.py'
+      - 'tests/preview-publication.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeries-playground-3-1-release
+  cancel-in-progress: false
+
+jobs:
+  previews:
+    if: github.repository == 'sodium-qed/aeries-playground' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
+      checks: read
+      statuses: read
+    steps:
+      - name: Check out the preview publication controller
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Validate the publication controller and current repository
+        run: |
+          node --test tests/*.test.mjs
+          node scripts/check-userscripts.mjs
+          node scripts/check-documentation.mjs
+          git diff --check
+      - name: Publish only the two frozen prereleases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish-previews.py
