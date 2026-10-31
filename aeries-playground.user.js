@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      3.1.0
-// @description  Aeries grade tools, saved and temporary /4 assignment weights, native regression forecasts, validated fractional-score recovery and conservative rounding-aware targets, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
+// @version      3.1.1
+// @description  Aeries grade tools, a configurable purple bonus grade band, saved and temporary /4 assignment weights, native regression forecasts, validated fractional-score recovery and conservative rounding-aware targets, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -19,7 +19,13 @@
 // ==/UserScript==
 
 /*
- * 3.1.0 integration candidate: Unify Developer and public features on the
+ * 3.1.1 bonus update after unification: Build on the unified 3.1.0 source.
+ * Add a configurable purple bonus band: strictly above 100% or 4 by default,
+ * shown as Playground rating 5. Letter-based GPA calculations are unchanged.
+ * This is a separate update from the November 1 Developer/public merge.
+ * See docs/RELEASE-3.1.1.md for the November 8 release preparation.
+ *
+ * 3.1.0: Unify Developer and public features on the
  * audited 3.0.0 base. Add saved and temporary /4 assignment multipliers,
  * native regression forecast badges, validated card/raw-score precision,
  * and bounded rounding reconciliation with conservative target scores.
@@ -1781,7 +1787,8 @@ const GradeDOM = (() => {
     categorySpotlight: true, weightMap: true, weightMapUngraded: false, dashboardColors: true, numericGrades: false, overallGrade: true, trendPredictions: true, nextClass: false,
     scheduleNetworkConsent: false,
     precise: true, detailsColors: true, profile: '', year: '',
-    cutoffs: [95,85,75], averageCutoffs: [3.7,3.1,2.5], colors: ['#1f1f7f','#1f7f1f','#c05600','#7f1f1f']
+    cutoffs: [95,85,75], averageCutoffs: [3.7,3.1,2.5], colors: ['#1f1f7f','#1f7f1f','#c05600','#7f1f1f'],
+    bonusColor: '#7c3aed', bonusPercentCutoff: 100, bonusAverageCutoff: 4
   };
   let db = {version:1, settings:clone(defaults), profiles:{}};
   let storageError = '', storageRecovery = '', storageLoadBlocked = false;
@@ -1860,6 +1867,8 @@ const GradeDOM = (() => {
       for (const key of Object.keys(defaults).filter(k=>typeof defaults[k]==='boolean')) if (typeof db.settings[key] !== 'boolean') db.settings[key] = defaults[key];
       for (const key of ['cutoffs','averageCutoffs']) if (!validCutoffs(db.settings[key])) db.settings[key] = clone(defaults[key]);
       if (!Array.isArray(db.settings.colors) || db.settings.colors.length !== 4 || db.settings.colors.some(c => !/^#[0-9a-f]{6}$/i.test(c))) db.settings.colors = clone(defaults.colors);
+      if (typeof db.settings.bonusColor !== 'string' || !/^#[0-9a-f]{6}$/i.test(db.settings.bonusColor)) db.settings.bonusColor = defaults.bonusColor;
+      for (const key of ['bonusPercentCutoff','bonusAverageCutoff']) if (!Number.isFinite(db.settings[key]) || db.settings[key] < 0) db.settings[key] = defaults[key];
       if (typeof db.settings.profile !== 'string' || !db.settings.profile.trim()) db.settings.profile = defaults.profile;
       if (typeof db.settings.year !== 'string' || db.settings.year.trim() && !/^\d{4}$/.test(db.settings.year.trim())) db.settings.year = defaults.year;
       if (Object.keys(defaults).some(key => Object.hasOwn(savedSettings,key) && JSON.stringify(savedSettings[key]) !== JSON.stringify(db.settings[key]))) noteStorageRecovery();
@@ -1992,11 +2001,22 @@ const GradeDOM = (() => {
     if (card.unit==='average' && c.scale!=='average') {c.scale='average';c.minimum=1;c.maximum=4;queueSave();}
     return c;
   }
+  // Keep the existing four-color/three-cutoff settings intact when upgrading.
+  // Bonus thresholds are strict and global, independent of course overrides.
+  function bonusCutoff(unit) {
+    const value=unit==='average'?db.settings.bonusAverageCutoff:db.settings.bonusPercentCutoff;
+    return Number.isFinite(value)&&value>=0?value:unit==='average'?4:100;
+  }
+  function bonusBandColor() {
+    const color=db.settings.bonusColor;
+    return typeof color==='string'&&/^#[0-9a-f]{6}$/i.test(color)?color:'#7c3aed';
+  }
   function cutoffs(c) { return validCutoffs(c.customCutoffs)?c.customCutoffs:(c.scale==='average'?db.settings.averageCutoffs:db.settings.cutoffs); }
-  function colorFor(value,c) { let n=cutoffs(c).findIndex(v=>value>=v);return db.settings.colors[n<0?3:n]; }
+  function colorFor(value,c) { if(Number.isFinite(value)&&value>bonusCutoff(c.scale))return bonusBandColor();let n=cutoffs(c).findIndex(v=>value>=v);return db.settings.colors[n<0?3:n]; }
   const dashboardPainted=new Map(),dashboardMarks=new Map();
   function dashboardGradeNumber(value,c){
     if(!Number.isFinite(value))return null;
+    if(value>bonusCutoff(c.scale))return 5;
     const band=cutoffs(c).findIndex(threshold=>value>=threshold);
     return band<0?1:4-band;
   }
@@ -2016,7 +2036,7 @@ const GradeDOM = (() => {
     let node;
     while((node=walker.nextNode())){
       if(card.valueElement?.contains(node) || node.parentElement?.closest('[data-ap-owned]'))continue;
-      if(/^(?:[A-F][+−–-]?|[PNSUI]|CR|NC|INC|[1-4])$/i.test(node.data.trim()))candidates.push(node);
+      if(/^(?:[A-F][+−–-]?|[PNSUI]|CR|NC|INC|[1-5])$/i.test(node.data.trim()))candidates.push(node);
     }
     return candidates.length===1?candidates[0]:null;
   }
@@ -2075,9 +2095,11 @@ const GradeDOM = (() => {
   // Both GPAs count the same included A–F courses equally; weighting is opt-in.
   // Neither is an official transcript GPA; posted marks are never persisted.
   const OverallMath = (() => {
-    function rating(value, limits) {
+    function rating(value, limits, bonusCutoff = Infinity) {
       if (!Number.isFinite(value) || !Array.isArray(limits) || limits.length !== 3 ||
           !limits.every(n => Number.isFinite(n) && n >= 0) || !(limits[0] > limits[1] && limits[1] > limits[2])) return null;
+      if (bonusCutoff !== Infinity && (!Number.isFinite(bonusCutoff) || bonusCutoff < 0)) return null;
+      if (value > bonusCutoff) return 5;
       const band = limits.findIndex(limit => value >= limit);
       return band < 0 ? 1 : 4 - band;
     }
@@ -2090,10 +2112,10 @@ const GradeDOM = (() => {
       // Only A, B and C receive a bonus. D and F remain 1 and 0.
       return points + (weighted === true && points >= 2 ? 1 : 0);
     }
-    function summarize(courses, limits, numericGrades = false) {
+    function summarize(courses, limits, numericGrades = false, bonusAverageCutoff = 4) {
       const indexes = new Map(), rows = [];
       for (const course of courses) {
-        const score = numericGrades ? rating(course.value, course.cutoffs) : letterPoints(course.mark);
+        const score = numericGrades ? rating(course.value, course.cutoffs, course.bonusCutoff) : letterPoints(course.mark);
         const weightedScore = numericGrades ? score : letterPoints(course.mark, course.gpaWeighted);
         const row = {...course, score, weightedScore, counted: course.included !== false && score !== null};
         if (!indexes.has(course.key)) {indexes.set(course.key, rows.length);rows.push(row);}
@@ -2108,7 +2130,7 @@ const GradeDOM = (() => {
       const weightedAverage = counted.length ? weightedTotal / counted.length : null;
       // Keep the average as the displayed value in BOTH modes. The overall
       // threshold band is separate and controls only the numeric-mode color.
-      return {rows, count: counted.length, total, average, weightedTotal, weightedAverage, band: numericGrades ? rating(average, limits) : null};
+      return {rows, count: counted.length, total, average, weightedTotal, weightedAverage, band: numericGrades ? rating(average, limits, bonusAverageCutoff) : null};
     }
     return {rating, letterPoints, summarize};
   })();
@@ -2187,16 +2209,16 @@ const GradeDOM = (() => {
     const result = OverallMath.summarize(visibleCards.map(card => {
       const c = courseFor(card);
       return {key: card.key, title: c.nickname || card.title, value: card.value,
-        mark: dashboardOriginalMark(card), cutoffs: overallIsRating ? cutoffs(c) : null,
+        mark: dashboardOriginalMark(card), cutoffs: overallIsRating ? cutoffs(c) : null, bonusCutoff: overallIsRating ? bonusCutoff(c.scale) : undefined,
         included: c.overallIncluded !== false, gpaWeighted: c.gpaWeighted === true};
-    }), limits, overallIsRating);
+    }), limits, overallIsRating, bonusCutoff('average'));
     if (!overallHost) {
       overallHost = el('div', null, {id: 'ap-overall-card', role: 'region', 'data-ap-owned': 'overall', 'aria-label': 'Playground overall score'});
       overallHost.attachShadow({mode: 'open'});
     }
     overallHost.setAttribute('aria-label', overallIsRating ? 'Playground overall score' : 'Current-year weighted and unweighted GPA');
     mountSummary(overallHost, section, true);
-    const signature = JSON.stringify([profileKey(), result, limits, db.settings.colors, db.settings.numericGrades, db.settings.precise]);
+    const signature = JSON.stringify([profileKey(), result, limits, db.settings.colors, bonusBandColor(), bonusCutoff('average'), db.settings.numericGrades, db.settings.precise]);
     if (signature === overallSignature) return;
     overallSignature = signature;
     const root = overallHost.shadowRoot;
@@ -2212,10 +2234,10 @@ const GradeDOM = (() => {
       el('div', `${result.count} class${result.count === 1 ? '' : 'es'} included · Equal weight`, {class: 'sub'}));
     const displayScore = result.average === null ? '—' : fmt(result.average, 2);
     const scoreDescription = result.average === null ? (overallIsRating ? 'No overall score' : 'No unweighted GPA') : overallIsRating
-      ? `Overall average ${displayScore} out of 4${result.band === null ? '' : `; color indicates band ${result.band}`}`
+      ? `Overall average ${displayScore} out of 5${result.band === null ? '' : `; color indicates band ${result.band}`}`
       : `Current-year unweighted GPA ${displayScore} out of 4`;
     const score = el('div', displayScore, {class: 'score', 'aria-label': scoreDescription, title: scoreDescription});
-    if (overallIsRating && result.band !== null) score.style.color = db.settings.colors[4 - result.band];
+    if (overallIsRating && result.band !== null) score.style.color = result.band===5?bonusBandColor():db.settings.colors[4 - result.band];
     heading.append(title);
     if (overallIsRating) heading.append(score);
     else {
@@ -2233,9 +2255,9 @@ const GradeDOM = (() => {
     details.append(el('summary', overallIsRating ? 'Calculation & included classes' : 'Calculation & GPA class selection'));
     const calculation = el('div', null, {class: 'calculation', tabindex: '0', role: 'region', 'aria-label': 'Overall calculation and included classes'});
     if (overallIsRating) {
-      const thresholds = `4 ≥ ${fmt(limits[0])}; 3 ≥ ${fmt(limits[1])}; 2 ≥ ${fmt(limits[2])}; otherwise 1.`;
-      calculation.append(el('p', result.count ? `Each class becomes a 1–4 rating using its own thresholds. Average: ${result.total} ÷ ${result.count} = ${fmt(result.average)}. The displayed number stays an average; only its color indicates the overall band, using these thresholds: ${thresholds}` : 'Include a class with a posted numeric grade to see an overall average.'));
-      calculation.append(el('p', 'This is your custom Playground average, not an official GPA. Ungraded and excluded classes do not count. Change the overall color cutoffs under Settings → Average ≥.', {class: 'muted'}));
+      const thresholds = `5 > ${fmt(bonusCutoff('average'))}; 4 ≥ ${fmt(limits[0])}; 3 ≥ ${fmt(limits[1])}; 2 ≥ ${fmt(limits[2])}; otherwise 1.`;
+      calculation.append(el('p', result.count ? `Each class becomes a 1–5 rating: the global bonus threshold is checked first, followed by its ordinary course thresholds. Average: ${result.total} ÷ ${result.count} = ${fmt(result.average)}. The displayed number stays an average; only its color indicates the overall band, using these thresholds: ${thresholds}` : 'Include a class with a posted numeric grade to see an overall average.'));
+      calculation.append(el('p', 'This is your custom Playground average, not an official GPA. Ungraded and excluded classes do not count. Change the overall color thresholds under Settings → Average > for the bonus band and Average ≥ for ordinary bands.', {class: 'muted'}));
     } else {
       calculation.append(el('p', 'Posted letter grades are averaged equally. Unweighted: A = 4, B = 3, C = 2, D = 1, F = 0. Checked honors/AP classes use A = 5, B = 4, C = 3, D = 1, F = 0 for weighted GPA. Plus/minus signs are ignored.'));
       calculation.append(el('p', result.count ? `Unweighted GPA: ${result.total} ÷ ${result.count} = ${fmt(result.average)}. Weighted GPA: ${result.weightedTotal} ÷ ${result.count} = ${fmt(result.weightedAverage)}.` : 'Include a class with a posted A–F letter grade to see both GPAs.'));
@@ -2252,7 +2274,9 @@ const GradeDOM = (() => {
       });
       const rowText = row.score === null ? (overallIsRating ? 'No numeric grade' : 'No A–F grade')
         : overallIsRating ? String(row.score) : `${row.mark} · ${fmt(row.score, 2)} unweighted · ${fmt(row.weightedScore, 2)} weighted`;
-      label.append(include, el('span', row.title, {class: 'name'}), el('span', rowText, {class: row.score === null ? 'muted' : 'rating'}));
+      const ratingLabel=el('span', rowText, {class: row.score === null ? 'muted' : 'rating'});
+      if(overallIsRating&&row.score!==null){ratingLabel.setAttribute('aria-label',`Playground rating ${row.score} out of 5`);if(row.score===5)ratingLabel.style.color=bonusBandColor();}
+      label.append(include, el('span', row.title, {class: 'name'}), ratingLabel);
       line.append(label);
       if (!overallIsRating) {
         const weightedLabel = el('label', null, {class: 'weight-toggle'}), weighted = input('', 'checkbox');
@@ -2319,6 +2343,8 @@ const GradeDOM = (() => {
         const text='Predicted: '+forecast.label;
         if(entry.badge.textContent!==text)entry.badge.textContent=text;
         if(entry.badge.getAttribute('title')!==forecast.title)entry.badge.setAttribute('title',forecast.title);
+        const forecastStyle=db.settings.dashboardColors===true&&forecast.value>bonusCutoff('percent')?'color:'+bonusBandColor():'';
+        if(entry.badge.getAttribute('style')!==forecastStyle)entry.badge.setAttribute('style',forecastStyle);
         if(entry.badge.previousSibling!==icon||entry.badge.parentElement!==parent)icon.after(entry.badge);
       }
     }
@@ -3931,6 +3957,7 @@ const GradeDOM = (() => {
     detailsPainted.clear();
   }
   function detailsColor(value,unit){
+    if(Number.isFinite(value)&&value>bonusCutoff(unit))return bonusBandColor();
     const c=profile().courses[detectedCourseKey];
     const limits=c && c.scale===unit?cutoffs(c):(unit==='average'?db.settings.averageCutoffs:db.settings.cutoffs);
     const band=limits.findIndex(n=>value>=n);return db.settings.colors[band<0?3:band];
@@ -4729,7 +4756,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       const posted=GradeDOM.assignmentGrade(source);
       entry.scoreValue=posted.value;entry.scoreUnit=posted.unit;
       const limits=c&&c.scale===entry.scoreUnit?cutoffs(c):entry.scoreUnit==='average'?db.settings.averageCutoffs:db.settings.cutoffs;
-      const band=limits.findIndex(n=>entry.scoreValue>=n);entry.color=db.settings.colors[band<0?3:band];
+      const band=limits.findIndex(n=>entry.scoreValue>=n);entry.color=Number.isFinite(entry.scoreValue)&&entry.scoreValue>bonusCutoff(entry.scoreUnit)?bonusBandColor():db.settings.colors[band<0?3:band];
     }
     const scope=profileKey()+'|'+key;
     const state={scope,key,title:current.title,...built,showUngraded,rules:checked.model?.rules||parsed.rules};
@@ -5151,7 +5178,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       box.append(gpaToggle,note('For included courses, checked Honors/AP uses A = 5, B = 4, C = 3, D = 1, F = 0 in weighted GPA. It does not include an excluded course. Choose included courses in the dashboard GPA details.'));
       const scale=el('select');for(const [value,label] of [['percent','Percentage'],['average','Average points']])scale.append(el('option',label,{value}));scale.value=c.scale;
       const row2=el('div',null,{class:'ap-row'});row2.append(field('Bar scale',scale),field('Bar minimum',min),field('Bar maximum',max));box.append(row2);
-      const custom=input(Boolean(c.customCutoffs),'checkbox');custom.checked=Boolean(c.customCutoffs);const toggle=el('label',null,{class:'ap-toggle'});toggle.append(custom,el('span','Custom thresholds for this course'));box.append(toggle);
+      const custom=input(Boolean(c.customCutoffs),'checkbox');custom.checked=Boolean(c.customCutoffs);const toggle=el('label',null,{class:'ap-toggle'});toggle.append(custom,el('span','Custom ordinary thresholds for this course'));box.append(toggle);
       const cutrow=el('div',null,{class:'ap-row'});const values=cutoffs(c);const nums=values.map((n,i)=>{const v=input(n,'number');v.step='any';v.min='0';v.style.width='70px';cutrow.append(field(['4 ≥','3 ≥','2 ≥'][i],v));return v;});cutrow.hidden=!custom.checked;custom.addEventListener('change',()=>cutrow.hidden=!custom.checked);box.append(cutrow);
       controls.push({key,nick,icon,schedulePeriod,gpaWeighted,min,max,scale,custom,nums});grid.append(box);
     }
@@ -5163,7 +5190,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
   function renderSettings(){
     content.append(el('h2','Make it yours'));
     const draft=clone(db.settings),toggles={},grid=el('div',null,{class:'ap-grid'}),box=el('div',null,{class:'ap-box'});
-    for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',trendPredictions:'Show regression predictions',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
+    for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 5/4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',trendPredictions:'Show regression predictions',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
       const n=input('', 'checkbox');n.checked=draft[key];toggles[key]=n;n.addEventListener('change',()=>setToggle(key,n.checked));const l=el('label',null,{class:'ap-toggle'});l.append(n,el('span',label));box.append(l);
       if(key==='nextClass'){
         const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off requests cancellation and ignores late responses in this tab. Reload other Aeries tabs promptly; they keep old settings and can continue requests or save the old opt-in again.');
@@ -5171,8 +5198,8 @@ window.addEventListener('pagehide',abortScheduleRequests);
       }
     }
     box.append(note('Toggles apply immediately and attempt to save automatically. Colors, thresholds, profile, and year need Save settings below; save them before changing tabs. Use the gradebook toolbar for score testing and the Weight map tab for posted assignment weights.'));
-    box.append(note('Number grades replace only the dashboard letter: 4, 3, 2, or 1 from your thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
-    box.append(note('Leave 4/3/2/1 off to see both GPAs from posted letters. In the dashboard GPA details, choose included courses and check eligible Honors/AP courses. Both averages use equal course weights and ignore plus/minus: A/B/C/D/F = 4/3/2/1/0, or 5/4/3/1/0 for checked courses in weighted GPA. Turn 4/3/2/1 on for an average of custom class ratings; its color shows the overall band.'));
+    box.append(note('Number grades replace only the dashboard letter: 5 above the bonus threshold, otherwise 4, 3, 2, or 1 from your ordinary thresholds. The posted percentage or average stays visible. Turn this off to show the original letters.'));
+    box.append(note('Leave 5/4/3/2/1 off to see both GPAs from posted letters. In the dashboard GPA details, choose included courses and check eligible Honors/AP courses. Both averages use equal course weights and ignore plus/minus: A/B/C/D/F = 4/3/2/1/0, or 5/4/3/1/0 for checked courses in weighted GPA. Turn 5/4/3/2/1 on for an average of custom class ratings; its color shows the overall band.'));
     box.append(note('Precise mode shows up to 8 decimals for supported calculated values and impacts. Native labels keep their posted formatting; matching on-page data may supply more precise input scores independently of this setting. Raw-score conversion always rounds gradebook points down to 2 decimals.'));
     const musicBox=el('div',null,{class:'ap-box'});
     musicBox.append(el('h3','KBAR music · P'),note('With Playground enabled and this dialog closed, press P outside editable controls to request play/pause. The looping English KBAR player is offscreen; its reported status appears below. If silent, close the player and retry or use Open on YouTube below.'));
@@ -5192,13 +5219,19 @@ window.addEventListener('pagehide',abortScheduleRequests);
     const scopeBox=el('div',null,{class:'ap-box'});scopeBox.append(el('h3','Separate course settings'));
     const scopeInput=input(draft.profile),yearInput=input(draft.year);scopeInput.maxLength=60;yearInput.maxLength=4;scopeBox.append(field('Settings profile',scopeInput),field('School-year starting year',yearInput),note('When changing students, close other Aeries tabs first, pause Playground here, and reopen Settings to check for storage errors. Switch the Aeries account, then save profile/year here while paused and re-enable. Active Playground discovers the current page into the selected profile. Labels are manual and case-sensitive; score matching does not select them.'));
     grid.append(box,scopeBox);content.append(grid);
-    const colorBox=el('div',null,{class:'ap-box'});colorBox.append(el('h3','Grade colors & thresholds'),note('Default cutoffs set custom 4/3/2/1 bands; course-specific thresholds override them. The palette also colors bars, grade details, and graded map entries. Letter-based GPA is unchanged. Choose Save settings to apply this form.'));
-    const colorRows=[];for(let i=0;i<4;i++){const r=el('div',null,{class:'ap-row'});const color=input(draft.colors[i],'color');color.setAttribute('aria-label','Band '+(i+1)+' color');r.append(field(['4 · top band','3 · second band','2 · third band','1 · below all cutoffs'][i],color));let percent=null,avg=null;if(i<3){percent=input(draft.cutoffs[i],'number');avg=input(draft.averageCutoffs[i],'number');percent.step=avg.step='any';r.append(field('Percentage ≥',percent),field('Average ≥',avg));}colorRows.push({color,percent,avg});colorBox.append(r);}content.append(colorBox);
+    const colorBox=el('div',null,{class:'ap-box'});colorBox.append(el('h3','Grade colors & thresholds'),note('The 5 bonus band applies strictly above its global threshold; exactly 100% or 4 uses ordinary bands with the defaults. The remaining 4/3/2/1 cutoffs allow course-specific overrides. Colors also apply to bars, grade details, and graded map entries. Letter-based GPA is unchanged. Choose Save settings to apply this form.'));
+    const bonusRow=el('div',null,{class:'ap-row'}),bonusColor=input(bonusBandColor(),'color'),bonusPercent=input(bonusCutoff('percent'),'number'),bonusAverage=input(bonusCutoff('average'),'number');
+    bonusColor.setAttribute('aria-label','Band 5 color');bonusColor.id='ap-bonus-color';bonusPercent.id='ap-bonus-percent-cutoff';bonusAverage.id='ap-bonus-average-cutoff';
+    bonusPercent.min=bonusAverage.min='0';bonusPercent.step=bonusAverage.step='any';
+    bonusRow.append(field('5 · bonus band',bonusColor),field('Percentage >',bonusPercent),field('Average >',bonusAverage));colorBox.append(bonusRow);
+    const colorRows=[];for(let i=0;i<4;i++){const r=el('div',null,{class:'ap-row'});const color=input(draft.colors[i],'color');color.setAttribute('aria-label','Band '+(4-i)+' color');r.append(field(['4 · highest ordinary band','3 · ordinary band','2 · ordinary band','1 · below all cutoffs'][i],color));let percent=null,avg=null;if(i<3){percent=input(draft.cutoffs[i],'number');avg=input(draft.averageCutoffs[i],'number');percent.step=avg.step='any';r.append(field('Percentage ≥',percent),field('Average ≥',avg));}colorRows.push({color,percent,avg});colorBox.append(r);}content.append(colorBox);
     const message=note('','ap-saving');content.append(button('Save settings',()=>{
       const cut=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.percent.value)),avg=colorRows.slice(0,3).map(r=>GradeMath.parseNumber(r.avg.value));
+      const bonusPercentValue=GradeMath.parseNumber(bonusPercent.value),bonusAverageValue=GradeMath.parseNumber(bonusAverage.value);
+      if(bonusPercentValue===null||bonusPercentValue<0||bonusAverageValue===null||bonusAverageValue<0||!/^#[0-9a-f]{6}$/i.test(bonusColor.value)){message.textContent='Use finite nonnegative bonus thresholds and a six-digit hex bonus color.';message.className='ap-error';return;}
       if(!validCutoffs(cut)||!validCutoffs(avg)||(yearInput.value.trim()&&!/^\d{4}$/.test(yearInput.value.trim()))){message.textContent='Use descending nonnegative thresholds and a four-digit year if supplied.';message.className='ap-error';return;}
       const scopeChanged=db.settings.profile.trim()!==scopeInput.value.trim() || db.settings.year.trim()!==yearInput.value.trim();
-      db.settings={...db.settings,...Object.fromEntries(Object.entries(toggles).map(([k,n])=>[k,n.checked])),scheduleNetworkConsent:db.settings.scheduleNetworkConsent,cutoffs:cut,averageCutoffs:avg,colors:colorRows.map(r=>r.color.value),profile:scopeInput.value.trim(),year:yearInput.value.trim()};
+      db.settings={...db.settings,...Object.fromEntries(Object.entries(toggles).map(([k,n])=>[k,n.checked])),scheduleNetworkConsent:db.settings.scheduleNetworkConsent,cutoffs:cut,averageCutoffs:avg,colors:colorRows.map(r=>r.color.value),bonusColor:bonusColor.value,bonusPercentCutoff:bonusPercentValue,bonusAverageCutoff:bonusAverageValue,profile:scopeInput.value.trim(),year:yearInput.value.trim()};
       if(scopeChanged){closeGradeLab();selectedCourse='';detectedCourseKey='';annotationSources.clear();nativePageState=null;clearAnnotations();clearWeightMapPage();clearCategorySpotlight();}
       if(!db.settings.impacts)clearImpactLabels();
 

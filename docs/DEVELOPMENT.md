@@ -107,7 +107,8 @@ Choose the relevant checks below. Record the input and rules, expected result, o
 
 - Cover A/B/C/D/F, plus/minus marks, mixed Honors/AP choices, unchecked/excluded courses, duplicate course identities, and empty/non-A–F input. F counts as zero. Five included, Honors/AP-selected A/B/C/D/F courses yield unweighted **2.00** and weighted **2.60**; D/F receive no bonus.
 - Check default-off Honors/AP selections, both editing locations, **Save course settings** versus immediate detail-panel saves, reload, manual profile/year separation, and reset. Formula checks alone do not verify saving or controls.
-- Keep the numeric **4/3/2/1** mode separate from letter GPA. Check course thresholds, boundary values, the average itself, and its color threshold. Unsupported letters or unavailable scores must not silently become a counted zero.
+- For the separate planned **3.1.1** configurable **5 · bonus band**, cover values below, exactly at, and above both global cutoffs; defaults 100% and average 4 use strict `>`. Check custom color/cutoff persistence, preserved older four-color/three-cutoff settings, ordinary course overrides, numeric averages containing a 5, each color toggle with numeric mode off, and unchanged letter-based GPA.
+- Keep the planned 3.1.1 numeric **5/4/3/2/1** mode separate from letter GPA; the November 1 integration retains its original four-band mode. Check course thresholds, boundary values, the average itself, and its color threshold. Unsupported letters or unavailable scores must not silently become a counted zero.
 
 ### Public schedules and clocks
 
@@ -157,6 +158,12 @@ If publication stops after creating a tag, draft, or upload, inspect the error a
 The publisher refuses to replace another release's Latest selection when it observes one, including during final verification. GitHub does not provide an atomic transaction for the whole publication sequence, so keep other release publishing paused during this run and investigate a reported race. Do not repeat publication blindly after such a report.
 
 Review triggers and guards before changing publication code. Documentation work must not create, move, replace, or republish tags or assets, or weaken checks to make a documentation run pass. Comment and line-ending edits change a file's hash. Do not use an earlier asset's fingerprint or verification as evidence for a future release. Preserve newer fixes already on `main`, including the KBAR Settings fallback. If page access, permissions, storage, external requests, updates, or safeguards change, update the opening source explanation and affected guides together.
+
+### Separate planned 3.1.1 publication
+
+The publication descriptions above retain the November 1 **3.1.0** preparation and recovery record. The configurable bonus band is a separate **3.1.1** follow-up, planned for **November 8, 2026 at 11:59 p.m. America/Los_Angeles (PST)**, or **November 9 at 07:59 UTC**. It must not change that earlier candidate, tag, asset, or scheduled merge.
+
+Prepare a distinct 3.1.1 candidate and [release notes](RELEASE-3.1.1.md), freeze its own source fingerprint after all edits, and configure its publisher for tag `v3.1.1`, title `Aeries Playground 3.1.1`, and not-before time `2026-11-09T07:59:00Z`. Verify the earlier `v3.1.0` stable publication before using it as the predecessor. Preserve the same exact-source, test, tag, asset, Latest, and recovery safeguards; never repurpose the 3.1.0 fingerprint or move its tag. The future schedule and branch do not establish either release's availability today.
 
 ## Prepare a pull request
 

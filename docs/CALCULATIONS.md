@@ -13,7 +13,7 @@ Use these sections for the most common questions:
 - [Replacements](#replacement-rules), [required scores](#target-score-calculation), and [score ranges](#score-range-calculation)
 - [Why a calculation can be unavailable](#reconciliation-and-incomplete-data)
 
-The main reference describes the public 3.0.0 baseline. The [planned 3.1.0 additions](#planned-310-assignment-multipliers) separately describe the Developer/public integration candidate, not a verified stable publication.
+This reference retains the public 3.0.0 calculation behavior, describes the prepared [3.1.0 integration additions](#planned-310-assignment-multipliers), and identifies the separate planned 3.1.1 bonus band. Check [release availability](FEATURES.md#available-release); a calculation description is not evidence of stable publication.
 
 ## Inputs and interpretation
 
@@ -139,7 +139,7 @@ Points entered directly are not deliberately rounded to hundredths. Their linked
 
 The score controls accept ordinary signed decimal notation, then enforce nonnegative earned values and positive denominators. Use plain numbers such as `6.5`, rather than `65%`, a comma-formatted value, or scientific notation in these controls. Formatting in the original Aeries page is parsed separately.
 
-There is no general snapping of entered scores to whole points or to integer 4/3/2/1 ratings. Raw conversion, the target solver's chosen increment, final-grade rounding, and display formatting are separate operations. Switching range display units also retains each endpoint's entered basis until that endpoint is edited.
+There is no general snapping of entered scores to whole points or to integer dashboard ratings. Raw conversion, the target solver's chosen increment, final-grade rounding, and display formatting are separate operations. Switching range display units also retains each endpoint's entered basis until that endpoint is edited.
 
 ## Total-points and weighted-category grades
 
@@ -227,24 +227,29 @@ For an unrounded average of **3.456/4**, two-place nearest and up rounding both 
 
 The dashboard summary uses currently visible course cards, with duplicate course identities counted once. It retains the first usable grade for the selected summary: a recognized letter for GPA or a numeric grade for ratings. A later usable card can replace an earlier blank or unreadable duplicate, while conflicting usable duplicates keep the first one. Included courses have equal weight. Saved courses that are not visible are not added to the calculation.
 
-With **Show 4/3/2/1 on dashboard** on, compare each course's posted numeric percentage or average to that course's three descending cutoffs:
+In the separate **planned 3.1.1** source, **Show 5/4/3/2/1 on dashboard** first compares each posted numeric grade with the global bonus cutoff for its scale. Only a grade strictly above that cutoff receives 5. Otherwise, compare it with the course's three ordinary descending cutoffs:
 
 | Condition | Rating |
 | --- | --- |
-| Grade at least the highest cutoff | 4 |
+| Grade strictly above its global bonus cutoff | 5 |
+| Grade at least the highest ordinary cutoff, without a bonus match | 4 |
 | Grade at least the middle cutoff, below the highest | 3 |
 | Grade at least the lowest cutoff, below the middle | 2 |
 | Grade below all three cutoffs | 1 |
 
-The default percentage cutoffs are **95 / 85 / 75**; the default average cutoffs are **3.7 / 3.1 / 2.5**. Equality belongs to the higher band. A posted numeric zero is still a usable numeric grade and receives rating 1 with these cutoffs. A missing numeric grade is omitted. Course-specific cutoffs override defaults.
+The earlier 3.0.0 and prepared 3.1.0 editions keep their original 1–4 ratings and **Show 4/3/2/1 on dashboard** label. The bonus row is not part of the November 1 integration.
+
+The default bonus cutoffs are **100%** and **4** average points, using strict **>**. Thus exactly **100%** or **4** is not a bonus match. The ordinary percentage cutoffs are **95 / 85 / 75**; ordinary average cutoffs are **3.7 / 3.1 / 2.5**. Equality at an ordinary cutoff belongs to its higher band. A posted numeric zero is still a usable numeric grade and receives rating 1 with these cutoffs. A missing numeric grade is omitted. Course-specific cutoffs override the ordinary defaults only; the bonus row stays global.
 
 Average the ratings of included visible courses. Ratings **4, 4, 3, 3** give **14/4 = 3.5**. The displayed number remains **3.5**; the default overall-average cutoffs make its color band 3. The overall color does not round the average to an integer. Honors/AP choices have no effect in this mode.
+
+Bonus ratings also participate in that arithmetic: ratings **5** and **4** average to **4.5**. The numeric summary uses the configured **Average >** cutoff for its own bonus color, so 4.5 is purple with the default cutoff 4; exactly 4 uses an ordinary color. Changing display bands does not change posted scores, gradebook calculations, or letter-based GPA.
 
 With numeric display off, the summary uses the original posted A/B/C/D/F letters and shows both GPAs below. It does not infer letters from percentages, custom bands, four-point averages, or hypothetical assignment results. For example, **A, B+, F** give unweighted **(4 + 3 + 0)/3 = 2.3333…**, displayed as **2.33**.
 
 ### Weighted GPA
 
-The summaries appear when **Overall grade / GPA above classes** is on and **Show 4/3/2/1 on dashboard** is off. The class inclusion checkbox determines membership in **both** GPAs. **Honors/AP** changes the weighted grade points for a counted A, B, or C; it does not change course weight or override exclusion.
+The summaries appear when **Overall grade / GPA above classes** is on and **Show 5/4/3/2/1 on dashboard** is off. The class inclusion checkbox determines membership in **both** GPAs. **Honors/AP** changes the weighted grade points for a counted A, B, or C; it does not change course weight or override exclusion.
 
 | Posted letter, ignoring plus/minus | Unweighted points | Weighted when unchecked | Weighted when Honors/AP is checked |
 | --- | --- | --- | --- |

@@ -40,16 +40,18 @@ The dialog has **Courses**, **Weight map**, and **Settings** tabs. Open it with 
 3. **Try one gradebook.** Open the full assignment list, turn Aeries' **Show only missing assignments** off, and wait for rows and totals to load. Choose **Start grade testing** in the **Grade testing lab**. Edit a **Score**, try a **Range**, or **Add hypothetical assignment**. Resolve any baseline warning before relying on the result.
 4. **Finish with Exit grade testing.** This restores posted values and clears the scenario. Reloading or changing gradebooks also clears it. Closing the Playground dialog alone leaves testing active.
 
-On a fresh install, colors, progress bars, and the GPA summary are on; custom **4/3/2/1** ratings are off. In the dashboard's **Calculation & GPA class selection**, choose included courses and mark **Honors/AP** eligibility yourself. Honors/AP starts unchecked and is never inferred from a course name.
+In the planned 3.1.1 source, a fresh install starts with colors, progress bars, and the GPA summary on; custom **5/4/3/2/1** ratings are off. The earlier 3.0.0 and prepared 3.1.0 editions retain four numeric bands. In the dashboard's **Calculation & GPA class selection**, choose included courses and mark **Honors/AP** eligibility yourself. Honors/AP starts unchecked and is never inferred from a course name.
 
 Save ordinary **Courses** and non-toggle **Settings** form edits before changing dialog tabs. Feature toggles apply and attempt to save immediately. See [settings and save controls](docs/SETTINGS.md#which-save-control-do-i-use) for the full distinction.
 
 ## Features
 
+A separate **3.1.1** follow-up is planned for **Sunday, November 8, 2026, at 11:59 p.m. Pacific Standard Time** (`2026-11-09T07:59:00Z`). It adds a configurable purple **5 · bonus band** for grades above 100% by default. This feature is not part of the November 1 integration. See [bonus-band behavior](docs/FEATURES.md#bonus-band-planned-for-311) and [3.1.1 release preparation](docs/RELEASE-3.1.1.md); neither a branch nor these notes establishes publication.
+
 | I want to… | Where to start |
 | --- | --- |
 | Change course names, icons, colors, or progress bars | **Courses** and **Settings** → [dashboard customization](docs/FEATURES.md#dashboard-and-course-customization). |
-| Compare weighted and unweighted GPA, or use my own 4/3/2/1 ratings | Dashboard summary → [grade summaries](docs/FEATURES.md#overall-grade-and-current-year-gpa). |
+| Compare weighted and unweighted GPA, or use custom ratings (bonus 5 planned for 3.1.1) | Dashboard summary → [grade summaries](docs/FEATURES.md#overall-grade-and-current-year-gpa). |
 | Focus on one category or see how an assignment affects the grade | Gradebook **Category** buttons and **Grade impact** labels → [assignment analysis](docs/FEATURES.md#assignment-analysis). |
 | Compare assignment weights, including ungraded work | **Assignment weight map** → [map and ungraded preview](docs/FEATURES.md#assignment-weight-map). Circle **area** represents weight; gray means ungraded. |
 | Try scores, ranges, exclusions, or future assignments | **Start grade testing** → [grade testing lab](docs/FEATURES.md#grade-testing-lab). |

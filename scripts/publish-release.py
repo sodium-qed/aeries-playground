@@ -1,4 +1,4 @@
-"""Publish or recover only the reviewed Aeries Playground 3.1.0 artifact.
+"""Publish or recover only the reviewed Aeries Playground 3.1.1 artifact.
 
 Run from the repository root in the guarded release workflow. This module uses
 only Python's standard library, Node.js, Git, and the authenticated GitHub CLI.
@@ -18,18 +18,18 @@ import tempfile
 
 
 REPOSITORY = 'sodium-qed/aeries-playground'
-VERSION = '3.1.0'
-TAG = 'v3.1.0'
-TITLE = 'Aeries Playground 3.1.0'
-PREVIOUS_STABLE_TAG = 'v3.0.0'
+VERSION = '3.1.1'
+TAG = 'v3.1.1'
+TITLE = 'Aeries Playground 3.1.1'
+PREVIOUS_STABLE_TAG = 'v3.1.0'
 SOURCE = Path('aeries-playground.user.js')
-NOTES = Path('docs/RELEASE-3.1.0.md')
-# Sunday, November 1, 2026 at 11:59 PM America/Los_Angeles (PST).
+NOTES = Path('docs/RELEASE-3.1.1.md')
+# Sunday, November 8, 2026 at 11:59 PM America/Los_Angeles (PST).
 # This is a not-before guard, not a scheduler; DST has ended by this time.
-LAUNCH_TIME = datetime(2026, 11, 2, 7, 59, tzinfo=timezone.utc)
+LAUNCH_TIME = datetime(2026, 11, 9, 7, 59, tzinfo=timezone.utc)
 # Fill these from the final integrated userscript before committing the release.
-EXPECTED_SHA256 = '5e37b76082308c0eb0f2bc1e472cb33bc4bd3b360a713ddbf8e192c655b33773'
-EXPECTED_SIZE = 379864
+EXPECTED_SHA256 = '3920c6c72f6b0d4ddfac82dad5d6f3bb560510cfe1d1ed193d43e3bb28136c4b'
+EXPECTED_SIZE = 383784
 
 
 def prepared_source():
@@ -81,10 +81,10 @@ def main(now=None):
 
     matched = prepared_source()
     if event == 'push' and not matched:
-        print('Push differs from the frozen 3.1.0 artifact; no release or asset changes attempted.')
+        print('Push differs from the frozen 3.1.1 artifact; no release or asset changes attempted.')
         return
     if not matched:
-        raise SystemExit('The userscript does not match the prepared 3.1.0 launch file.')
+        raise SystemExit('The userscript does not match the prepared 3.1.1 launch file.')
     if (now or datetime.now(timezone.utc)) < LAUNCH_TIME:
         print('The release time has not arrived; no release was created.')
         return
@@ -93,7 +93,7 @@ def main(now=None):
     versions = re.findall(r'^//[ \t]*@version[ \t]+([^\n]*?)\s*$',
                           metadata[1], re.MULTILINE) if metadata else []
     if versions != [VERSION]:
-        raise SystemExit('The userscript metadata does not match version 3.1.0.')
+        raise SystemExit('The userscript metadata does not match version 3.1.1.')
     if not NOTES.is_file() or NOTES.is_symlink():
         raise SystemExit('The reviewed release notes are missing.')
     body = NOTES.read_text(encoding='utf-8').strip()

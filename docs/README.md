@@ -12,6 +12,7 @@ The Developer and public editions are being prepared for one maintained 3.1.0 ed
 | --- | --- |
 | Install, update, pause, or remove the script | [README](../README.md#install) — download choices, setup, first use, and recovery controls. |
 | Find Settings, keyboard shortcuts, or a feature | [Feature guide](FEATURES.md#find-the-controls) — where each control appears and what it does. |
+| Preview the planned 3.1.1 bonus color and cutoffs | [5 · bonus band](FEATURES.md#bonus-band-planned-for-311) — a separate November 8 follow-up with global color and strict percentage/average boundaries; letter-based GPA is unchanged. |
 | Customize courses or understand the dashboard GPA | [Dashboard and course customization](FEATURES.md#dashboard-and-course-customization) — names, icons, periods, colors, ratings, and included courses. |
 | Compare assignment weights and impacts | [Assignment analysis](FEATURES.md#assignment-analysis) — category filtering, impact labels, the posted weight map, and ungraded previews. |
 | Try scores, ranges, future assignments, or a target grade | [Grade testing lab](FEATURES.md#grade-testing-lab) — temporary scenarios, grading profiles, targets, replacements, and explanations. |
