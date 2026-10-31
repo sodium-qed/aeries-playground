@@ -1,12 +1,10 @@
-name: Publish or recover the approved 3.1 previews
+name: Withdraw premature preview releases
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/preview-releases.yml'
-      - 'scripts/publish-previews.py'
-      - 'tests/preview-publication.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -17,32 +15,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  previews:
+  withdraw:
     if: github.repository == 'sodium-qed/aeries-playground' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     permissions:
       contents: write
-      pull-requests: read
-      checks: read
-      statuses: read
+      actions: write
     steps:
-      - name: Check out the preview publication controller
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - name: Validate the publication controller and current repository
-        run: |
-          node --test tests/*.test.mjs
-          node scripts/check-userscripts.mjs
-          node scripts/check-documentation.mjs
-          git diff --check
-      - name: Publish only the two frozen prereleases
+      - name: Return only the two prematurely published previews to drafts
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/publish-previews.py
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          repo = 'sodium-qed/aeries-playground'
+          specs = [
+              (429677314, 'v3.1.0-preview.1', '858a0a1fac820163d1185664baa039624767928e', 379864, '5e37b76082308c0eb0f2bc1e472cb33bc4bd3b360a713ddbf8e192c655b33773'),
+              (429677360, 'v3.1.1-preview.1', '8fad3af92e680e67d6872f52dc998cbfde14d7fc', 383784, '3920c6c72f6b0d4ddfac82dad5d6f3bb560510cfe1d1ed193d43e3bb28136c4b'),
+          ]
+          def api(path, payload=None, method='PATCH'):
+              args = ['gh', 'api', f'repos/{repo}/{path}']
+              if payload is not None:
+                  args += ['--method', method, '--input', '-']
+              result = subprocess.run(args, input=json.dumps(payload) if payload is not None else None,
+                                      text=True, capture_output=True, check=True, timeout=60)
+              return json.loads(result.stdout) if result.stdout.strip() else None
+          def verify(spec):
+              rid, tag, commit, size, digest = spec
+              release = api(f'releases/{rid}')
+              ref = api(f'git/ref/tags/{tag}')
+              if release['id'] != rid or release['tag_name'] != tag or release['prerelease'] is not True:
+                  raise SystemExit('Unexpected release metadata; no replacement authorized.')
+              if ref['object'] != {'sha': commit, 'type': 'commit', 'url': f'https://api.github.com/repos/{repo}/git/commits/{commit}'}:
+                  raise SystemExit('Unexpected tag target; tag was preserved.')
+              assets = release['assets']
+              if len(assets) != 1 or assets[0]['name'] != 'aeries-playground.user.js' or assets[0]['size'] != size or assets[0]['digest'] != f'sha256:{digest}':
+                  raise SystemExit('Unexpected asset; no replacement authorized.')
+              return release
+          api('actions/workflows/release.yml/disable', {}, method='PUT')
+          if api('actions/workflows/release.yml')['state'] != 'disabled_manually':
+              raise SystemExit('Legacy stable publisher could not be disabled.')
+          latest = api('releases/latest')
+          if latest['id'] != 423949198 or latest['tag_name'] != 'v3.0.0' or latest['draft'] or latest['prerelease']:
+              raise SystemExit('Stable Latest changed; preserved without mutation.')
+          for spec in specs:
+              verify(spec)
+          for spec in specs:
+              release = verify(spec)
+              if not release['draft']:
+                  api(f'releases/{spec[0]}', {'draft': True, 'prerelease': True, 'make_latest': 'false'})
+              if verify(spec)['draft'] is not True:
+                  raise SystemExit('Withdrawal did not produce the expected draft.')
+              print(f'Withdrawn to draft: {spec[1]}')
+          if api('releases/latest')['id'] != latest['id']:
+              raise SystemExit('Latest changed concurrently; no reset attempted.')
+          print('Both previews are unpublished drafts. No publication is performed by this workflow.')
+          PY
