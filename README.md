@@ -111,6 +111,14 @@ GPA estimates weight included, visible courses equally. They do not retrieve a t
 
 Aeries Playground is not affiliated with Aeries, MVLA, or any school. Follow your school's device, account, and acceptable-use rules. Neither the documentation nor the software license grants permission to use school systems or certifies school approval.
 
+## Student resources
+
+Additional resources for students, separate from Aeries Playground:
+
+- [Wellness resources (Google Doc)](https://docs.google.com/document/d/1iHnxRoOJwPHqy5xq2I-gEraLhsMKL3QWjfPvOPmoqog/edit) — an external resource collection.
+
+These links are provided for convenience and are not part of Aeries Playground or official school guidance. Check each resource's sharing permissions and contents before distributing it.
+
 ## Help and feedback
 
 Use the [documentation hub](docs/README.md) to find controls, calculations, settings, troubleshooting, privacy, and contributor instructions.
