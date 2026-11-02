@@ -6,7 +6,7 @@ Start with the [project README](../README.md) to install Aeries Playground and t
 
 Playground supports the MVLA Aeries student portal. Its optional schedule panel is for Mountain View High School. It changes your local display and calculations, without submitting grade changes to Aeries.
 
-The Developer and public editions are being prepared for one maintained 3.1.0 edition. See the [November 1 merge plan](MERGE-PLAN.md) for the scheduled time, feature differences, upgrade guidance, checks, and rollback. Planned features are not yet part of the published 3.0.0 asset.
+The Developer and public editions are unified in the published **3.1.0 prerelease**. See the [verified merge result](MERGE-RESULT.md) for artifact evidence and the [original merge plan](MERGE-PLAN.md) for the preserved schedule, upgrade guidance, checks, and rollback. **3.0.0 remains the stable Latest release.**
 
 ## Use Playground
 

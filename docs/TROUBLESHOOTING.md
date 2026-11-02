@@ -1,5 +1,9 @@
 # Troubleshooting
 
+<!-- aeries-playground-3.1.0-publication-note -->
+
+**Publication update:** Unified **3.1.0** has been published and verified as a **prerelease**; see [the merge result](MERGE-RESULT.md). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions included in that prerelease. **3.0.0 remains the stable Latest release.** The recorded browser-verification limits still apply.
+
 Choose the symptom below. Start with the smallest recovery step that fits; clearing all settings is rarely necessary. The [feature guide](FEATURES.md) explains the controls, and the [settings guide](SETTINGS.md) explains saves and resets.
 
 | Problem | Jump to |

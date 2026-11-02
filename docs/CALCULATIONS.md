@@ -1,5 +1,9 @@
 # Calculation reference
 
+<!-- aeries-playground-3.1.0-publication-note -->
+
+**Publication update:** Unified **3.1.0** has been published and verified as a **prerelease**; see [the merge result](MERGE-RESULT.md). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions included in that prerelease. **3.0.0 remains the stable Latest release.** The recorded browser-verification limits still apply.
+
 Aeries Playground reconstructs the gradebook loaded in your browser and evaluates local hypothetical scenarios. This reference describes the calculations implemented in the current source. See the [feature guide](FEATURES.md) for controls and [release availability](FEATURES.md#available-release) for which edition includes them. A planned release does not make an unimplemented calculation or fix available.
 
 All examples use fictional scores. A calculated result is an estimate under the available data and supplied rules; it does not establish a teacher's policy or replace the official Aeries grade. **Unavailable** or **—** means there is no usable result or comparison, not a grade of zero.

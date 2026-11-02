@@ -19,22 +19,25 @@ For installation and supported pages, start with the [README](../README.md). For
 
 ## Available release
 
-This guide describes the published **3.0.0 stable release**, verified as Latest on October 26, 2026. The moving `main` source and a tagged asset remain distinct downloads.
+This guide includes the published **3.1.0 unified prerelease**. See the [verified merge result](MERGE-RESULT.md) for publication and artifact evidence. **3.0.0 remains the stable Latest release**; its October 26, 2026 verification remains valid audit evidence. The moving `main` source and a tagged asset remain distinct downloads.
 
 | Download | What it selects |
 | --- | --- |
-| [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The published stable artifact for the audited source. |
-| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0**, verified at publication; this shortcut can select a later stable release in the future. |
+| [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) · [3.1.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.0/aeries-playground.user.js) | The verified unified prerelease artifact. |
+| [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The audited stable artifact, still selected as Latest. |
+| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the stable Latest release after 3.1.0 prerelease publication. |
 | [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source; later documentation edits do not replace tagged assets. |
 | [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) | The historical prerelease, preserved under its original tag. |
 
 The [audit record](AUDIT-3.0.0.md) describes coverage and verification limits. Review the exact replacement file and [update steps](SETTINGS.md#update-the-userscript); publication does not update an installed copy automatically.
 
-### Planned Developer and public integration
+<a id="planned-developer-and-public-integration"></a>
 
-The supplied Developer **2.X** build and public **3.0.0** edition are being unified for **3.1.0**, with merge execution scheduled for **November 1, 2026, at 11:59 p.m. America/Los_Angeles (PST)**. This is a plan, not a published download. See the [merge plan](MERGE-PLAN.md) for candidate status and upgrade instructions.
+### Developer and public integration in 3.1.0
 
-| Feature | Public 3.0.0 | Planned unified 3.1.0 |
+The supplied Developer **2.X** build and public **3.0.0** edition have been unified in the **3.1.0 prerelease**. The [verified merge result](MERGE-RESULT.md) records publication; the [merge plan](MERGE-PLAN.md) retains the original November 1, 2026, 11:59 p.m. America/Los_Angeles (PST) schedule and upgrade instructions.
+
+| Feature | Public 3.0.0 | Unified 3.1.0 |
 | --- | --- | --- |
 | Saved assignment multipliers and temporary **Counts as** for numeric `/4` gradebooks | Not available | Positive multipliers affect earned and possible points; original score scale stays intact. |
 | Native regression forecast text beside trend icons | Not available | Display Aeries' existing forecast without inventing or recalculating one; a Settings toggle controls it. |

@@ -1,5 +1,9 @@
 # Security and privacy
 
+<!-- aeries-playground-3.1.0-publication-note -->
+
+**Publication update:** Unified **3.1.0** has been published and verified as a **prerelease**; see [the merge result](docs/MERGE-RESULT.md). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions included in that prerelease. **3.0.0 remains the stable Latest release.** The recorded browser-verification limits still apply.
+
 Aeries Playground reads the Aeries page available to the signed-in user and changes its local display. Grade calculations run in the browser; this source does not submit grades or account-setting changes to Aeries. Public schedules and KBAR playback are optional external connections. Saved configuration can reveal school, course, and assignment information even though current features do not save posted or hypothetical score values.
 
 The public baseline for this policy is **3.0.0 stable**, whose publication and exact source/asset were verified on October 26, 2026. The [planned 3.1.0 additions](#planned-310-merge-additions) below describe the Developer/public integration candidate; they do not announce a published release. A moving [userscript](aeries-playground.user.js) and older tagged files can behave differently. Use the [feature guide](docs/FEATURES.md) to choose a published download, and review the actual file you install. A version label, static check, or AI review is not a security certification.

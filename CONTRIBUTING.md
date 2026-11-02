@@ -6,7 +6,7 @@ A useful contribution can be one sentence: an idea, an unclear instruction, or s
 
 If the [README](README.md) carries a temporary maintenance notice, follow it before making commits. Suggestions and bug reports remain welcome during a pause; scheduled maintenance is exempt.
 
-Developer and public editions are currently being prepared for a unified 3.1.0 release. Coordinate changes affecting that integration through [issue #8](https://github.com/sodium-qed/aeries-playground/issues/8) and the [merge plan](docs/MERGE-PLAN.md). Continue using focused pull requests; keep the scheduled integration candidate unmerged until its announced time and retain public audit fixes when resolving conflicts.
+Developer and public editions are unified in the verified **3.1.0 prerelease**. **3.0.0 remains stable Latest.** The [merge result](docs/MERGE-RESULT.md) records the completed integration; the [merge plan](docs/MERGE-PLAN.md) preserves its original schedule and recovery instructions. Continue using focused pull requests and retain the public audit fixes when resolving conflicts.
 
 ## Choose a starting point
 

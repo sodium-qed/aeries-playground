@@ -2,9 +2,15 @@
 
 > **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
 
-The supplied Developer **2.X** build and public **3.0.0** edition are being prepared as one maintained **3.1.0** edition. This document records the planned transition; it does not claim that a merge or publication has already succeeded.
+The supplied Developer **2.X** build and public **3.0.0** edition were unified as the **3.1.0 prerelease**. **3.0.0 remains stable Latest.** The completion evidence below is current; the original schedule, preparation counts, and execution instructions remain preserved as a historical record.
 
-## Schedule and current status
+## Verified completion
+
+<!-- aeries-playground-3.1.0-completion -->
+
+[PR #10](https://github.com/sodium-qed/aeries-playground/pull/10) merged as [`eea1a45c6327d37bcf88f76ed43c4e2b1839efd3`](https://github.com/sodium-qed/aeries-playground/commit/eea1a45c6327d37bcf88f76ed43c4e2b1839efd3). [v3.1.0](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) was published at `2026-11-02T08:09:23Z` and verified as a prerelease. **3.0.0 remains the stable Latest release.** The userscript is **379864 bytes**, SHA-256 `5e37b76082308c0eb0f2bc1e472cb33bc4bd3b360a713ddbf8e192c655b33773`. The guarded workflow runs its full checks before publication; original preparation test counts below remain unchanged. See [the result and evidence limits](MERGE-RESULT.md).
+
+## Original schedule and preparation record
 
 | Item | Plan or verified state |
 | --- | --- |

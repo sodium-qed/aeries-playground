@@ -1,5 +1,9 @@
 # Settings and saved data
 
+<!-- aeries-playground-3.1.0-publication-note -->
+
+**Publication update:** Unified **3.1.0** has been published and verified as a **prerelease**; see [the merge result](MERGE-RESULT.md). Sections labeled **Planned 3.1.0** and references to a candidate below preserve the preparation-era labels and describe additions included in that prerelease. **3.0.0 remains the stable Latest release.** The recorded browser-verification limits still apply.
+
 Open Playground with **S** outside an editable control, or the manager's **Aeries Playground — open settings (S)** command. This guide explains which changes save, how to separate students and years, and how to pause, clear, or update the script. For using the features, see the [feature guide](FEATURES.md); for a failed save, see [troubleshooting](TROUBLESHOOTING.md#settings-do-not-survive-reload).
 
 The controls below describe the public 3.0.0 baseline. The Developer/public integration adds the separately marked [planned 3.1.0 settings](#planned-310-settings); those additions are not a claim that a new stable download has been published.

@@ -9,11 +9,11 @@ It is an independent, unofficial project. Hypothetical edits change the local di
 
 [Install](#install) · [Get started](#get-started) · [Find a feature](#features) · [Update](#update-manually) · [All documentation](docs/README.md)
 
-## Developer and public editions are being unified
+## Developer and public editions are unified
 
-The Developer **2.X** build and public **3.0.0** edition are planned to become one maintained **3.1.0** edition. Merge execution is scheduled for **Sunday, November 1, 2026, at 11:59 p.m. Pacific Standard Time** (`America/Los_Angeles`; November 2 at 07:59 UTC), subject to the prepared candidate passing its checks. The merge and release have not happened yet; the existing stable download remains available.
+The Developer **2.X** build and public **3.0.0** edition are now unified in the [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0), which has been published and verified. **3.0.0 remains the stable Latest release.** See the [merge result](docs/MERGE-RESULT.md) for the exact commit, artifact fingerprint, and verification limits.
 
-The integration brings over Developer assignment multipliers, native forecast display, additional validated score-precision recovery, and conservative rounding estimates while retaining the public edition's audited fixes. See the [merge plan, upgrade steps, and verification status](docs/MERGE-PLAN.md). Keep one installation enabled; no settings reset is required just to prepare for the merge.
+The integration adds Developer assignment multipliers, native forecast display, additional validated score-precision recovery, and conservative rounding estimates while retaining the public edition's audited fixes. Follow the [upgrade steps](docs/MERGE-PLAN.md#upgrade-from-either-edition), keep one installation enabled, and review the saved settings after updating. An ordinary update does not require clearing settings.
 
 ## Install
 
@@ -21,8 +21,9 @@ Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/).
 
 | Download | What you are choosing |
 | --- | --- |
-| [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | Open **Assets** and choose the attached `aeries-playground.user.js`. The current stable release is **3.0.0**; planned Developer additions are identified separately. |
-| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source. The scheduled integration introduces **3.1.0** source; source availability can precede verification of its stable release asset. Use a tagged download for a fixed version. |
+| [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the verified stable Latest release. Open **Assets** and choose `aeries-playground.user.js`. |
+| [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) | The unified edition is available separately as a prerelease; use its tagged asset for a fixed version. |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the unified **3.1.0** integration. Later development can differ from the tagged prerelease asset. |
 
 Check [available downloads and feature differences](docs/FEATURES.md#available-release) before choosing. GitHub's stable **Latest** and **Pre-release** are separate choices.
 

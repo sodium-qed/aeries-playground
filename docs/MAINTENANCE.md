@@ -2,11 +2,11 @@
 
 > **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
 
-## Active Developer and public merge preparation
+## Verified Developer and public integration
 
-The next planned change is the Developer/public integration tracked in [issue #8](https://github.com/sodium-qed/aeries-playground/issues/8). Merge execution is scheduled for **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**). The [merge plan](MERGE-PLAN.md) is the current runbook for scope, candidate verification, migration, publication, and recovery.
+The Developer/public integration tracked in [issue #8](https://github.com/sodium-qed/aeries-playground/issues/8) has completed. The [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and its exact artifact were verified; **3.0.0 remains stable Latest**. See the [merge result](MERGE-RESULT.md). The original scheduled start was **Sunday, November 1, 2026, at 11:59 p.m. PST** (`America/Los_Angeles`, **2026-11-02T07:59:00Z**); the [merge plan](MERGE-PLAN.md) preserves preparation and recovery details.
 
-Public **3.0.0** remains the stable release during preparation. The supplied Developer **2.X** build predates its audit and will be integrated selectively, preserving newer public fixes. The planned **3.1.0** release needs its own frozen source fingerprint and guarded publisher; the 3.0.0 publisher must not be reused with an unverified replacement. Documentation preparation does not merge the runtime candidate or publish a release.
+Public **3.0.0** remains the stable Latest release. The **3.1.0 prerelease** selectively integrates Developer **2.X** features into the audited public base, preserving newer fixes. Its publisher uses the frozen 3.1.0 fingerprint and retained safeguards. The 3.0.0 tag, asset, and audit remain unchanged; the preparation test count below remains the count recorded on its original date.
 
 The prepared integration passed **195/195 tests** on October 29, 2026, including new forecast, assignment-weight, precision, and bounded-rounding fixtures. Userscript syntax/basic metadata and documentation links also pass. The frozen candidate source is **379864 bytes**, SHA-256 `5e37b76082308c0eb0f2bc1e472cb33bc4bd3b360a713ddbf8e192c655b33773`. Live Aeries rendering, actual manager migration, live schedules, and audible media remain unverified. The scheduled merger revalidates the exact combined candidate/base before writing the merge.
 
