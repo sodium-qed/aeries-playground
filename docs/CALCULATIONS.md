@@ -13,6 +13,8 @@ Use these sections for the most common questions:
 - [Replacements](#replacement-rules), [required scores](#target-score-calculation), and [score ranges](#score-range-calculation)
 - [Why a calculation can be unavailable](#reconciliation-and-incomplete-data)
 
+The main reference describes the public 3.0.0 baseline. The [planned 3.1.0 additions](#planned-310-assignment-multipliers) separately describe the Developer/public integration candidate, not a verified stable publication.
+
 ## Inputs and interpretation
 
 Different tools use different inputs:
@@ -476,3 +478,28 @@ There are two deliberately limited empty-course cases:
 - **Ungraded weight preview:** an empty current grade can be accepted when its category totals pass the map's reconciliation checks and the overall grade is absent or zero. Categories without a recognized numeric average still need usable earned/possible totals, normally zero; missing totals are not automatically accepted. This includes blank category grades in a native four-point book.
 
 These checks do not infer arbitrary drop-lowest rules, hidden exclusions, different assignment weighting inside a four-point rubric, zero-point extra-credit policies, or additional teacher adjustments. Course-title recognition and native page selectors also have limits. Load the complete grading period and inspect the visible scores and known policy before changing a profile to explain a discrepancy. When a policy cannot be represented, the official gradebook remains authoritative.
+
+## Planned 3.1.0 assignment multipliers
+
+The [merge candidate](MERGE-PLAN.md) adds explicit assignment multipliers to recognized numeric `/4` gradebooks. A positive **Counts as** value changes an assignment's contribution within its category without changing its score scale or the category's configured percentage weight. The ordinary value is **1**; positive fractional values are allowed. Missing or guessed teacher weights are not inferred automatically.
+
+After applying a replacement and score limits, the calculation multiplies both that assignment's earned and possible points by its multiplier. For two fictional assignments in one category, with no replacements or limits:
+
+| Assignment | Score | Counts as | Weighted earned / possible |
+| --- | --- | --- | --- |
+| Quiz A | 3 / 4 | 2× | 6 / 8 |
+| Quiz B | 4 / 4 | 1× | 4 / 4 |
+
+The category average is `(6 + 4) / (8 + 4) × 4 = 3.333333… / 4`. The individual scores stay **3/4** and **4/4**. Within this category, their possible-point shares are **2/3** and **1/3**; circle area in the weight map follows those weighted shares. Other category weights still apply at the category level.
+
+A replacement changes the target assignment's earned value first; the target retains its own denominator and multiplier. Range endpoints and target calculations use the same multiplier rules. A weight change does not turn a blank into a counted zero, include an excluded row, or alter the raw-to-points conversion. **Saved assignment weights** affect reconstruction and testing; temporary **Counts as** edits affect the active scenario and reset to the saved/default weight. See [save behavior](SETTINGS.md#planned-310-settings).
+
+## Planned 3.1.0 precision and bounded estimates
+
+The candidate keeps validated `RecentData` restoration and adds eligible card/raw values already present in the loaded page. A supplied precise value must agree with the current assignment identity, visible denominator, and displayed score information. An ambiguous or contradictory match is not a basis for inventing additional digits. These are read-only page adapters, not requests for hidden records.
+
+When only rounded posted scores remain, a separate fallback can label the reconstruction **approximate** if display-derived bounds are consistent with the reported category and overall totals. This applies to eligible complete percentage gradebooks; it cannot explain a missing assignment denominator, an incomplete grading period, malformed metadata, or an unsupported policy. It preserves the public edition's explicit final-grade rounding policy and displayed-precision checks. Passing bounded reconciliation does not identify each exact hidden score or prove every teacher rule is known.
+
+The target planner uses the lower permitted bounds of uncertain original scores for a **conservative** result. Under the supported nondecreasing calculation rules, that result meets the modeled target even at those lower bounds; the exact minimum could be lower. An entered hypothetical score remains the entered value, rather than being replaced by the original posted score's uncertainty bound. Ordinary reconstructed grades and impacts remain labeled estimates while this fallback is active. Display precision, teacher final-rounding policy, uncertainty in original inputs, and the chosen target increment are separate concepts.
+
+Native regression predictions are a separate display feature: the candidate shows the existing Aeries tooltip value without recalculating it. A forecast is not a target calculation, posted grade, or extra input to these formulas.

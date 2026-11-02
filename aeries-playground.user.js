@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      3.0.0
-// @description  Aeries grade tools, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
+// @version      3.1.0
+// @description  Aeries grade tools, saved and temporary /4 assignment weights, native regression forecasts, validated fractional-score recovery and conservative rounding-aware targets, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
 // @noframes
@@ -19,6 +19,14 @@
 // ==/UserScript==
 
 /*
+ * 3.1.0 integration candidate: Unify Developer and public features on the
+ * audited 3.0.0 base. Add saved and temporary /4 assignment multipliers,
+ * native regression forecast badges, validated card/raw-score precision,
+ * and bounded rounding reconciliation with conservative target scores.
+ * Existing identity, schema, manual updates and opt-in permissions remain.
+ * Synthetic regression coverage is not live Aeries/browser validation.
+ * See docs/RELEASE-3.1.0.md and docs/MERGE-PLAN.md for release readiness.
+ *
  * 3.0.0: Correct grade reconciliation, scenario validation, saved-state
  * recovery, native-page lifecycle, schedule timeouts and KBAR playback races.
  * Add synthetic regression coverage and verified stable-release recovery.
@@ -75,10 +83,20 @@
  *   information. For eligible percentage gradebooks it can restore a more
  *   precise score from one bounded RecentData JSON initializer already in
  *   the page. It does not execute that initializer as JavaScript.
- * - Score matching checks school/student/person identifiers, the selected
+ * - Embedded-score matching checks school/student/person identifiers, the selected
  *   course/gradebook/term, assignment identity and dates, possible points,
  *   and displayed score/percentage consistency. Ambiguous or inconsistent
  *   matches retain visible scores; four-point gradebooks skip this adapter.
+ * - A separate percentage-gradebook adapter can restore precision from an
+ *   exactly linked alternate score card or a validated raw-count ratio. It
+ *   requires a unique assignment, matching denominator, and agreement with
+ *   the displayed score and percentage. Contradictions preserve a previously
+ *   matching baseline. When displayed rounding alone explains a mismatch,
+ *   reconstructed values are labeled approximate; targets use conservative
+ *   lower bounds for untouched original scores. No hidden score is guessed.
+ * - Native regression forecasts are read from existing trend tooltips and
+ *   shown without recalculating or rounding them. Missing, invalid, or
+ *   conflicting forecasts are omitted. No forecast is requested or saved.
  * - Student/person identity values and embedded records are working data in
  *   memory, not added to storage or external requests. Saved course keys can
  *   independently contain school, gradebook, term, section, or year values.
@@ -92,6 +110,10 @@
  *   toggles and schedule consent; profile/year labels; course names and keys;
  *   nicknames, icons, periods, inclusion and Honors/AP choices; colors,
  *   thresholds and scales; grading policies and incomplete rule-form drafts.
+ *   Saved /4 assignment weights contain assignment IDs, names, categories,
+ *   due dates, and positive multipliers, never scores. Matching is exact
+ *   within the current course; invalid, duplicate, or unmatched weights stay
+ *   inactive. Temporary Counts as changes stay in the current scenario.
  *   Course discovery can save names/keys automatically when pages are read.
  * - Replacement rules save source/target assignment names, IDs, categories,
  *   a hypothetical-reference flag, policy, and optional cap. This includes
@@ -105,7 +127,8 @@
  *   under that label. Profiles are manual organization, not private accounts
  *   or access controls. Matching identifiers do not select them. Display
  *   toggles, colors, default thresholds, schedule consent, and the default-off
- *   Show ungraded assignments preference remain global.
+ *   Show ungraded assignments preference remain global. The default-on
+ *   Show regression predictions toggle is also global.
  * - Saved names and references are not anonymized or encrypted by Playground.
  *   Manager sync/backups can copy them elsewhere. Do not share a settings
  *   export as generic preferences. Upgrading does not erase older/imported
@@ -113,7 +136,8 @@
  *   or unsupported configuration blocks ordinary saves so visit defaults do
  *   not overwrite it. Recover storage access and reload a compatible script,
  *   or explicitly clear it if clearing succeeds. Malformed saved grading
- *   policies, replacement rules, or drafts are ignored with a recovery warning.
+ *   policies, replacement rules, or drafts are ignored with a recovery warning;
+ *   malformed assignment-weight data is retained but inactive with a warning.
  *
  * OTHER OPEN TABS
  * Each tab keeps a settings copy. Ordinary saves are last-write-wins, with
@@ -687,13 +711,17 @@ const GradeMath = (() => {
       const included = assignment.included !== false;
       const possible = parseNumber(assignment.possible);
       const earned = assignment.earned === null ? null : parseNumber(assignment.earned);
+      const multiplier = assignment.multiplier === undefined ? 1 : parseNumber(assignment.multiplier);
+      if (included && (multiplier === null || multiplier <= 0)) {
+        return emptyResult(`"${name}" needs a positive assignment weight. Use Count to exclude it.`);
+      }
       if (included && (possible === null || possible <= 0)) {
         return emptyResult(`"${name}" needs positive possible points. Zero-point extra credit requires a separate grading policy.`);
       }
       if (included && assignment.earned !== null && (earned === null || earned < 0)) {
         return emptyResult(`"${name}" needs nonnegative earned points, or an ungraded (blank) score.`);
       }
-      originals.set(id, { id, name, category, included, earned, possible });
+      originals.set(id, { id, name, category, included, earned, possible, multiplier });
     }
 
     const normalizedRules = [];
@@ -767,11 +795,18 @@ const GradeMath = (() => {
       const category = categoryMap.get(row.category) || {
         name: row.category, earned: 0, possible: 0, percent: null, weight: null
       };
-      category.earned += row.earned;
-      category.possible += row.possible;
+      // Scores and replacement percentages stay on their original scale.
+      // Only the target assignment's contribution receives its multiplier.
+      row.countedEarned = row.earned * row.multiplier;
+      row.countedPossible = row.possible * row.multiplier;
+      if (!Number.isFinite(row.countedEarned) || !Number.isFinite(row.countedPossible) || row.countedPossible <= 0) {
+        return emptyResult('These assignment weights are too large or small to calculate reliably.');
+      }
+      category.earned += row.countedEarned;
+      category.possible += row.countedPossible;
       categoryMap.set(row.category, category);
-      totalEarned += row.earned;
-      totalPossible += row.possible;
+      totalEarned += row.countedEarned;
+      totalPossible += row.countedPossible;
       usedCount += 1;
     }
     if (![totalEarned, totalPossible].every(Number.isFinite)) {
@@ -962,6 +997,64 @@ const GradeMath = (() => {
     });
   }
 
+  // Native-page rounding bounds describe uncertain displayed scores, never
+  // invented hidden values. Edited scenario scores deliberately omit bounds.
+  function roundingEndpoint(assignments, endpoint = 'low') {
+    return assignments.map(a => {
+      const b=a.pointBounds;
+      if(!a.included || a.earned===null || !Array.isArray(b) || b.length!==2
+        || !b.every(Number.isFinite) || b[0]<0 || b[0]>b[1])return {...a};
+      return {...a,earned:b[endpoint==='high'?1:0]};
+    });
+  }
+  function displayTolerance(decimals) {
+    const places=decimals===undefined?2:decimals;
+    return Number.isInteger(places)&&places>=0?Math.max(0.011,0.5*10**-places+1e-9):null;
+  }
+  function reconcileDisplayRounding(assignments,rules,posted) {
+    if(rules.averageMaximum || !Array.isArray(posted.categories) || !posted.categories.length)return null;
+    // Invalid supplied metadata cannot widen an otherwise rejected baseline.
+    if(assignments.some(a=>a.pointBounds!==undefined && (!Array.isArray(a.pointBounds) || a.pointBounds.length!==2
+      || !a.pointBounds.every(Number.isFinite) || a.pointBounds[0]<0 || !Number.isFinite(a.earned)
+      || a.pointBounds[0]>a.pointBounds[1])))return null;
+    const lowRows=roundingEndpoint(assignments),highRows=roundingEndpoint(assignments,'high');
+    const count=assignments.filter((a,i)=>a.earned!==lowRows[i].earned || a.earned!==highRows[i].earned).length;
+    if(!count)return null;
+    const low=calculate(lowRows,rules),high=calculate(highRows,rules);
+    if(low.error || high.error || low.value===null || high.value===null)return null;
+    const lower=new Map(low.categories.map(c=>[c.name,c])),upper=new Map(high.categories.map(c=>[c.name,c]));
+    const between=(v,l,h,t)=>[v,l,h,t].every(Number.isFinite) && v>=l-t && v<=h+t;
+    const seen=new Set(),constrained=[];
+    for(const category of posted.categories){
+      if(!category || typeof category!=='object' || Array.isArray(category) || seen.has(category.name))return null;
+      seen.add(category.name);
+      const l=lower.get(category.name),h=upper.get(category.name);
+      // Display uncertainty never explains missing assignments/denominators.
+      if(!Number.isFinite(category.possible) || Math.abs((l?.possible??0)-category.possible)>0.011
+        || Math.abs((h?.possible??0)-category.possible)>0.011)return null;
+      const places=category.earnedDecimals===undefined?2:category.earnedDecimals;
+      if(!Number.isInteger(places) || places<0)return null;
+      const tolerance=0.5*10**-Math.max(2,places)+1e-9;
+      if(!between(category.earned,l?.earned??0,h?.earned??0,tolerance))return null;
+      if(l&&h)constrained.push({...l,low:Math.max(l.earned,category.earned-tolerance),high:Math.min(h.earned,category.earned+tolerance)});
+      lower.delete(category.name);upper.delete(category.name);
+    }
+    const tolerance=displayTolerance(posted.officialDecimals);
+    // Apply configured final-grade rounding to both endpoints, just as the
+    // exact public reconciliation does, without rounding the impact model.
+    // Tighten overall bounds with displayed category totals. Independent
+    // point intervals alone must not accept a contradictory overall grade.
+    const weightTotal=constrained.reduce((sum,c)=>sum+(c.weight??0),0);
+    const aggregate=key=>rules.mode==='weighted'
+      ?constrained.reduce((sum,c)=>sum+c[key]/c.possible*100*(c.weight/weightTotal),0)
+      :constrained.reduce((sum,c)=>sum+c[key],0)/low.totalPossible*100;
+    const constrainedLow=Math.max(low.value,aggregate('low')),constrainedHigh=Math.min(high.value,aggregate('high'));
+    if(!Number.isFinite(constrainedLow)||!Number.isFinite(constrainedHigh)||constrainedLow>constrainedHigh)return null;
+    const lowValue=roundPercent(constrainedLow,rules),highValue=roundPercent(constrainedHigh,rules);
+    if(lower.size || upper.size || tolerance===null || !between(posted.official,lowValue,highValue,tolerance))return null;
+    return {count,lowValue:low.value,highValue:high.value};
+  }
+
   function fromAeries(assignments, rules, options = {}) {
     const fail=error=>({model:null,result:null,error});
     if(!Array.isArray(assignments))return fail('Assignments must be a list.');
@@ -971,7 +1064,7 @@ const GradeMath = (() => {
     if(!rules || typeof rules!=='object' || Array.isArray(rules) || !Array.isArray(rules.categories) || !rules.categories.length)return fail('Impact estimates need the category totals shown by Aeries.');
     const averageMaximum=rules.averageMaximum==null?null:parseNumber(rules.averageMaximum);
     if(rules.averageMaximum!=null && (averageMaximum===null || averageMaximum<=0))return fail('Enter a positive average-scale maximum.');
-    const model={assignments:assignments.map(a=>({id:a.id,name:a.name,category:a.category,earned:a.earned,possible:a.possible,included:a.included})),
+    const model={assignments:assignments.map(a=>({id:a.id,name:a.name,category:a.category,earned:a.earned,possible:a.possible,included:a.included,multiplier:a.multiplier===undefined?1:a.multiplier,pointBounds:a.pointBounds})),
       rules:{mode:rules.mode,weights:{...rules.weights},averageMaximum,scoreFloor:rules.scoreFloor??null,scoreCeiling:rules.scoreCeiling??null,replacements:rules.replacements===undefined?[]:rules.replacements,
         rounding:rules.rounding,roundingDecimals:rules.roundingDecimals},
       confirmed:true,source:'aeries',updatedAt:null};
@@ -984,9 +1077,9 @@ const GradeMath = (() => {
     const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=0.011;
     // Retain the existing hundredth-scale allowance while respecting coarser
     // labels. Invalid precision metadata must never turn a comparison into NaN.
-    const displayTolerance=decimals=>{
-      const places=decimals===undefined?2:decimals;
-      return Number.isInteger(places)&&places>=0?Math.max(0.011,0.5*10**-places+1e-9):null;
+    const mismatch=error=>{
+      const rounding=reconcileDisplayRounding(model.assignments,model.rules,rules);
+      return rounding?{model,result,error:null,rounding}:fail(error);
     };
     for(const reported of rules.categories){
       if(!reported || typeof reported!=='object' || Array.isArray(reported))return fail('Aeries category totals are not readable yet.');
@@ -999,7 +1092,7 @@ const GradeMath = (() => {
         const tolerance=displayTolerance(reported.decimals);
         if(!Number.isFinite(reported.grade) || !Number.isFinite(average) || tolerance===null || Math.abs(average-reported.grade)>tolerance)
           return fail('Assignment averages do not match Aeries yet. Show all assignments for this grading period.');
-      }else if(!close(seen?.earned??0,reported.earned) || !close(seen?.possible??0,reported.possible))return fail('Assignment totals do not match Aeries yet. Show all assignments for this grading period; impacts will appear when the totals agree.');
+      }else if(!close(seen?.earned??0,reported.earned) || !close(seen?.possible??0,reported.possible))return mismatch('Assignment totals do not match Aeries yet. Show all assignments for this grading period; impacts will appear when the totals agree.');
       actual.delete(reported.name);
     }
     if(actual.size)return fail('Some assignment categories are missing from the Aeries totals.');
@@ -1013,10 +1106,10 @@ const GradeMath = (() => {
     if(rounded===null)return fail('Choose a valid rounding rule and its decimal places.');
     const displayedValue=averageMaximum!==null && rules.officialUnit==='average'?rounded*averageMaximum/100:rounded;
     const officialTolerance=displayTolerance(rules.officialDecimals);
-    if(!Number.isFinite(rules.official) || !Number.isFinite(displayedValue) || officialTolerance===null || Math.abs(displayedValue-rules.official)>officialTolerance)return fail('The calculated grade does not match the displayed Aeries grade. This class may use additional grading rules.');
+    if(!Number.isFinite(rules.official) || !Number.isFinite(displayedValue) || officialTolerance===null || Math.abs(displayedValue-rules.official)>officialTolerance)return mismatch('The calculated grade does not match the displayed Aeries grade. This class may use additional grading rules.');
     return {model,result,error:null};
   }
-  return { calculate, impacts, format, parseNumber, fromAeries, roundPercent, solveTarget, calculateRange, calculateRanges, convertRawScore };
+  return { calculate, impacts, format, parseNumber, fromAeries, roundPercent, solveTarget, calculateRange, calculateRanges, convertRawScore, roundingEndpoint };
 })();
 
 /* Read-only adapters. This module never requests data or submits a page form. */
@@ -1316,7 +1409,7 @@ const GradeDOM = (() => {
       if(/^total$/i.test(name)){official=grade.value;officialUnit=grade.unit;officialDecimals=grade.decimals;continue;}
       if(!name)continue;
       if(pct.value!==null)weights[name]=pct.value;
-      categories.push({name,earned:parseScalar(cleanText(row.querySelector('[id$="_tdPTS"]'))),possible:parseScalar(cleanText(row.querySelector('[id$="_tdMX"]'))),
+      categories.push({name,earned:parseScalar(cleanText(row.querySelector('[id$="_tdPTS"]'))),earnedDecimals:(cleanText(row.querySelector('[id$="_tdPTS"]')).split('.')[1]||'').length,possible:parseScalar(cleanText(row.querySelector('[id$="_tdMX"]'))),
         grade:grade.value,unit:grade.unit,decimals:grade.decimals});
     }
     const averageMaximum=fourPoint || officialUnit==='average'?4:null;
@@ -1514,7 +1607,7 @@ const GradeDOM = (() => {
       const assigned=readAssignedDate(assignment.sourceRow,assignment.sourceRows[1]);
       if(!assigned || !assignment.dueDate)continue;
       const precise=scores.get(embeddedScoreKey(number,assignment.name,assignment.category,assigned,assignment.dueDate));
-      if(!precise || precise.earned===assignment.earned)continue;
+      if(!precise)continue;
       // Aeries strips trailing zeros but renders ordinary point scores to at
       // least two-place precision. Only accept a numeric score on that scale.
       const scoreText=cleanText(assignment.sourceCell).split('/')[0].trim();
@@ -1524,13 +1617,65 @@ const GradeDOM = (() => {
       if(posted.unit!=='percent' || posted.value===null || posted.decimals>15
         || Number(percent.toFixed(posted.decimals))!==posted.value
         || !roundsToPosted(percent,precise.percentText))continue;
-      assignment.earned=precise.earned;
+      const changed=assignment.earned!==precise.earned;
+      assignment.earned=precise.earned;assignment.precisionSource='embedded';
       // Raw-count metadata stays as displayed: the refresh guard uses it to
       // recognize old rows during a course switch. labDraft preserves these
       // precise points and derives a raw equivalent when the two disagree.
-      restored++;
+      if(changed)restored++;
     }
     return restored;
+  }
+  function restoreRowPrecision(assignments,rules) {
+    if(rules.averageMaximum)return 0;
+    const ids=new Map();
+    for(const a of assignments)ids.set(a.id,(ids.get(a.id)||0)+1);
+    const changes=[],before=GradeMath.fromAeries(assignments,rules);
+    let restored=0;
+    for(const a of assignments){
+      if(a.precisionSource || !a.included || a.status!=='graded' || !(a.possible>0) || ids.get(a.id)!==1)continue;
+      const scoreText=cleanText(a.sourceCell).split('/')[0].trim();
+      const posted=parseGrade(cleanText(a.sourceRow?.querySelector('[id$="_tdPerc"]')));
+      const matches=value=>Number.isFinite(value) && value>=0 && roundsToPosted(value,scoreText,2)
+        && posted.unit==='percent' && posted.value!==null && posted.decimals<=15
+        && Number((value/a.possible*100).toFixed(posted.decimals))===posted.value;
+      // These cells are linked to this row by Aeries' exact element ID, not
+      // by course-title guesses or whichever item happens to be recent.
+      const cards=(a.sourceCells||[]).filter(cell=>cell!==a.sourceCell).map(cell=>parsePair(cleanText(cell)))
+        .filter(pair=>pair && pair.possible===a.possible && pair.earned!==a.earned && matches(pair.earned));
+      const values=[...new Set(cards.map(pair=>pair.earned))];
+      if(values.length===1){changes.push({a,earned:a.earned});a.earned=values[0];a.precisionSource='card';restored++;continue;}
+      if(values.length>1)continue;
+      if(!Number.isFinite(a.rawEarned) || a.rawEarned<0 || !(a.rawPossible>0) || !Number.isFinite(a.rawPossible))continue;
+      const value=a.rawEarned/a.rawPossible*a.possible;
+      if(value===a.earned || !matches(value))continue;
+      changes.push({a,earned:a.earned});a.earned=value;a.precisionSource='raw';restored++;
+    }
+    // A point override or stale alternate view can resemble a rounded score.
+    // Never replace a matching baseline with a contradictory alternate value.
+    if(!before.error && GradeMath.fromAeries(assignments,rules).error){
+      for(const {a,earned} of changes){a.earned=earned;delete a.precisionSource;restored--;}
+    }
+    return restored;
+  }
+  function attachDisplayBounds(assignments,rules) {
+    if(rules.averageMaximum)return;
+    for(const a of assignments){
+      if(a.precisionSource || !a.included || a.status!=='graded' || !(a.possible>0))continue;
+      const text=cleanText(a.sourceCell).split('/')[0].trim(),shown=parseScalar(text);
+      if(shown===null || shown!==a.earned)continue;
+      const decimals=Math.max(2,(text.split('.')[1]||'').length);
+      if(decimals>15)continue;
+      const half=0.5*10**-decimals;
+      let low=Math.max(0,shown-half),high=shown+half;
+      const percent=parseGrade(cleanText(a.sourceRow?.querySelector('[id$="_tdPerc"]')));
+      if(percent.unit==='percent' && percent.value!==null && percent.decimals<=15){
+        const margin=0.5*10**-percent.decimals;
+        low=Math.max(low,(percent.value-margin)/100*a.possible);
+        high=Math.min(high,(percent.value+margin)/100*a.possible);
+      }
+      if(Number.isFinite(low) && Number.isFinite(high) && low<=high)a.pointBounds=[low,high];
+    }
   }
   function readAeriesTable(info) {
     const assignments=[],issues=[],doc=info.element.ownerDocument;
@@ -1561,14 +1706,16 @@ const GradeDOM = (() => {
         sourceNameCells:[cells[1],cardRow?.querySelector('.TextHeading')].filter(Boolean)});
     }
     const restored=restoreEmbeddedPrecision(assignments,readEmbeddedScores(doc),rules);
-    if(restored)issues.push(`More precise scores were read from matching on-page Aeries data for ${restored} assignment(s). Other scores retain their displayed precision.`);
+    const rowRestored=restoreRowPrecision(assignments,rules);
+    attachDisplayBounds(assignments,rules);
+    if(restored+rowRestored)issues.push(`More precise scores were read from matching on-page Aeries data for ${restored+rowRestored} assignment(s). Other scores retain their displayed precision.`);
     if(assignments.some(a=>!a.included))issues.push('Blank or excluded scores do not count. A numeric score can count even when Grading Complete says No, as in Aeries Totals.');
     if(Object.keys(rules.weights).length)issues.push('Category weights were read from Aeries Totals and are used with these rows.');
     if(rules.scoreFloor!==null || rules.scoreCeiling!==null)issues.push(`Aeries assignment score limits detected: ${rules.scoreFloor??'no minimum'}% to ${rules.scoreCeiling??'no maximum'}%. These will apply to hypothetical scores.`);
     if(doc.querySelector('input[id$="_chkMissingAssignmentOnly"]')?.checked)issues.push('Show only missing assignments is enabled. Turn it off and wait for all rows to load before calculating the full gradebook.');
     return {assignments,issues,rules};
   }
-  return { readCards, listTables, readTable, parseGrade, courseKey, cleanText, currentCourse, readAeriesRules, parseDueDate, isFourPointCourse, assignmentGrade, parseCourseGrade, readRawScoreMetadata, parseRecentData, readEmbeddedScores, restoreEmbeddedPrecision };
+  return { readCards, listTables, readTable, parseGrade, courseKey, cleanText, currentCourse, readAeriesRules, parseDueDate, isFourPointCourse, assignmentGrade, parseCourseGrade, readRawScoreMetadata, parseRecentData, readEmbeddedScores, restoreEmbeddedPrecision, restoreRowPrecision, attachDisplayBounds };
 })();
   // Period-to-course matching stays local; no class names go to either schedule service.
   const CourseSchedule = (() => {
@@ -1631,7 +1778,7 @@ const GradeDOM = (() => {
   const clone = x => JSON.parse(JSON.stringify(x));
   const defaults = {
     enabled: true, nicknames: true, bars: true, impacts: true,
-    categorySpotlight: true, weightMap: true, weightMapUngraded: false, dashboardColors: true, numericGrades: false, overallGrade: true, nextClass: false,
+    categorySpotlight: true, weightMap: true, weightMapUngraded: false, dashboardColors: true, numericGrades: false, overallGrade: true, trendPredictions: true, nextClass: false,
     scheduleNetworkConsent: false,
     precise: true, detailsColors: true, profile: '', year: '',
     cutoffs: [95,85,75], averageCutoffs: [3.7,3.1,2.5], colors: ['#1f1f7f','#1f7f1f','#c05600','#7f1f1f']
@@ -1679,7 +1826,13 @@ const GradeDOM = (() => {
       (rule.onlyIfHigher === undefined || typeof rule.onlyIfHigher === 'boolean') &&
       (rule.capPercent == null || GradeMath.parseNumber(rule.capPercent) !== null && GradeMath.parseNumber(rule.capPercent) >= 0);
   }
+  function validSavedAssignmentWeight(ref) {
+    return storageRecord(ref) && ['id','name','category'].every(key=>typeof ref[key]==='string'&&ref[key].trim())
+      && (ref.dueDate==null || typeof ref.dueDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(ref.dueDate))
+      && GradeMath.parseNumber(ref.multiplier)>0;
+  }
   function normalizeSavedCourseRules(course) {
+    if(course.assignmentWeights!==undefined && (!Array.isArray(course.assignmentWeights) || course.assignmentWeights.some(ref=>!validSavedAssignmentWeight(ref))))noteStorageRecovery();
     if (course.gradingRules !== undefined && !validSavedGradingRules(course.gradingRules)) {
       delete course.gradingRules;noteStorageRecovery();
     } else if (course.gradingRules) {
@@ -2124,10 +2277,55 @@ const GradeDOM = (() => {
     .classesSection > .Card > a.TextHeading[data-ap-label] {font-size:0 !important;}
     .classesSection > .Card > a.TextHeading[data-ap-label]::after {content:attr(data-ap-label);font-size:var(--ap-title-size,20px);line-height:1.3;}
     .ap-page-impact {display:inline-block;font-family:inherit;font-size:11px;line-height:1.4;color:#234d78;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 5px;margin-left:6px;}
+    .ap-trend-prediction {display:inline-block;font:inherit;font-size:12px;font-weight:600;line-height:1.4;margin:0 6px;color:#234d78;white-space:nowrap;}
     tr[data-ap-weight-jump] {outline:3px solid #2563eb !important;outline-offset:-3px !important;}
-    @media print {[data-ap-owned="widget"],.ap-page-impact {display:none !important;} }
+    @media print {[data-ap-owned="widget"],.ap-page-impact,.ap-trend-prediction {display:none !important;} }
   `;
   document.head.append(pageStyle);
+  window.addEventListener('pagehide',clearTrendPredictions);
+  const trendPredictionEntries=new Map();
+  const trendIconSelector='.gradebook-trend-click-hint img, img[class*="gradebook-trend-"]';
+  function parseTrendForecast(text){
+    if(typeof text!=='string')return null;
+    const title=text.replace(/\u00a0/g,' ').trim();
+    const match=title.match(/^Forecasted value of\s+([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*%(?=\s|$)/i);
+    if(!match||!Number.isFinite(Number(match[1])))return null;
+    // The later percentage is a comparison average, not the forecast.
+    return {value:Number(match[1]),label:match[1]+'%',title};
+  }
+  function clearTrendPredictions(){
+    for(const entry of trendPredictionEntries.values())entry.badge.remove();
+    trendPredictionEntries.clear();
+  }
+  function refreshTrendPredictions(){
+    const seen=new Set();
+    if(db.settings.enabled&&db.settings.trendPredictions){
+      for(const icon of document.querySelectorAll(trendIconSelector)){
+        if(icon.closest('[data-ap-owned]'))continue;
+        const anchor=icon.closest('a.gradebook-trend-click-hint');
+        const parent=anchor||icon.parentElement;
+        if(!parent||(anchor&&anchor.querySelectorAll('img').length!==1))continue;
+        // Tooltip libraries may move the original title to a data attribute.
+        // If the available titles disagree, remove an earlier prediction.
+        const titles=['title','data-original-title','data-bs-original-title'].map(name=>icon.getAttribute(name)).filter(text=>text?.trim());
+        const forecasts=titles.map(parseTrendForecast),forecast=forecasts[0];
+        if(!forecast||forecasts.some(item=>!item||item.value!==forecast.value))continue;
+        seen.add(icon);
+        let entry=trendPredictionEntries.get(icon);
+        if(!entry){
+          entry={badge:el('span',null,{class:'ap-trend-prediction','data-ap-owned':'trend-prediction'})};
+          trendPredictionEntries.set(icon,entry);
+        }
+        const text='Predicted: '+forecast.label;
+        if(entry.badge.textContent!==text)entry.badge.textContent=text;
+        if(entry.badge.getAttribute('title')!==forecast.title)entry.badge.setAttribute('title',forecast.title);
+        if(entry.badge.previousSibling!==icon||entry.badge.parentElement!==parent)icon.after(entry.badge);
+      }
+    }
+    for(const [icon,entry]of trendPredictionEntries)if(!seen.has(icon)){
+      entry.badge.remove();trendPredictionEntries.delete(icon);
+    }
+  }
   function restoreTitle(title,original) {
     title.removeAttribute('data-ap-label');title.style.removeProperty('--ap-title-size');
     for (const name of ['title','aria-label']) original[name]===null?title.removeAttribute(name):title.setAttribute(name,original[name]);
@@ -2290,6 +2488,100 @@ const GradeDOM = (() => {
     if(nativeBanner.parentElement!==info.element.parentElement)info.element.before(nativeBanner);
     if(nativeBanner.textContent!==text)nativeBanner.textContent=text;
   }
+  function savedAssignmentWeightMatches(ref,assignment){
+    return ref && typeof ref==='object' && !Array.isArray(ref)
+      && ['id','name','category'].every(key=>typeof ref[key]==='string'&&ref[key].trim())
+      && (ref.dueDate==null || typeof ref.dueDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(ref.dueDate))
+      && ref.id===assignment.id && ref.name===assignment.name && ref.category===assignment.category
+      && (ref.dueDate??null)===(assignment.dueDate??null);
+  }
+  function applySavedAssignmentWeights(parsed,key){
+    if(!parsed.rules.averageMaximum)return;
+    const saved=profile().courses[key]?.assignmentWeights;
+    const rows=parsed.assignments;
+    for(const a of rows)a.multiplier=1;
+    const status={matched:0,pending:0,invalid:0};
+    if(saved===undefined){parsed.assignmentWeightStatus=status;return;}
+    if(!Array.isArray(saved)){status.invalid++;parsed.assignmentWeightStatus=status;return;}
+    const candidates=new Map();
+    for(const ref of saved){
+      const multiplier=GradeMath.parseNumber(ref?.multiplier);
+      if(multiplier===null || multiplier<=0){status.invalid++;continue;}
+      const matches=rows.filter(a=>savedAssignmentWeightMatches(ref,a));
+      if(matches.length!==1){status.pending++;continue;}
+      const list=candidates.get(matches[0])||[];
+      list.push(multiplier);candidates.set(matches[0],list);
+    }
+    for(const [assignment,multipliers] of candidates){
+      // Duplicate saved references are ambiguous, even if their values agree.
+      if(multipliers.length!==1){status.invalid+=multipliers.length;continue;}
+      assignment.multiplier=multipliers[0];status.matched++;
+    }
+    parsed.assignmentWeightStatus=status;
+  }
+  function buildSavedAssignmentWeightsUI(toolbar){
+    if(!gradeLab?.parsed.rules.averageMaximum)return;
+    const context=gradeLab,course=planningCourse(),rows=context.parsed.assignments;
+    const panel=el('details',null,{id:'ap-saved-assignment-weights',class:'ap-plan-section'});
+    panel.open=Boolean(context.baselineError);
+    const summary=el('summary','Saved assignment weights');summary.style.cursor='pointer';summary.style.fontWeight='600';
+    panel.append(summary,note('Set how many ordinary assignments each score counts as. A 3 / 4 score at 2× still stays 3 / 4; it contributes twice inside its category. These weights save for this course and apply to grade reconstruction and testing.'),
+      note('Saving a weight resets active hypothetical tests. Use the weight controls beside a score during grade testing for temporary changes instead.'));
+    const status=context.parsed.assignmentWeightStatus;
+    if(status?.pending || status?.invalid)panel.append(note(`${status.pending||0} saved weight(s) await an exact assignment match; ${status.invalid||0} invalid or ambiguous weight(s) are inactive. Matching uses the assignment ID, name, category, and due date.`));
+    const list=el('div',null,{class:'ap-saved-weight-list'});list.style.cssText='max-height:340px;overflow:auto;margin:10px 0;padding-right:4px;';
+    const message=note('','ap-plan-message');message.setAttribute('role','status');
+    function saveWeights(next,focusId){
+      if(gradeLab!==context)return;
+      const previous=course.assignmentWeights;
+      if(JSON.stringify(previous===undefined?[]:previous)===JSON.stringify(next)){message.textContent='This weight is already saved.';return;}
+      course.assignmentWeights=next;
+      if(!persist()){
+        if(previous===undefined)delete course.assignmentWeights;else course.assignmentWeights=previous;
+        message.textContent=storageError||'Could not save assignment weights. Your previous saved weights are unchanged.';return;
+      }
+      const scrollTop=list.scrollTop;
+      closeGradeLab();scan();
+      const reopened=document.getElementById('ap-saved-assignment-weights');
+      if(reopened){
+        reopened.open=true;
+        reopened.querySelector('.ap-saved-weight-list').scrollTop=scrollTop;
+        const focus=[...reopened.querySelectorAll('input[data-weight-assignment]')].find(n=>n.dataset.weightAssignment===focusId);
+        focus?.focus({preventScroll:true});
+      }
+    }
+    for(const a of rows){
+      const row=el('div');row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #e2e8f0;';
+      const label=el('div');label.style.cssText='flex:1 1 190px;min-width:0;overflow-wrap:anywhere;';
+      label.append(el('strong',a.name),note(a.category+(a.dueDate?' · '+a.dueDate:'')));row.append(label);
+      const controls=el('div');controls.style.cssText='display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
+      const amount=input(a.multiplier??1,'number');amount.min='0';amount.step='any';amount.style.cssText='width:76px;';
+      amount.setAttribute('data-weight-assignment',a.id);amount.setAttribute('aria-label',`How many assignments ${a.name} counts as`);
+      const countLabel=el('label');countLabel.style.cssText='display:flex;align-items:center;gap:5px;';countLabel.append(el('span','Counts as'),amount,el('span','×'));controls.append(countLabel);
+      const unique=rows.filter(other=>savedAssignmentWeightMatches(a,other)).length===1;
+      amount.disabled=!unique;
+      const saveValue=()=>{
+        if(gradeLab!==context)return;
+        const multiplier=GradeMath.parseNumber(amount.value);
+        const valid=multiplier!==null&&multiplier>0;
+        amount.setAttribute('aria-invalid',String(!valid));
+        if(!valid){message.textContent='Enter a positive number for Counts as, such as 1, 2, 3, or 1.5.';return;}
+        const previous=Array.isArray(course.assignmentWeights)?course.assignmentWeights:[];
+        const next=previous.filter(ref=>!savedAssignmentWeightMatches(ref,a));
+        if(multiplier!==1)next.push({id:a.id,name:a.name,category:a.category,dueDate:a.dueDate??null,multiplier});
+        saveWeights(next,a.id);
+      };
+      amount.addEventListener('change',saveValue);
+      for(const value of [1,2,3]){
+        const preset=button(value+'×',()=>{amount.value=String(value);saveValue();});preset.style.cssText='padding:4px 7px;';preset.disabled=!unique;
+        preset.setAttribute('aria-label',`${a.name}: count as ${value} assignment${value===1?'':'s'}`);controls.append(preset);
+      }
+      row.append(controls);if(!unique)row.append(note('This assignment reference is duplicated; its weight cannot be saved reliably.'));
+      list.append(row);
+    }
+    const reset=button('Reset saved weights to 1×',()=>saveWeights([],rows[0]?.id));
+    panel.append(list,reset,message);toolbar.append(panel);
+  }
   function refreshNativeDetails(){
     if(!db.settings.enabled){closeGradeLab();nativeBanner?.remove();nativeBanner=null;nativeStatus=null;clearWeightMapPage();clearCategorySpotlight();return;}
     const current=GradeDOM.currentCourse();
@@ -2319,6 +2611,7 @@ const GradeDOM = (() => {
     }
     nativePageState={key,table:info.element,partial,sourceRows,sourceText,waiting:false};
     if(parsed.rules.averageMaximum)courseFor({key,title:current.title,unit:'average'});
+    if(parsed.rules.averageMaximum)applySavedAssignmentWeights(parsed,key);
     refreshWeightMap(key,current,parsed,{partial});
     refreshCategorySpotlight(key,info,parsed);
     // Only the current native gradebook can receive labels or map jumps.
@@ -2337,7 +2630,7 @@ const GradeDOM = (() => {
       else{
         const count=annotate(GradeMath.impacts(checked.model.assignments,checked.model.rules),checked.model,key);
         labelCount=count;
-        impactText=`${count} assignment impact label${count===1?'':'s'} · estimates match Aeries totals`;
+        impactText=`${count} assignment impact label${count===1?'':'s'} · ${checked.rounding?'estimates; posted scores are rounded':'estimates match Aeries totals'}`;
       }
     }else clearImpactLabels();
     showNativeStatus(info,`${parsed.assignments.length} assignments read · ${impactText}`);
@@ -2348,6 +2641,10 @@ const GradeDOM = (() => {
   let gradeLab=null,gradeLabNextId=0;
   const labStyle=el('style',null,{'data-ap-owned':'lab-style'});
   labStyle.textContent=`
+    .ap-lab-weight{display:inline-flex!important;align-items:center;gap:4px;white-space:nowrap;margin:0!important;font:inherit!important}
+    .ap-lab-weight input{box-sizing:border-box!important;width:7ch!important;min-width:0!important;margin:0!important;padding:3px 5px!important;font:inherit!important;color:#453375!important;background:#faf7ff!important;border:1px solid #c4b5fd!important;border-radius:4px!important;height:auto!important}
+    .ap-lab-weight input[aria-invalid=true]{border-color:#b42318!important;background:#fff1f0!important}
+    .ap-lab-row-actions{flex-wrap:wrap;max-width:100%;white-space:normal!important}
     .ap-lab-assignment-toggle{display:block!important;margin:5px 0 0;text-align:inherit;line-height:1.4}
     .ap-lab-assignment-toggle button{font-family:inherit!important;font-size:11px!important;font-weight:400!important;line-height:1.4!important;padding:3px 7px!important;white-space:nowrap;color:#53667e;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer}
     .ap-lab-assignment-toggle button[aria-pressed=true]{color:#57428a;background:#f5f1ff;border-color:#c9bde2}
@@ -2448,7 +2745,7 @@ const GradeDOM = (() => {
   }
   function planningField(label,n){const l=field(label,n);l.className='ap-plan-field';return l;}
   function planningNumber(id){const n=input('','text');n.id=id;n.setAttribute('inputmode','decimal');n.autocomplete='off';return n;}
-  function planningRows(){return gradeLab.active?labModel().assignments:gradeLab.parsed.assignments.map(({id,name,category,earned,possible,included})=>({id,name,category,earned,possible,included}));}
+  function planningRows(){return gradeLab.active?labModel().assignments:gradeLab.parsed.assignments.map(({id,name,category,earned,possible,included,multiplier=1,pointBounds})=>({id,name,category,earned,possible,included,multiplier,pointBounds}));}
   function planningRef(a){
     const ref={id:a.id,name:a.name,category:a.category,hypothetical:a.id.startsWith('hypothetical:')};
     if(ref.hypothetical)gradeLab.referenceBindings.set(ref,a.id);
@@ -2509,6 +2806,10 @@ const GradeDOM = (() => {
     const rows=gradeLab.parsed.assignments,rules=planningRules(rows);
     if(!rules.replacements.length&&!planningCourse().gradingRules)return gradeLab.baselineError;
     const checked=GradeMath.fromAeries(rows,rules,{partial:false});
+    if(!checked.error){
+      gradeLab.rounding=checked.rounding??null;
+      const note=gradeLab.toolbar.querySelector('.ap-lab-precision-note');if(note)note.hidden=!gradeLab.rounding;
+    }
     return checked.error?gradeLab.baselineError:'';
   }
   function planningTargetSignature(rows,rules){return JSON.stringify([rows,rules,planningBaselineError(),resolvePlanningRules(rows).pending]);}
@@ -2641,14 +2942,16 @@ const GradeDOM = (() => {
     if(model.error||baselineError){ui.output.textContent='Hypothetical target unavailable: '+(model.error||baselineError);return;}
     const chosen=model.assignments.find(a=>a.id===ui.assignment.value);
     if(chosen?.id.startsWith('hypothetical:')&&(!chosen.name.trim()||!chosen.category)){ui.output.textContent='Give the hypothetical assignment a name and category before solving for its score.';return;}
-    const result=GradeMath.solveTarget(model.assignments,rules,{assignmentId:ui.assignment.value,target:desired===null?null:desired/(rules.averageMaximum||100)*100,maximumEarned:GradeMath.parseNumber(ui.maximum.value),step:GradeMath.parseNumber(ui.step.value)});
+    const searchAssignments=gradeLab.rounding?GradeMath.roundingEndpoint(model.assignments):model.assignments;
+    const result=GradeMath.solveTarget(searchAssignments,rules,{assignmentId:ui.assignment.value,target:desired===null?null:desired/(rules.averageMaximum||100)*100,maximumEarned:GradeMath.parseNumber(ui.maximum.value),step:GradeMath.parseNumber(ui.step.value)});
     if(result.status!=='solved'){
       ui.output.textContent=result.status==='unreachable'?'Hypothetical target is unreachable within the entered maximum and score increment.':'Hypothetical target unavailable: '+result.error;return;
     }
     const selected=model.assignments.find(a=>a.id===ui.assignment.value);
-    const candidate=model.assignments.map(a=>a.id===selected.id?{...a,earned:result.earned,included:true}:a);
+    const candidate=searchAssignments.map(a=>a.id===selected.id?{...a,earned:result.earned,included:true}:a);
     const calculated=GradeMath.calculate(candidate,rules),names=new Map(model.assignments.map(a=>[a.id,a.name]));
-    ui.output.textContent=`Hypothetical score needed: ${fmt(result.earned)} / ${fmt(selected.possible)} → course grade ${planningFormat(result.rawValue,rules,true)}. Includes the assessment itself and ${calculated.appliedReplacements.length} replacement${calculated.appliedReplacements.length===1?'':'s'} at this score.`;
+    ui.output.textContent=`${gradeLab.rounding?'Conservative hypothetical':'Hypothetical'} score needed: ${fmt(result.earned)} / ${fmt(selected.possible)} → course grade ${planningFormat(result.rawValue,rules,true)}. Includes the assessment itself and ${calculated.appliedReplacements.length} replacement${calculated.appliedReplacements.length===1?'':'s'} at this score.`;
+    if(gradeLab.rounding)ui.breakdown.append(note('Some original scores are available only rounded. This score meets the target at their lower rounding bounds; the exact minimum may be lower. No hidden assignment score has been inferred.'));
     ui.breakdown.append(el('strong','Hypothetical replacements at the required score'));
     if(!calculated.appliedReplacements.length)ui.breakdown.append(note(rules.replacements.length?'No earlier score is changed at this candidate score under the configured rules.':'No replacement rules are configured.'));
     for(const r of calculated.appliedReplacements)ui.breakdown.append(note(`${names.get(r.sourceId)} → ${names.get(r.targetId)}: ${fmt(r.originalEarned)} / ${fmt(r.possible)} becomes ${fmt(r.newEarned)} / ${fmt(r.possible)} (${fmt(r.newPercent)}%).`));
@@ -2688,16 +2991,22 @@ const GradeDOM = (() => {
     const upper=ranged&&range?range.highResult:null;
     const blocked=model.error||(active?planningBaselineError():postedCheck.error?gradeLab.baselineError:'');
     const error=model.error||scenario.error||result.error||(ranged?blocked:'');
-    const signature=JSON.stringify([active,model.assignments.map(({id,name,earned,possible,included,category})=>({id,name,earned,possible,included,category})),rules,result,upper,error,gradeLab.baselineError]);
+    const signature=JSON.stringify([active,model.assignments.map(({id,name,earned,possible,included,category,multiplier})=>({id,name,earned,possible,included,category,multiplier})),rules,result,upper,error,gradeLab.baselineError]);
     if(signature===gradeLab.explanationSignature)return;gradeLab.explanationSignature=signature;
     box.replaceChildren(el('h3',active?'Hypothetical grade explanation':'Posted grade explanation'));
     if(error){box.append(note('Grade explanation unavailable: '+error,'ap-plan-message'));return;}
     if(blocked)box.append(note('A complete matching total is unavailable: '+blocked,'ap-plan-message'));
     else if(ranged)box.append(note(`Hypothetical overall grade — lower bound: ${planningFormat(result.value,rules,true)}; upper bound: ${planningFormat(upper.value,rules,true)}. All counted ranges vary together; single scores stay fixed.`));
     else box.append(note((active?'Hypothetical calculated grade: ':'Reconstructed from Aeries scores: ')+planningFormat(result.value,rules,true)));
+    if(gradeLab.rounding)box.append(note('Some posted scores are rounded; reconstructed values are approximate. Target calculations use conservative lower rounding bounds.'));
     if(active&&planningCourse().gradingRules)box.append(note('Uses your saved course grading profile.'));
     else box.append(note('The calculation below shows the category weights and score limits in use.'));
     if(!active&&!postedCheck.error&&result.appliedReplacements.length)box.append(note('Your configured replacement rules reconcile the visible scores with Aeries’ posted totals.'));
+    const multiplied=result.effectiveAssignments.filter(a=>a.counted&&a.multiplier!==1);
+    if(multiplied.length){
+      box.append(el('h4','Assignment weights'));
+      for(const a of multiplied)box.append(note(`${a.name}: ${fmt(a.earned)} / ${fmt(a.possible)} × ${fmt(a.multiplier)} = ${fmt(a.countedEarned)} / ${fmt(a.countedPossible)} counted${ranged?' at the lower bound':''}.`));
+    }
     const table=el('table',null,{class:'ap-plan-table'}),head=el('thead'),hr=el('tr');
     const headings=ranged?['Category','Lower earned / possible','Upper earned / possible','Lower category grade','Upper category grade','Effective weight','Lower contribution','Upper contribution']:['Category','Earned / possible','Category grade','Effective weight','Contribution'];
     for(const text of headings)hr.append(el('th',text,{scope:'col'}));head.append(hr);table.append(head);
@@ -3012,8 +3321,9 @@ const GradeDOM = (() => {
     return checked.error.replace(/Impact estimates need/g,'Grade testing needs').replace(/impacts will appear/g,'totals will appear').replace(/to calculate impacts/g,'to calculate hypothetical totals');
   }
   function refreshGradeLab(info,key,current,parsed,checked,options){
-    const signature=JSON.stringify([profileKey(),key,options.partial,parsed.assignments.map(a=>[a.id,a.name,a.category,a.earned,a.possible,a.included,a.status,a.rawEarned,a.rawPossible]),parsed.rules]);
-    const same=gradeLab && gradeLab.signature===signature && gradeLab.info.element===info.element &&
+    const signature=JSON.stringify([profileKey(),key,options.partial,parsed.assignments.map(a=>[a.id,a.name,a.category,a.earned,a.possible,a.included,a.status,a.rawEarned,a.rawPossible,...(a.pointBounds?[a.pointBounds]:[])]),parsed.rules]);
+    const weightSignature=parsed.assignments.some(a=>(a.multiplier??1)!==1)?JSON.stringify(parsed.assignments.map(a=>[a.id,a.multiplier??1])):'';
+    const same=gradeLab && (gradeLab.weightSignature??'')===weightSignature && gradeLab.signature===signature && gradeLab.info.element===info.element &&
       [...gradeLab.overlays].every(([cell,saved])=>cell.isConnected && saved.original.parentNode===cell && saved.ui.parentNode===cell) &&
       parsed.assignments.every((a,i)=>a.sourceRow===gradeLab.parsed.assignments[i]?.sourceRow
         && (a.sourceRows||[]).length===(gradeLab.parsed.assignments[i]?.sourceRows||[]).length
@@ -3029,8 +3339,8 @@ const GradeDOM = (() => {
       closeGradeLab();
       const toolbar=el('section',null,{id:'ap-grade-lab','data-ap-owned':'grade-lab','aria-label':'Hypothetical grade testing'});
       labContain(toolbar);
-      gradeLab={signature,key,info,current,parsed,active:false,edits:new Map(),ranges:new Map(),added:[],overlays:new Map(),editors:new Map(),addedEditors:new Map(),assignmentButtons:new Map(),rowActions:[],badges:[],newBody:null,toolbar,
-        baselineError:labBaselineError(parsed,checked,options.partial),partial:options.partial,result:null};
+      gradeLab={signature,weightSignature,key,info,current,parsed,active:false,edits:new Map(),ranges:new Map(),added:[],overlays:new Map(),editors:new Map(),addedEditors:new Map(),assignmentButtons:new Map(),rowActions:[],badges:[],newBody:null,toolbar,
+        baselineError:labBaselineError(parsed,checked,options.partial),rounding:checked.rounding??null,partial:options.partial,result:null};
       const actions=el('div',null,{class:'ap-lab-actions'});
       const toggle=button('Start grade testing',()=>setGradeLabActive(!gradeLab.active));toggle.id='ap-lab-toggle';toggle.setAttribute('aria-pressed','false');
       const add=button('Add hypothetical assignment',()=>{if(!gradeLab.active)setGradeLabActive(true);addLabAssignment();});add.id='ap-lab-add';
@@ -3040,7 +3350,11 @@ const GradeDOM = (() => {
         el('p','',{id:'ap-lab-result','aria-live':'polite','aria-atomic':'true'}),
         el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in userscript-manager storage. Nothing is submitted to Aeries.'),
         el('p','Turn on Range to enter lower and upper bounds; multiple ranges update the combined grade. Percentage gradebooks allow # correct or Points; four-point gradebooks use Points. For a single score, edit Score or the available Complete fields. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; directly entered points are not deliberately rounded. For unequal question values, use raw marks.'));
+      const precisionNote=note('Some posted scores are rounded. Grade and impact estimates use displayed points; required-score results use the conservative lower bound allowed by those displays.');
+      precisionNote.classList.add('ap-lab-precision-note');precisionNote.hidden=!gradeLab.rounding;toolbar.append(precisionNote);
       info.element.before(toolbar);
+      if(parsed.rules.averageMaximum)buildSavedAssignmentWeightsUI(toolbar);
+      if(parsed.rules.averageMaximum)toolbar.append(note('During grade testing, Counts as changes an assignment’s weight without changing its /4 score. Use 2 for double weight, 3 for triple, or any positive decimal. Reset restores the saved weight.'));
       initPlanningUI();
     }else if(!gradeLab.toolbar.isConnected)info.element.before(gradeLab.toolbar);
     if(weightMapButton)weightMapButton.textContent=gradeLab.active?'Posted assignment weight map':'Assignment weight map';
@@ -3223,7 +3537,7 @@ const GradeDOM = (() => {
     // Complete 0 / total does not make an ungraded assignment a counted zero.
     // Posted point overrides remain authoritative; their raw equivalent is an estimate.
     const matches=a.earned===null||(converted&&!converted.error&&Math.abs(converted.earned-a.earned)<1e-9);
-    const draft={earned:a.earned===null?'':String(a.earned),possible:a.possible===null?'':String(a.possible),included:a.status!=='excluded',
+    const draft={earned:a.earned===null?'':String(a.earned),possible:a.possible===null?'':String(a.possible),multiplier:String(a.multiplier??1),included:a.status!=='excluded',
       scoreMode:rawPossible&&matches?'raw':'points',rawEarned,rawPossible,rawDerived:false};
     if(!average&&rawPossible&&!matches){
       const points=GradeMath.parseNumber(draft.earned),possible=GradeMath.parseNumber(draft.possible);
@@ -3253,6 +3567,7 @@ const GradeDOM = (() => {
   }
   function updateLabScoreDraft(draft,field,value){
     const next={...draft};
+    if(field==='multiplier')return {...next,multiplier:String(value??'')};
     if(!['earned','possible','rawEarned','rawPossible'].includes(field))return next;
     next[field]=String(value??'');
     const previous=GradeMath.parseNumber(draft[field]),entered=GradeMath.parseNumber(next[field]);
@@ -3297,22 +3612,27 @@ const GradeDOM = (() => {
     const possible=labField(draft.possible,'possible',`Score total for ${name}`);
     const rawEarned=labField(draft.rawEarned||'','rawEarned',`Number correct or raw score for ${name}`);
     const rawPossible=labField(draft.rawPossible||'','rawPossible',`Total questions or raw marks for ${name}`);
-    const controls={earned,possible,rawEarned,rawPossible};
+    const multiplier=labField(draft.multiplier??'1','multiplier',`Assignment weight for ${name}; counts as this many assignments`);
+    const controls={earned,possible,rawEarned,rawPossible,multiplier};
     for(const [key,node] of Object.entries(controls)){
       node.className='ap-lab-number'+(/Possible$|^possible$/.test(key)?' ap-lab-denominator':'');
       node.spellcheck=false;node.setAttribute('title',node.getAttribute('aria-label'));
     }
     rawPossible.placeholder='?';
+    multiplier.className='ap-lab-multiplier';
+    const weightControl=el('label',null,{class:'ap-lab-weight'});
+    weightControl.append(el('span','Counts as'),multiplier,el('span','×'));
+    weightControl.hidden=!average;labContain(weightControl);
     score.append(earned,el('span','/',{'aria-hidden':'true'}),possible);
     raw.append(rawEarned,el('span','/',{'aria-hidden':'true'}),rawPossible);
     labContain(score);labContain(raw);
     if(average){possible.readOnly=true;raw.hidden=true;}
-    const c={score,raw,...controls};
+    const c={score,raw,weightControl,...controls};
     let current={...draft},editingField='';
     c.sync=next=>{
       current={...next};
       const rawNumber=GradeMath.parseNumber(next.rawEarned);
-      const values={earned:next.earned,possible:next.possible,rawPossible:next.rawPossible||'',
+      const values={earned:next.earned,possible:next.possible,multiplier:next.multiplier??'1',rawPossible:next.rawPossible||'',
         rawEarned:next.rawDerived&&rawNumber!==null&&editingField!=='rawEarned'&&document.activeElement!==rawEarned?fmt(rawNumber):next.rawEarned||''};
       // Keep the active input node and typed string intact, including partial
       // decimals. Changing a partner never feeds its display rounding back.
@@ -3321,6 +3641,10 @@ const GradeDOM = (() => {
         sizeLabNumberInput(node);
       }
       const state=labScoreState(next),fromRaw=next.scoreMode==='raw';
+      const weight=GradeMath.parseNumber(next.multiplier??1);
+      multiplier.setAttribute('aria-invalid',String(!(weight>0)));
+      weightControl.title=!(weight>0)?'Enter a positive weight, such as 1, 2, 3, or 0.5. Use Count to exclude an assignment.':
+        `Counts as ${fmt(weight)} assignments inside its category. The score stays out of ${fmt(state.possible)}. Weight applies after any replacement or score limits, including range endpoints. This test weight resets when grade testing ends.`;
       earned.setAttribute('aria-invalid',String(!fromRaw&&state.invalidEarned));
       rawEarned.setAttribute('aria-invalid',String(fromRaw&&state.invalidEarned));
       possible.setAttribute('aria-invalid',String(state.invalidPossible));
@@ -3352,6 +3676,7 @@ const GradeDOM = (() => {
           syncLabEditors(a.id);renderGradeLabResult();
         };
         const c=buildLabScoreControls(draft,a.name,update,Boolean(gradeLab.parsed.rules.averageMaximum));
+        if(gradeLab.parsed.rules.averageMaximum)actions.prepend(c.weightControl);
         const range=buildLabRangeControls(a.id,a.name,()=>{syncLabEditors(a.id);renderGradeLabResult();});
         connectLabRangeControls(c,range);actions.append(range.toggle);
         c.score.dataset.assignmentId=a.id;c.raw.dataset.assignmentId=a.id;
@@ -3419,7 +3744,7 @@ const GradeDOM = (() => {
   }
   function addLabAssignment(){
     const categories=labCategories(),average=gradeLab.parsed.rules.averageMaximum;
-    const a={id:'hypothetical:'+ ++gradeLabNextId,name:'',category:'',earned:'',possible:average?String(average):'',included:true,scoreMode:'points',rawEarned:'',rawPossible:''};
+    const a={id:'hypothetical:'+ ++gradeLabNextId,name:'',category:'',earned:'',possible:average?String(average):'',multiplier:'1',included:true,scoreMode:'points',rawEarned:'',rawPossible:''};
     gradeLab.added.push(a);
     if(!gradeLab.newBody){gradeLab.newBody=el('tbody',null,{'data-ap-owned':'lab-assignments'});gradeLab.info.element.append(gradeLab.newBody);}
     const row=el('tr',null,{class:'ap-lab-new-row','data-assignment-id':a.id,'data-ap-owned':'lab-assignment'});
@@ -3441,6 +3766,7 @@ const GradeDOM = (() => {
     const count=el('label');count.append(included,el('span','Count'));
     const remove=button('Remove',()=>{gradeLab.added=gradeLab.added.filter(item=>item!==a);gradeLab.ranges.delete(a.id);gradeLab.addedEditors.delete(a.id);row.remove();renderGradeLabResult();},'ap-lab-remove');remove.setAttribute('aria-label','Remove hypothetical assignment');
     const actions=el('span',null,{class:'ap-lab-row-actions'});actions.append(count,remove,range.toggle);
+    if(average)actions.prepend(scoreControls.weightControl);
     heading.append(name,labTag(),actions);
     main.append(heading,categoryLine,el('p','Supply a name, category, and positive score total; enter a score or enable Range. Count must be checked for the assignment to contribute.',{class:'ap-lab-new-help'}));
     const scoreField=(label,pair)=>{
@@ -3462,22 +3788,24 @@ const GradeDOM = (() => {
   function labModel(){
     const assignments=[],errors=[];
     const convert=(a,draft)=>{
+      const multiplier=GradeMath.parseNumber(draft.multiplier??1);
+      if(draft.included!==false && !(multiplier>0))errors.push(`“${a.name||'New assignment'}”: enter a positive assignment weight.`);
       const range=gradeLab.ranges.get(a.id);
       if(range && draft.included){
         const state=labRangeState(range,draft),earned=state.low.earned,possible=state.possible;
         if(state.error)errors.push(`“${a.name||'New assignment'}”: ${state.error}`);
         if(a.id.startsWith('hypothetical:')&&(!a.name.trim()||!a.category))errors.push('Give each ranged hypothetical assignment a name and category.');
-        return {id:a.id,name:a.name,category:a.category,earned,possible,included:true};
+        return {id:a.id,name:a.name,category:a.category,earned,possible,included:true,multiplier};
       }
       const state=labScoreState(draft),{earned,possible}=state;
       if(draft.included!==false&&a.id.startsWith('hypothetical:')&&earned!==null&&(!a.name.trim()||!a.category))errors.push('Give each scored hypothetical assignment a name and category.');
       if(state.error)errors.push(`“${a.name||'New assignment'}”: ${state.error}`);
       // Blank scores do not create an active category or an invalid denominator.
-      return {id:a.id,name:a.name,category:a.category,earned,possible,included:draft.included&&earned!==null};
+      return {id:a.id,name:a.name,category:a.category,earned,possible,included:draft.included&&earned!==null,multiplier};
     };
     for(const a of gradeLab.parsed.assignments){
       const draft=gradeLab.edits.get(a.id)||(gradeLab.ranges.has(a.id)?labDraft(a):null);
-      assignments.push(draft?convert(a,draft):{id:a.id,name:a.name,category:a.category,earned:a.earned,possible:a.possible,included:a.included});
+      assignments.push(draft?convert(a,draft):{id:a.id,name:a.name,category:a.category,earned:a.earned,possible:a.possible,included:a.included,multiplier:a.multiplier??1,pointBounds:a.pointBounds});
     }
     for(const a of gradeLab.added)assignments.push(convert(a,a));
     return {assignments,error:errors[0]||''};
@@ -3527,7 +3855,8 @@ const GradeDOM = (() => {
     const postedText=posted===null?'—':fmt(posted)+(gradeLab.parsed.rules.officialUnit==='average'?' / '+fmt(gradeLab.parsed.rules.averageMaximum||4):'%');
     gradeLab.toolbar.querySelector('#ap-lab-result').textContent=error?'Hypothetical total unavailable: '+error:ranged?
       `Hypothetical overall grade — lower bound: ${planningFormat(result.value,rules,true)} · upper bound: ${planningFormat(upper.value,rules,true)} · Posted: ${postedText} · ${range.rangeCount} assignment range${range.rangeCount===1?'':'s'}`:
-      `Hypothetical overall grade: ${planningFormat(result.value,rules,true)} · Posted: ${postedText} · ${count} hypothetical score change${count===1?'':'s'} · ${result.appliedReplacements.length} replacement${result.appliedReplacements.length===1?'':'s'}`;
+      `Hypothetical overall grade: ${planningFormat(result.value,rules,true)} · Posted: ${postedText} · ${count} hypothetical assignment change${count===1?'':'s'} · ${result.appliedReplacements.length} replacement${result.appliedReplacements.length===1?'':'s'}`;
+    if(!error&&gradeLab.rounding)gradeLab.toolbar.querySelector('#ap-lab-result').textContent+=' · Approximate: some posted scores are rounded.';
     for(const badge of gradeLab.badges)badge.remove();gradeLab.badges=[];
     for(const a of gradeLab.parsed.assignments){
       const modeled=lowAssignments.get(a.id),high=highAssignments.get(a.id),edited=gradeLab.edits.has(a.id)||gradeLab.ranges?.has(a.id);
@@ -4181,6 +4510,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     renderGradeLabResult();
     cards=db.settings.enabled?GradeDOM.readCards():[];
     refreshDashboardGrades();
+    refreshTrendPredictions();
     refreshSchedule();
     refreshOverallGrade();
     prunePageDecorations();
@@ -4290,18 +4620,20 @@ window.addEventListener('pagehide',abortScheduleRequests);
       if(ungraded){ungradedCount++;if(!showUngraded)continue;}
       const category=typeof a.category==='string'&&a.category.trim()?a.category.trim():'Uncategorized';
       const possible=GradeMath.parseNumber(a.possible),earned=ungraded?null:GradeMath.parseNumber(a.earned);
+      const multiplier=GradeMath.parseNumber(a.multiplier??1),weightedPossible=possible*multiplier;
       const weight=rules.mode==='weighted'?(Object.hasOwn(rules.weights||{},category)?GradeMath.parseNumber(rules.weights[category]):null):0;
       const weightUnavailable=possible===null||possible<=0?'Positive possible points unavailable':
+        !(multiplier>0)||!Number.isFinite(weightedPossible)||weightedPossible<=0?'Positive assignment weight unavailable':
         rules.mode==='weighted'&&(weight===null||weight<0)?'Category weight unavailable':'';
       if(!weightUnavailable){
         const subtotal=categories.get(category)||{possible:0,weight};
-        subtotal.possible+=possible;categories.set(category,subtotal);
+        subtotal.possible+=weightedPossible;categories.set(category,subtotal);
       }
       const percent=ungraded?null:earned/possible*100;
       if(!ungraded&&!Number.isFinite(percent))return fail('An assignment score is too large to display reliably in the weight map.');
       const id=String(a.id).trim();
       entries.push({id,name:typeof a.name==='string'&&a.name.trim()?a.name.trim():id,
-        number:id.replace(/^aeries:/,''),category,earned,possible,ungraded,weightUnavailable,
+        number:id.replace(/^aeries:/,''),category,earned,possible,multiplier,weightedPossible,ungraded,weightUnavailable,
         share:null,weight:null,percent,categoryShare:null,categoryPossible:null});
     }
     if(!entries.length)return fail('No assignments to show. Explicitly excluded assignments stay out of the weight map.');
@@ -4312,7 +4644,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
       if(entry.weightUnavailable)continue;
       const subtotal=categories.get(entry.category);
       const categoryShare=rules.mode==='weighted'?(activeWeight>0?subtotal.weight/activeWeight:0):subtotal.possible/totalPossible;
-      const share=categoryShare*(entry.possible/subtotal.possible);
+      const share=categoryShare*(entry.weightedPossible/subtotal.possible);
       if(share<0||!Number.isFinite(share))return fail('The assignment weights could not be determined.');
       Object.assign(entry,{share,weight:share*100,categoryShare,categoryPossible:subtotal.possible});
     }
@@ -4474,8 +4806,9 @@ window.addEventListener('pagehide',abortScheduleRequests);
       detailText.replaceChildren(el('strong',e.name),el('div',e.category+' · '+scoreText(e)));
       detailText.append(el('p',weightText(e)));
       if(e.weightUnavailable)detailText.append(note('This assignment stays outside the preview denominators until Aeries provides positive possible points and, in a weighted class, a valid category weight. A known 0% category remains listed without a circle.'));
-      else if(state.rules.mode==='weighted')detailText.append(note(weightPercent(e.categoryShare*100)+(state.preview?' preview':' active')+' category share × '+GradeMath.format(e.possible,4)+' / '+GradeMath.format(e.categoryPossible,4)+(state.preview?' preview':' counted')+' category points'));
-      else detailText.append(note(GradeMath.format(e.possible,4)+' / '+GradeMath.format(state.totalPossible,4)+(state.preview?' preview':' counted')+' points'));
+      else if(state.rules.mode==='weighted')detailText.append(note(weightPercent(e.categoryShare*100)+(state.preview?' preview':' active')+' category share × '+GradeMath.format(e.weightedPossible,4)+' / '+GradeMath.format(e.categoryPossible,4)+(state.preview?' preview':' counted')+' category points'));
+      else detailText.append(note(GradeMath.format(e.weightedPossible,4)+' / '+GradeMath.format(state.totalPossible,4)+(state.preview?' preview':' counted')+' points'));
+      if(e.multiplier!==1)detailText.append(note(`Counts as ${GradeMath.format(e.multiplier)} assignments: ${GradeMath.format(e.possible)} possible points × ${GradeMath.format(e.multiplier)} = ${GradeMath.format(e.weightedPossible)} weighted points.`));
       if(e.ungraded)detailText.append(note('No grade is assigned to this work in the map. It is not counted as a zero.'));
     };
     const select=e=>{
@@ -4830,7 +5163,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
   function renderSettings(){
     content.append(el('h2','Make it yours'));
     const draft=clone(db.settings),toggles={},grid=el('div',null,{class:'ap-grid'}),box=el('div',null,{class:'ap-box'});
-    for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
+    for(const [key,label] of Object.entries({enabled:'Enable Playground',dashboardColors:'Dashboard grade colors',numericGrades:'Show 4/3/2/1 on dashboard',overallGrade:'Overall grade / GPA above classes',trendPredictions:'Show regression predictions',nextClass:'What class is next (MVHS)',nicknames:'Course nicknames & icons',bars:'Grade progress bars',detailsColors:'Grade colors on details page',impacts:'Assignment impact labels on the page',precise:'Ridiculously precise mode',categorySpotlight:'Category filter on gradebook pages',weightMap:'Assignment weight map'})){
       const n=input('', 'checkbox');n.checked=draft[key];toggles[key]=n;n.addEventListener('change',()=>setToggle(key,n.checked));const l=el('label',null,{class:'ap-toggle'});l.append(n,el('span',label));box.append(l);
       if(key==='nextClass'){
         const explanation=note('Off by default. Turning this on allows public schedule and clock requests to mvhs.io’s Firebase service and bell.plus. No grades or course data are sent; these services can see your IP address. Turning it off requests cancellation and ignores late responses in this tab. Reload other Aeries tabs promptly; they keep old settings and can continue requests or save the old opt-in again.');
@@ -4888,6 +5221,7 @@ window.addEventListener('pagehide',abortScheduleRequests);
     if(target?.closest('[data-ap-owned]'))return false;
     if(m.type==='childList'&&[...m.addedNodes,...m.removedNodes].length&&[...m.addedNodes,...m.removedNodes].every(n=>n.nodeType===Node.ELEMENT_NODE&&n.matches?.('[data-ap-owned]')))return false;
     if(m.type==='attributes'){
+      if(target?.matches('.gradebook-trend-click-hint img, img[class*="gradebook-trend-"]') || target?.nextElementSibling?.matches?.('[data-ap-owned="trend-prediction"]') || target?.matches('a.gradebook-trend-click-hint'))return true;
       if(target?.matches('.classesSection') || target?.querySelector('.classesSection'))return true;
       if(!target?.closest('.classesSection'))return false;
       if(m.attributeName!=='style')return true;
@@ -4898,11 +5232,11 @@ window.addEventListener('pagehide',abortScheduleRequests);
         previous.style.getPropertyValue(property)!==target.style.getPropertyValue(property)
         || previous.style.getPropertyPriority(property)!==target.style.getPropertyPriority(property));
     }
-    const tracked='.classesSection,table,select[id$="_dlGN"],input[id$="_chkMissingAssignmentOnly"]';
+    const tracked='.classesSection,.classSummaryContainer,#gridClasses,.gradebook-trend-click-hint,table,select[id$="_dlGN"],input[id$="_chkMissingAssignmentOnly"]';
     return Boolean(target?.closest(tracked) || [...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===Node.ELEMENT_NODE&&(n.matches?.(tracked)||n.querySelector?.(tracked))));
   }
   const observer=new MutationObserver(mutations=>{if(mutations.some(pageMutationRelevant))scheduleScan();});
-  const observerOptions={childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true,attributeFilter:['class','style','hidden','aria-expanded']};
+  const observerOptions={childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true,attributeFilter:['class','style','hidden','aria-expanded','title','data-original-title','data-bs-original-title']};
   observer.observe(document.body,observerOptions);
   window.addEventListener('resize',scheduleScan);
   document.addEventListener('change',scheduleScan);

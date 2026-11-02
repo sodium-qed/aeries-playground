@@ -2,7 +2,7 @@
 
 Aeries Playground reads the Aeries page available to the signed-in user and changes its local display. Grade calculations run in the browser; this source does not submit grades or account-setting changes to Aeries. Public schedules and KBAR playback are optional external connections. Saved configuration can reveal school, course, and assignment information even though current features do not save posted or hypothetical score values.
 
-This policy describes the **3.0.0 stable source** in [aeries-playground.user.js](aeries-playground.user.js). Stable publication and the exact source/asset were verified on October 26, 2026. Older tagged files can behave differently. Use the [feature guide](docs/FEATURES.md) to choose a published download, and review the actual file you install. A version label, static check, or AI review is not a security certification.
+The public baseline for this policy is **3.0.0 stable**, whose publication and exact source/asset were verified on October 26, 2026. The [planned 3.1.0 additions](#planned-310-merge-additions) below describe the Developer/public integration candidate; they do not announce a published release. A moving [userscript](aeries-playground.user.js) and older tagged files can behave differently. Use the [feature guide](docs/FEATURES.md) to choose a published download, and review the actual file you install. A version label, static check, or AI review is not a security certification.
 
 **Found a possible vulnerability?** Use [private reporting](#report-a-vulnerability-privately). For controls, start below; for the data retained after a visit, see [saved configuration](#saved-data-and-settings-profiles).
 
@@ -88,6 +88,20 @@ Aeries can embed more precise numeric scores than its table displays. For eligib
 School/student/person identity values and the embedded record collection are used in memory for matching. The adapter adds neither to configuration or external requests. Saved course keys can independently contain school/course identifiers. This reads data already in the page; it does not fetch additional records, authenticate the data, guarantee a match for every Aeries layout, or switch settings profiles.
 
 Copied HTML or page source can contain identifiers and records that are absent from a screenshot. Reproduce problems with invented page fixtures; do not share a real page export.
+
+## Planned 3.1.0 merge additions
+
+The [merge plan](docs/MERGE-PLAN.md) keeps the audited public edition as the integration base. The candidate adds these local behaviors without requesting new userscript grants or new external endpoints:
+
+| Addition | Data and privacy effect |
+| --- | --- |
+| **Saved assignment weights** for numeric `/4` gradebooks | Saves a positive multiplier with the assignment ID, name, category, and due date in the selected course/profile/year. These references can identify coursework. Posted and hypothetical scores are not part of the saved weight. |
+| Temporary **Counts as** in grade testing | Changes a scenario's multiplier in memory. Reset/exit/reload discards the temporary choice; it does not replace a saved weight. |
+| **Show regression predictions** | Saves a global display preference. Reads an existing native Aeries tooltip value and displays it beside the trend icon; it does not request, recalculate, or persist forecasts. |
+| Additional score-precision recovery | Reads matching assignment card/raw values already present in the loaded page, with identity, denominator, and displayed-value checks. It makes no additional Aeries request and saves neither recovered scores nor matching identifiers. |
+| Bounded rounding estimates | Uses display-derived uncertainty bounds in page memory. A labeled estimate is not an inferred hidden score, and those bounds are not saved. |
+
+Existing schedule opt-in, manual updates, storage-error protection, reset markers, and optional KBAR controls remain part of the integration. Forecast display does not enable schedules or music. See [migration and rollback](docs/SETTINGS.md#planned-310-migration-and-rollback) before replacing a Developer installation. Actual userscript-manager migration and signed-in Aeries behavior require separate verification; synthetic tests do not certify those environments.
 
 ## Optional public schedules
 

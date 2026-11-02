@@ -2,6 +2,8 @@
 
 Open Playground with **S** outside an editable control, or the manager's **Aeries Playground — open settings (S)** command. This guide explains which changes save, how to separate students and years, and how to pause, clear, or update the script. For using the features, see the [feature guide](FEATURES.md); for a failed save, see [troubleshooting](TROUBLESHOOTING.md#settings-do-not-survive-reload).
 
+The controls below describe the public 3.0.0 baseline. The Developer/public integration adds the separately marked [planned 3.1.0 settings](#planned-310-settings); those additions are not a claim that a new stable download has been published.
+
 ## Which save control do I use?
 
 | Where you edit | When it applies and saves | Before leaving the form |
@@ -138,3 +140,28 @@ Clearing configuration is not a routine troubleshooting step. It does not delete
 The source uses `@downloadURL none`. A fresh Tampermonkey setup is configured for manual updates, but an existing installation can retain its previous update preference; other managers may differ. Updating does not erase saved configuration. Current scores/ranges are temporary, so reload ends that scenario.
 
 For installation-specific browser/manager instructions, return to the [README](../README.md). Use [Troubleshooting](TROUBLESHOOTING.md) if the expected controls still do not appear.
+
+## Planned 3.1.0 settings
+
+The [Developer/public merge](MERGE-PLAN.md) prepares one maintained edition with these additional controls:
+
+| Control | Scope and save behavior |
+| --- | --- |
+| **Show regression predictions** in Settings | Global toggle, initially on when no preference exists. Applies and attempts to save immediately. It displays the native tooltip forecast without recalculating or saving that forecast. |
+| **Saved assignment weights** in a recognized numeric `/4` gradebook | Positive **Counts as** values save per course/profile/year, with the assignment's ID, name, category, and due date. Saving rebuilds the baseline and resets active hypothetical testing. |
+| **Counts as** beside a score during grade testing | Temporary multiplier, including for a hypothetical assignment. Reset returns to the saved/default multiplier; exit/reload discards the temporary change. |
+
+The ordinary multiplier is **1×**. A **3/4** score at **2×** remains **3/4** and contributes twice within its category. This does not change an Aeries score or the category's percentage weight. Use **Reset saved weights to 1×** to remove this course's saved overrides; use scenario reset for temporary tests. Neither action requires clearing all Playground settings.
+
+An exact, unique assignment reference is required before a saved weight applies. Missing matches remain inactive until a matching assignment appears; conflicting or invalid references must be reviewed. See [weight troubleshooting](TROUBLESHOOTING.md#planned-310-weights-and-predictions) and the [calculation example](CALCULATIONS.md#planned-310-assignment-multipliers).
+
+## Planned 3.1.0 migration and rollback
+
+The integration is designed to retain the existing `Aeries Playground` name, `local.aeries-playground` namespace, `aeries-playground-v1` storage key, and schema version 1. This supports replacing an existing public or Developer script in the same manager identity; it does not promise automatic transfer between separately installed scripts, browser profiles, devices, or managers.
+
+1. Close other Aeries tabs. If preserving a local manager backup, keep it private: configuration can contain course and assignment references.
+2. Review the complete candidate or verified release and replace the existing script's contents, including the metadata. Keep only one copy enabled. Do not clear settings as an upgrade step.
+3. Reload Aeries, confirm the intended profile/year, and inspect save/recovery messages. Check course policies, saved weights, forecast preference, and the schedule opt-in before relying on calculations.
+4. Check the manager's update preference. Updates remain manual for a fresh Tampermonkey installation; existing manager choices can differ. No new schedule consent is inferred from an older enabled widget.
+
+If the candidate misbehaves, disable it and reload to recover native Aeries first. The preserved [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) remains a known public source for rollback. Its code does not implement the new controls, and an older version can discard unrecognized preferences when it saves. Review compatibility and use a private pre-upgrade manager backup if needed; do not assume downgrading preserves every new setting. Do not overwrite newer public fixes with the older Developer build as a routine rollback. Actual manager migration and browser rendering remain unverified until tested in that environment.
