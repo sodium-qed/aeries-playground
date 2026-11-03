@@ -19,7 +19,9 @@ function fixture() {
         setAttribute(name, value) { this.attrs[name] = value; },
         remove() { this.parentElement = null; this.previousSibling = null; } };
     } });
-  vm.runInContext(source.slice(first, last) + '\nglobalThis.api={parseTrendForecast,refreshTrendPredictions,clearTrendPredictions,trendPredictionEntries};', context);
+  const helpersStart=source.indexOf('  function bonusCutoff('),helpersEnd=source.indexOf('  function cutoffs(',helpersStart);
+  assert.ok(helpersStart>=0&&helpersEnd>helpersStart);
+  vm.runInContext(source.slice(helpersStart,helpersEnd)+source.slice(first, last) + '\nglobalThis.api={parseTrendForecast,refreshTrendPredictions,clearTrendPredictions,trendPredictionEntries};', context);
   function icon(attributes = {}) {
     const parent = { querySelectorAll: () => [node] };
     const node = { attributes: { ...attributes }, parentElement: parent,
@@ -83,6 +85,23 @@ test('forecast decorations clean up on disabled settings, detached icons, and pa
   f.settings.enabled = false;
   f.refreshTrendPredictions();
   assert.equal(f.trendPredictionEntries.size, 0);
+});
+
+test('forecast bonus color follows the strict percentage threshold and the dashboard color preference', () => {
+  const f=fixture();
+  Object.assign(f.settings,{dashboardColors:true,bonusPercentCutoff:100,bonusColor:'#7c3aed'});
+  const icon=f.icon({title:'Forecasted value of 100%'});
+  f.refreshTrendPredictions();
+  const badge=f.trendPredictionEntries.get(icon).badge;
+  assert.doesNotMatch(badge.getAttribute('style')||'',/#7c3aed/i);
+  icon.attributes.title='Forecasted value of 100.001%';f.refreshTrendPredictions();
+  assert.match(badge.getAttribute('style'),/#7c3aed/i);
+  f.settings.bonusColor='#9234ab';f.refreshTrendPredictions();
+  assert.match(badge.getAttribute('style'),/#9234ab/i);
+  f.settings.bonusPercentCutoff=101;f.refreshTrendPredictions();
+  assert.doesNotMatch(badge.getAttribute('style'),/#9234ab/i);
+  f.settings.bonusPercentCutoff=100;f.settings.dashboardColors=false;f.refreshTrendPredictions();
+  assert.doesNotMatch(badge.getAttribute('style'),/#9234ab|#7c3aed/i);
 });
 
 test('tooltip mutations schedule a refresh while unrelated title changes remain irrelevant', () => {
