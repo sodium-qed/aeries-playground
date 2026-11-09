@@ -1,6 +1,6 @@
 # Developer and public edition merge
 
-> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
 
 The supplied Developer **2.X** build and public **3.0.0** edition were unified as the **3.1.0 prerelease**. **3.0.0 remains stable Latest.** The completion evidence below is current; the original schedule, preparation counts, and execution instructions remain preserved as a historical record.
 

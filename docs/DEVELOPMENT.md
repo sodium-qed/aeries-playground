@@ -1,6 +1,6 @@
 # Developing Aeries Playground
 
-> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
 
 Start with [Contributing](../CONTRIBUTING.md) for suggestions, bug reports, or a first documentation edit. This guide is for a local working copy and changes that need more detailed verification. Check the [README maintenance notice](../README.md) before making commits; already scheduled maintenance is exempt from the contributor pause.
 
@@ -109,8 +109,8 @@ Choose the relevant checks below. Record the input and rules, expected result, o
 
 - Cover A/B/C/D/F, plus/minus marks, mixed Honors/AP choices, unchecked/excluded courses, duplicate course identities, and empty/non-A–F input. F counts as zero. Five included, Honors/AP-selected A/B/C/D/F courses yield unweighted **2.00** and weighted **2.60**; D/F receive no bonus.
 - Check default-off Honors/AP selections, both editing locations, **Save course settings** versus immediate detail-panel saves, reload, manual profile/year separation, and reset. Formula checks alone do not verify saving or controls.
-- For the separate planned **3.1.1** configurable **5 · bonus band**, cover values below, exactly at, and above both global cutoffs; defaults 100% and average 4 use strict `>`. Check custom color/cutoff persistence, preserved older four-color/three-cutoff settings, ordinary course overrides, numeric averages containing a 5, each color toggle with numeric mode off, and unchanged letter-based GPA.
-- Keep the planned 3.1.1 numeric **5/4/3/2/1** mode separate from letter GPA; the November 1 integration retains its original four-band mode. Check course thresholds, boundary values, the average itself, and its color threshold. Unsupported letters or unavailable scores must not silently become a counted zero.
+- For the **3.1.1** configurable **5 · bonus band**, cover values below, exactly at, and above both global cutoffs; defaults 100% and average 4 use strict `>`. Check custom color/cutoff persistence, preserved older four-color/three-cutoff settings, ordinary course overrides, numeric averages containing a 5, each color toggle with numeric mode off, and unchanged letter-based GPA.
+- Keep the 3.1.1 numeric **5/4/3/2/1** mode separate from letter GPA; the November 1 integration retains its original four-band mode. Check course thresholds, boundary values, the average itself, and its color threshold. Unsupported letters or unavailable scores must not silently become a counted zero.
 
 ### Public schedules and clocks
 
@@ -161,11 +161,9 @@ The publisher refuses to replace another release's Latest selection when it obse
 
 Review triggers and guards before changing publication code. Documentation work must not create, move, replace, or republish tags or assets, or weaken checks to make a documentation run pass. Comment and line-ending edits change a file's hash. Do not use an earlier asset's fingerprint or verification as evidence for a future release. Preserve newer fixes already on `main`, including the KBAR Settings fallback. If page access, permissions, storage, external requests, updates, or safeguards change, update the opening source explanation and affected guides together.
 
-### Separate planned 3.1.1 publication
+### Verified 3.1.1 prerelease
 
-The publication descriptions above retain the November 1 **3.1.0** preparation and recovery record. The configurable bonus band is a separate **3.1.1** follow-up, planned for **November 8, 2026 at 11:59 p.m. America/Los_Angeles (PST)**, or **November 9 at 07:59 UTC**. It must not change that earlier candidate, tag, asset, or scheduled merge.
-
-Prepare a distinct 3.1.1 candidate and [release notes](RELEASE-3.1.1.md), freeze its own source fingerprint after all edits, and configure its publisher for tag `v3.1.1`, title `Aeries Playground 3.1.1`, and not-before time `2026-11-09T07:59:00Z`. Verify the earlier `v3.1.0` stable publication before using it as the predecessor. Preserve the same exact-source, test, tag, asset, Latest, and recovery safeguards; never repurpose the 3.1.0 fingerprint or move its tag. The future schedule and branch do not establish either release's availability today.
+The [publication workflow](https://github.com/sodium-qed/aeries-playground/actions/runs/42589547347) validated the exact [PR #12 merge](https://github.com/sodium-qed/aeries-playground/commit/ad676a3673a714b716e078e8e0b7edc07ce502ce) and downloaded the attached userscript to verify its size and SHA-256. The [release record](RELEASE-SCHEDULE.md) lists the fingerprint. Recover a transient publication failure by rerunning the original merge-triggered workflow. See the [frozen preparation notes](RELEASE-3.1.1.md) for the scope and live-testing limits.
 
 ## Prepare a pull request
 

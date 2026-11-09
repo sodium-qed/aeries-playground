@@ -17,7 +17,7 @@ Use these sections for the most common questions:
 - [Replacements](#replacement-rules), [required scores](#target-score-calculation), and [score ranges](#score-range-calculation)
 - [Why a calculation can be unavailable](#reconciliation-and-incomplete-data)
 
-This reference retains the public 3.0.0 calculation behavior, describes the prepared [3.1.0 integration additions](#planned-310-assignment-multipliers), and identifies the separate planned 3.1.1 bonus band. Check [release availability](FEATURES.md#available-release); a calculation description is not evidence of stable publication.
+This reference retains the public 3.0.0 calculation behavior, describes the prepared [3.1.0 integration additions](#planned-310-assignment-multipliers), and identifies the 3.1.1 bonus band. Check [release availability](FEATURES.md#available-release); a calculation description is not evidence of stable publication.
 
 ## Inputs and interpretation
 
@@ -231,7 +231,7 @@ For an unrounded average of **3.456/4**, two-place nearest and up rounding both 
 
 The dashboard summary uses currently visible course cards, with duplicate course identities counted once. It retains the first usable grade for the selected summary: a recognized letter for GPA or a numeric grade for ratings. A later usable card can replace an earlier blank or unreadable duplicate, while conflicting usable duplicates keep the first one. Included courses have equal weight. Saved courses that are not visible are not added to the calculation.
 
-In the separate **planned 3.1.1** source, **Show 5/4/3/2/1 on dashboard** first compares each posted numeric grade with the global bonus cutoff for its scale. Only a grade strictly above that cutoff receives 5. Otherwise, compare it with the course's three ordinary descending cutoffs:
+In the separate **3.1.1 prerelease**, **Show 5/4/3/2/1 on dashboard** first compares each posted numeric grade with the global bonus cutoff for its scale. Only a grade strictly above that cutoff receives 5. Otherwise, compare it with the course's three ordinary descending cutoffs:
 
 | Condition | Rating |
 | --- | --- |

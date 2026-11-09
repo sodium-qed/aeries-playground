@@ -1,6 +1,6 @@
 # Documentation
 
-> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
 
 Start with the [project README](../README.md) to install Aeries Playground and try a gradebook. The guides here describe the **current source**; check [available downloads](FEATURES.md#available-release) if a control is missing from your installed copy.
 
@@ -14,7 +14,7 @@ The Developer and public editions are unified in the published **3.1.0 prereleas
 | --- | --- |
 | Install, update, pause, or remove the script | [README](../README.md#install) — download choices, setup, first use, and recovery controls. |
 | Find Settings, keyboard shortcuts, or a feature | [Feature guide](FEATURES.md#find-the-controls) — where each control appears and what it does. |
-| Preview the planned 3.1.1 bonus color and cutoffs | [5 · bonus band](FEATURES.md#bonus-band-planned-for-311) — a separate November 8 follow-up with global color and strict percentage/average boundaries; letter-based GPA is unchanged. |
+| Configure the 3.1.1 bonus color and cutoffs | [5 · bonus band](FEATURES.md#bonus-band-in-311) — the published prerelease uses global color and strict percentage/average boundaries; letter-based GPA is unchanged. |
 | Customize courses or understand the dashboard GPA | [Dashboard and course customization](FEATURES.md#dashboard-and-course-customization) — names, icons, periods, colors, ratings, and included courses. |
 | Compare assignment weights and impacts | [Assignment analysis](FEATURES.md#assignment-analysis) — category filtering, impact labels, the posted weight map, and ungraded previews. |
 | Try scores, ranges, future assignments, or a target grade | [Grade testing lab](FEATURES.md#grade-testing-lab) — temporary scenarios, grading profiles, targets, replacements, and explanations. |

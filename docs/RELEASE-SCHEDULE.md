@@ -11,7 +11,7 @@ The Developer/public integration and its bonus-band follow-up are **prereleases*
 
 Both dates use **America/Los_Angeles**. Daylight saving time ends earlier on November 1, so both scheduled times are Pacific Standard Time (UTC−08:00). The time starts execution; checks, merge processing, and asset verification can finish later. A failed check or changed candidate blocks the run rather than authorizing a substitute or an early publication.
 
-As of **October 31, 2026**, these are pending scheduled releases. The November 8 bonus-band change remains separate from the November 1 integration. Preparation branches, version metadata, and release notes do not establish publication. Use each release's verified outcome to determine whether it has completed.
+Both prereleases are published. The [3.1.0 merge result](MERGE-RESULT.md) records the first release. GitHub published [v3.1.1](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) on November 9, 2026 at 12:56:39 a.m. PST (2026-11-09T08:56:39Z). Its tag points to [merge commit ad676a3](https://github.com/sodium-qed/aeries-playground/commit/ad676a3673a714b716e078e8e0b7edc07ce502ce), whose second parent is the approved PR #12 head `8fad3af92e680e67d6872f52dc998cbfde14d7fc`. The [release workflow](https://github.com/sodium-qed/aeries-playground/actions/runs/42589547347) verified the [attached userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js), **383784 bytes**, SHA-256 `3920c6c72f6b0d4ddfac82dad5d6f3bb560510cfe1d1ed193d43e3bb28136c4b`.
 
 ## Execution
 
@@ -24,7 +24,7 @@ The accidental early `v3.1.0-preview.1` and `v3.1.1-preview.1` releases were wit
 
 ## Downloads and verification
 
-Use the [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) for **v3.0.0**. After a scheduled prerelease is verified, its specific release page and attached `aeries-playground.user.js` are the opt-in download. The moving `main` source can contain prerelease code and is not a stable-release shortcut. Keep only one installation enabled and follow the [upgrade guidance](MERGE-PLAN.md#upgrade-from-either-edition).
+Use the [stable Latest release](https://github.com/sodium-qed/aeries-playground/releases/latest) for **v3.0.0**. For the purple bonus band, download the verified v3.1.1 asset linked above. The moving `main` source can contain prerelease code and is not a stable-release shortcut. Keep only one installation enabled and follow the [upgrade guidance](MERGE-PLAN.md#upgrade-from-either-edition).
 
 At each scheduled publication, verify the approved candidate and resulting merge commit, the exact tag target, and the attached userscript's bytes, size, and SHA-256. The resulting release must be public with `draft: false`, **`prerelease: true`**, and **`make_latest: false`**; independently confirm that the stable Latest endpoint still selects **v3.0.0**. Do not move historical tags, replace conflicting assets, or promote either prerelease to Latest.
 

@@ -1,6 +1,6 @@
 # Feature guide
 
-> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
 
 Use Playground on a recognized Aeries dashboard or gradebook to customize the display, inspect assignment weights, and try possible scores. The changes are local: a hypothetical score never submits a grade or creates an assignment in Aeries.
 
@@ -23,9 +23,10 @@ This guide includes the published **3.1.0 unified prerelease**. See the [verifie
 
 | Download | What it selects |
 | --- | --- |
+| [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js) | Configurable purple score-5 band for grades above the bonus cutoff. |
 | [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) · [3.1.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.0/aeries-playground.user.js) | The verified unified prerelease artifact. |
 | [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The audited stable artifact, still selected as Latest. |
-| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the stable Latest release after 3.1.0 prerelease publication. |
+| [Latest stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the stable Latest release after both prereleases. |
 | [Main-branch userscript](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving repository source; later documentation edits do not replace tagged assets. |
 | [2.4.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v2.4.0) | The historical prerelease, preserved under its original tag. |
 
@@ -50,7 +51,7 @@ Do not install both editions simultaneously. Version **2.X** is a personal build
 
 ### Separate 3.1.1 bonus-band follow-up
 
-The configurable purple **5 · bonus band** is planned separately for **Sunday, November 8, 2026, at 11:59 p.m. America/Los_Angeles (PST)**, equivalent to **November 9 at 07:59 UTC**. It is not included in the November 1 **3.1.0** integration. The [bonus controls](#bonus-band-planned-for-311) below describe the future 3.1.1 source; public 3.0.0 and the prepared 3.1.0 source retain their original four bands. See [3.1.1 release notes](RELEASE-3.1.1.md) for scope and verification limits.
+The [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) adds the configurable purple **5 · bonus band**. The [bonus controls](#bonus-band-in-311) apply to numeric marks and colors. Versions 3.0.0 and 3.1.0 use four bands.
 
 <a id="weight-map-prerelease"></a>
 <a id="weighted-gpa-prerelease"></a>
@@ -106,13 +107,13 @@ Period matching uses the visible dashboard roster. A missing or duplicate match 
 
 ### Colors and 5/4/3/2/1 ratings
 
-The bonus row and five-band labels in this section apply to the **planned 3.1.1** source. The 3.1.0 integration remains unchanged and keeps **Show 4/3/2/1 on dashboard**.
+The bonus row and five-band labels in this section apply to the **3.1.1 prerelease**. The 3.1.0 integration remains unchanged and keeps **Show 4/3/2/1 on dashboard**.
 
 **Dashboard grade colors** and **Show 5/4/3/2/1 on dashboard** are separate Settings toggles. Numeric display replaces a recognized dashboard mark with a custom 5, 4, 3, 2, or 1 based on its numeric grade, the global bonus cutoff, and the course's ordinary cutoffs. Its posted percentage or average stays visible. Turn numeric display off to recover the original mark.
 
 These are unofficial ratings, not the teacher's A–F scale. The current replacement does not add a tooltip identifying the original letter; turn numeric display off when you need to inspect that letter. A card whose mark cannot be recognized may retain its native display.
 
-The planned 3.1.1 source has these global defaults:
+The 3.1.1 prerelease has these global defaults:
 
 | Rating | Percentage | Average points | Color |
 | --- | --- | --- | --- |
@@ -128,9 +129,11 @@ Set global colors and cutoffs in **Settings → Grade colors & thresholds**, the
 
 <a id="bonus-band-in-the-unified-source"></a>
 
-### Bonus band planned for 3.1.1
+<a id="bonus-band-planned-for-311"></a>
 
-The **5 · bonus band** row in **Settings → Grade colors & thresholds** has an editable color and separate **Percentage >** and **Average >** fields. Defaults are purple (`#7c3aed`), **100**, and **4**. Select **Save settings** to apply the row. Public 3.0.0 and the prepared 3.1.0 source have only the original four bands; this addition belongs to the separate planned 3.1.1 source.
+### Bonus band in 3.1.1
+
+The **5 · bonus band** row in **Settings → Grade colors & thresholds** has an editable color and separate **Percentage >** and **Average >** fields. Defaults are purple (`#7c3aed`), **100**, and **4**. Select **Save settings** to apply the row. Public 3.0.0 and the 3.1.0 prerelease have only the original four bands; this addition belongs to the 3.1.1 prerelease.
 
 The comparison is strictly greater than the configured cutoff. With defaults, **100%** uses ordinary band 4, while **100.01%** uses bonus band 5; **4** uses ordinary band 4, while **4.01** uses band 5. Custom ordinary cutoffs still determine the non-bonus rating. A course-specific threshold override does not replace the global bonus boundary.
 
@@ -446,7 +449,7 @@ Use the [settings guide](SETTINGS.md) for the full defaults, save behavior, and 
 
 ### Default toggles
 
-A new install of the planned 3.1.1 source enables the grade tools, colors, bars, overall summary, and precise formatting. Numeric 5/4/3/2/1 display, schedule access, and the map's ungraded preview start off. KBAR starts unloaded. See the [complete default table](SETTINGS.md#default-toggles).
+A new install of the 3.1.1 prerelease enables the grade tools, colors, bars, overall summary, and precise formatting. Numeric 5/4/3/2/1 display, schedule access, and the map's ungraded preview start off. KBAR starts unloaded. See the [complete default table](SETTINGS.md#default-toggles).
 
 ### What changes and what stays saved
 

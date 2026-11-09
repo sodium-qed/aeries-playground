@@ -6,7 +6,7 @@
 
 Open Playground with **S** outside an editable control, or the manager's **Aeries Playground — open settings (S)** command. This guide explains which changes save, how to separate students and years, and how to pause, clear, or update the script. For using the features, see the [feature guide](FEATURES.md); for a failed save, see [troubleshooting](TROUBLESHOOTING.md#settings-do-not-survive-reload).
 
-Most controls below are shared with public 3.0.0 and the prepared 3.1.0 integration. The bonus row and renamed **Show 5/4/3/2/1 on dashboard** toggle belong to the separate **planned 3.1.1** follow-up for November 8. Public 3.0.0 and the unchanged 3.1.0 candidate retain **Show 4/3/2/1 on dashboard**. The [3.1.0 settings additions](#planned-310-settings) remain separate; check [release availability](FEATURES.md#available-release) before expecting a new control.
+Most controls below are shared with public 3.0.0 and the 3.1.0 integration. The bonus row and renamed **Show 5/4/3/2/1 on dashboard** toggle belong to the **3.1.1 prerelease**. Public 3.0.0 and the 3.1.0 prerelease retain **Show 4/3/2/1 on dashboard**. The [3.1.0 settings additions](#planned-310-settings) remain separate; check [release availability](FEATURES.md#available-release) before expecting a new control.
 
 ## Which save control do I use?
 
@@ -33,7 +33,7 @@ These are fresh-install defaults, not a reset of an existing installation's choi
 | --- | --- | --- |
 | **Enable Playground** | On | Master pause for page enhancements and integrations |
 | **Dashboard grade colors** | On | Threshold colors for recognized dashboard titles/grades |
-| **Show 5/4/3/2/1 on dashboard** (planned 3.1.1) | Off | Custom numeric marks; also selects rating mode instead of letter-based GPA |
+| **Show 5/4/3/2/1 on dashboard** (3.1.1 prerelease) | Off | Custom numeric marks; also selects rating mode instead of letter-based GPA |
 | **Overall grade / GPA above classes** | On | Dashboard summary using visible, included courses |
 | **What class is next (MVHS)** | Off | Public schedule/clock access after explicit opt-in |
 | **Course nicknames & icons** | On | Customized dashboard course titles/icons; nickname use in the next-class panel |
@@ -53,7 +53,7 @@ Existing valid preferences are generally retained on upgrade. The source migrate
 
 ### Colors, thresholds, and precision
 
-In the planned 3.1.1 source, **Settings → Grade colors & thresholds** has a separate **5 · bonus band** row above the original four colors and three descending nonnegative cutoffs. Set the bonus color, **Percentage >**, and **Average >**, then select **Save settings**. These form edits are not saved until that button succeeds.
+In the 3.1.1 prerelease, **Settings → Grade colors & thresholds** has a separate **5 · bonus band** row above the original four colors and three descending nonnegative cutoffs. Set the bonus color, **Percentage >**, and **Average >**, then select **Save settings**. These form edits are not saved until that button succeeds.
 
 | Band | Percentage default | Average default | Default color |
 | --- | --- | --- | --- |

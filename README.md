@@ -1,6 +1,6 @@
 # Aeries Playground
 
-> **Release policy correction:** The November 1 **3.1.0** integration and November 8 **3.1.1** bonus-band update are scheduled **prereleases**, each at **11:59 p.m. PST in 2026**. **v3.0.0 remains stable and Latest.** The [release schedule](docs/RELEASE-SCHEDULE.md) supersedes earlier stable-promotion wording in preparation notes.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
 
 
 Make your Aeries dashboard easier to read, understand how assignments affect a grade, and try “what if?” scores in your browser. Aeries Playground is a userscript for the **MVLA Aeries student portal**, with an optional next-class panel for **Mountain View High School**.
@@ -22,8 +22,9 @@ Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/).
 | Download | What you are choosing |
 | --- | --- |
 | [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the verified stable Latest release. Open **Assets** and choose `aeries-playground.user.js`. |
+| [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js) | Configurable purple score-5 band for grades above the bonus cutoff. |
 | [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) | The unified edition is available separately as a prerelease; use its tagged asset for a fixed version. |
-| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the unified **3.1.0** integration. Later development can differ from the tagged prerelease asset. |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the **3.1.1** bonus band. Later development can differ from the tagged prerelease asset. |
 
 Check [available downloads and feature differences](docs/FEATURES.md#available-release) before choosing. GitHub's stable **Latest** and **Pre-release** are separate choices.
 
@@ -43,18 +44,18 @@ The dialog has **Courses**, **Weight map**, and **Settings** tabs. Open it with 
 3. **Try one gradebook.** Open the full assignment list, turn Aeries' **Show only missing assignments** off, and wait for rows and totals to load. Choose **Start grade testing** in the **Grade testing lab**. Edit a **Score**, try a **Range**, or **Add hypothetical assignment**. Resolve any baseline warning before relying on the result.
 4. **Finish with Exit grade testing.** This restores posted values and clears the scenario. Reloading or changing gradebooks also clears it. Closing the Playground dialog alone leaves testing active.
 
-In the planned 3.1.1 source, a fresh install starts with colors, progress bars, and the GPA summary on; custom **5/4/3/2/1** ratings are off. The earlier 3.0.0 and prepared 3.1.0 editions retain four numeric bands. In the dashboard's **Calculation & GPA class selection**, choose included courses and mark **Honors/AP** eligibility yourself. Honors/AP starts unchecked and is never inferred from a course name.
+In the 3.1.1 prerelease, a fresh install starts with colors, progress bars, and the GPA summary on; custom **5/4/3/2/1** ratings are off. The earlier 3.0.0 and 3.1.0 editions retain four numeric bands. In the dashboard's **Calculation & GPA class selection**, choose included courses and mark **Honors/AP** eligibility yourself. Honors/AP starts unchecked and is never inferred from a course name.
 
 Save ordinary **Courses** and non-toggle **Settings** form edits before changing dialog tabs. Feature toggles apply and attempt to save immediately. See [settings and save controls](docs/SETTINGS.md#which-save-control-do-i-use) for the full distinction.
 
 ## Features
 
-A separate **3.1.1** follow-up is planned for **Sunday, November 8, 2026, at 11:59 p.m. Pacific Standard Time** (`2026-11-09T07:59:00Z`). It adds a configurable purple **5 · bonus band** for grades above 100% by default. This feature is not part of the November 1 integration. See [bonus-band behavior](docs/FEATURES.md#bonus-band-planned-for-311) and [3.1.1 release preparation](docs/RELEASE-3.1.1.md); neither a branch nor these notes establishes publication.
+The **3.1.1 prerelease** adds a configurable purple **5 · bonus band**. By default, a percentage strictly above 100% or a four-point average strictly above 4 earns a 5. Exactly 100% or 4 stays in the ordinary bands. See [bonus-band behavior](docs/FEATURES.md#bonus-band-in-311).
 
 | I want to… | Where to start |
 | --- | --- |
 | Change course names, icons, colors, or progress bars | **Courses** and **Settings** → [dashboard customization](docs/FEATURES.md#dashboard-and-course-customization). |
-| Compare weighted and unweighted GPA, or use custom ratings (bonus 5 planned for 3.1.1) | Dashboard summary → [grade summaries](docs/FEATURES.md#overall-grade-and-current-year-gpa). |
+| Compare weighted and unweighted GPA, or use custom ratings (bonus 5 in 3.1.1) | Dashboard summary → [grade summaries](docs/FEATURES.md#overall-grade-and-current-year-gpa). |
 | Focus on one category or see how an assignment affects the grade | Gradebook **Category** buttons and **Grade impact** labels → [assignment analysis](docs/FEATURES.md#assignment-analysis). |
 | Compare assignment weights, including ungraded work | **Assignment weight map** → [map and ungraded preview](docs/FEATURES.md#assignment-weight-map). Circle **area** represents weight; gray means ungraded. |
 | Try scores, ranges, exclusions, or future assignments | **Start grade testing** → [grade testing lab](docs/FEATURES.md#grade-testing-lab). |
