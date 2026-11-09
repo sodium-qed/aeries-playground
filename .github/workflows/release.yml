@@ -1,4 +1,4 @@
-name: Publish or recover fixed 3.1.0 stable release
+name: Publish or recover fixed 3.1.1 stable release
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: aeries-playground-3-1-release
+  group: aeries-playground-3-1-1-release
   cancel-in-progress: false
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Validate, publish, or recover the prepared 3.1.0 stable release
+      - name: Validate, publish, or recover the prepared 3.1.1 stable release
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/publish-release.py

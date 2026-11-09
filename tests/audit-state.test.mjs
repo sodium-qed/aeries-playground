@@ -277,6 +277,75 @@ test('saving profile/year keeps a preference changed since the Settings form ope
   assert.equal(api.db.settings.weightMapUngraded,true);
 });
 
+test('older four-band preferences gain bonus defaults without changing their palette or thresholds', () => {
+  const { api: seed } = fixture();
+  const saved = config(seed);
+  delete saved.settings.bonusColor;
+  delete saved.settings.bonusPercentCutoff;
+  delete saved.settings.bonusAverageCutoff;
+  const colors = ['#123456','#234567','#345678','#456789'];
+  Object.assign(saved.settings, {colors, cutoffs:[96,86,76], averageCutoffs:[3.9,3.2,2.6]});
+  const f = fixture(saved);
+  assert.deepEqual(plain(f.api.db.settings.colors), colors);
+  assert.deepEqual(plain(f.api.db.settings.cutoffs), [96,86,76]);
+  assert.deepEqual(plain(f.api.db.settings.averageCutoffs), [3.9,3.2,2.6]);
+  assert.equal(f.api.db.settings.bonusPercentCutoff, 100);
+  assert.equal(f.api.db.settings.bonusAverageCutoff, 4);
+  assert.equal(f.api.db.settings.bonusColor, f.api.defaults.bonusColor);
+  assert.equal(f.api.recovery, '');
+  assert.equal(f.api.persist(), true);
+  const reloaded = fixture(f.stored);
+  assert.deepEqual(plain(reloaded.api.db.settings), plain(f.api.db.settings));
+});
+
+test('the bonus settings row saves its color and strict percentage/average thresholds independently', () => {
+  const f = fixture(), { api } = f;
+  const original = plain(api.db.settings);
+  api.renderSettings();
+  const formField = label => findControl(api.content,node=>node.tagName==='LABEL'&&node.children[0]?.textContent===label)?.children[1];
+  const color = formField('5 · bonus band'), percent = formField('Percentage >'), average = formField('Average >');
+  assert.ok(color && percent && average, 'The bonus band has its own three controls');
+  assert.equal(color.value, api.defaults.bonusColor);
+  assert.equal(percent.value, '100'); assert.equal(average.value, '4');
+  color.value = '#9234ab'; percent.value = '102.5'; average.value = '4.25';
+  findControl(api.content,node=>node.tagName==='BUTTON'&&node.textContent==='Save settings').dispatch('click');
+  assert.equal(api.db.settings.bonusColor, '#9234ab');
+  assert.equal(api.db.settings.bonusPercentCutoff, 102.5);
+  assert.equal(api.db.settings.bonusAverageCutoff, 4.25);
+  assert.deepEqual(plain(api.db.settings.colors), original.colors);
+  assert.deepEqual(plain(api.db.settings.cutoffs), original.cutoffs);
+  assert.deepEqual(plain(api.db.settings.averageCutoffs), original.averageCutoffs);
+  const loaded = fixture(f.stored);
+  assert.equal(loaded.api.db.settings.bonusColor, '#9234ab');
+  assert.equal(loaded.api.db.settings.bonusPercentCutoff, 102.5);
+  assert.equal(loaded.api.db.settings.bonusAverageCutoff, 4.25);
+});
+
+test('invalid bonus thresholds cannot overwrite the saved settings', () => {
+  for (const [label, value] of [['Percentage >',''],['Percentage >','-1'],['Percentage >','Infinity'],['Average >','oops']]) {
+    const f = fixture(), { api } = f;
+    api.renderSettings();
+    const control = findControl(api.content,node=>node.tagName==='LABEL'&&node.children[0]?.textContent===label)?.children[1];
+    assert.ok(control); control.value = value;
+    const before = plain(api.db.settings), writes = f.writes;
+    findControl(api.content,node=>node.tagName==='BUTTON'&&node.textContent==='Save settings').dispatch('click');
+    assert.deepEqual(plain(api.db.settings), before, `${label}: ${value}`);
+    assert.equal(f.writes, writes);
+  }
+});
+
+test('malformed saved bonus settings recover without discarding valid existing bands', () => {
+  const { api: seed } = fixture();
+  const saved = config(seed);
+  Object.assign(saved.settings, {bonusColor:'purple', bonusPercentCutoff:-1, bonusAverageCutoff:'bad', colors:['#123456','#234567','#345678','#456789']});
+  const { api } = fixture(saved);
+  assert.equal(api.db.settings.bonusColor, api.defaults.bonusColor);
+  assert.equal(api.db.settings.bonusPercentCutoff, 100);
+  assert.equal(api.db.settings.bonusAverageCutoff, 4);
+  assert.deepEqual(plain(api.db.settings.colors), saved.settings.colors);
+  assert.match(api.recovery, /invalid saved settings/);
+});
+
 test('profile labels and persisted own property names do not modify object prototypes', () => {
   const { api:seed }=fixture();const saved=config(seed);
   saved.settings.profile='__proto__';saved.profiles['p:["__proto__",""]']=JSON.parse('{"courses":{"__proto__":{"title":"Synthetic","nickname":"Owned key"},"constructor":{"title":"Other"}}}');
