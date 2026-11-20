@@ -30,7 +30,7 @@ export function headingAnchors(source) {
   for (const line of text.split('\n')) {
     const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/);
     if (!heading) continue;
-    const plain = heading[1].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/<[^>]*>/g, '');
+    const plain = heading[1].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[<>]/g, '');
     const base = plain.toLowerCase().replace(/[^\p{L}\p{M}\p{N}_\- ]/gu, '').replace(/ /g, '-');
     let slug = base;
     for (let suffix = 1; used.has(slug); suffix++) slug = `${base}-${suffix}`;
