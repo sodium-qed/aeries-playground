@@ -21,7 +21,12 @@ class Control {
     this.dataset = {}; this.style = {}; this.parentElement = null; this.connected = false;
   }
   get isConnected() { return this.connected || Boolean(this.parentElement?.isConnected); }
+  get parentNode() { return this.parentElement; }
   append(...nodes) { for (const node of nodes) { node.parentElement = this; this.children.push(node); } }
+  remove() {
+    if (this.parentElement) this.parentElement.children = this.parentElement.children.filter(child => child !== this);
+    this.parentElement = null;
+  }
   setAttribute(key, value) { this.attributes.set(key, String(value)); if (key === 'id') this.id = String(value); }
   getAttribute(key) { return this.attributes.get(key) ?? null; }
   removeAttribute(key) { this.attributes.delete(key); }
@@ -71,7 +76,7 @@ function fixture(initial = null, options = {}) {
       persist, queueSave, clearSavedSettings, cutoffs, planningRef, resolvePlanningRef, bindPlanningRename,
       planningRows, planningRules, serializePlanningRules, savePlanningReplacementRules,
       labDraft, labScoreState, updateLabScoreDraft, labPointDraft, labModel, labRangeState, labRangeScenario,
-      labHasCountedRanges, buildGradingProfileUI, setToggle, renderSettings, content,
+      labHasCountedRanges, buildGradingProfileUI, buildPersonalComments, setToggle, renderSettings, content,
       get db() { return db; }, get error() { return storageError; }, get recovery() { return typeof storageRecovery==='string'?storageRecovery:''; },
       get pending() { return savePending; }, get blocked() { return typeof storageLoadBlocked==='boolean'?storageLoadBlocked:false; },
       get lab() { return gradeLab; }, setLab(value) { gradeLab = value; },
@@ -95,6 +100,65 @@ function lab(api, assignments = [assignment()], added = []) {
   api.setLab(state); return state;
 }
 function config(api, extra = {}) { return { version: 1, settings: plain(api.defaults), profiles: {}, defaultsRevision: 2, blankIconsRevision: 1, ...extra }; }
+
+function commentFixture(api, courseKey = 'course-a') {
+  const toolbar = new Control('section'), tableCell = new Control('td'), card = new Control('div');
+  const teacher = new Control('span'); teacher.textContent = 'Posted feedback'; tableCell.append(teacher);
+  card.querySelectorAll = () => [];
+  const row = { cells: [new Control('td'), tableCell], matches: () => false };
+  const cardRow = { matches: selector => selector === 'tr.CardView', querySelector: () => card };
+  const first = assignment({ id:'aeries:7', sourceRow:row, sourceRows:[row,cardRow], sourceNameCells:[row.cells[0]] });
+  const duplicate = assignment({ id:'aeries:8' });
+  const context = lab(api, [first, duplicate, duplicate]); Object.assign(context, {toolbar, key:courseKey});
+  const comments = api.buildPersonalComments(context);
+  comments.refresh(['Assignment', 'Comments']);
+  const control = text => findControl(toolbar, n => n.textContent === text);
+  const editor = findControl(toolbar, n => n.tagName === 'TEXTAREA');
+  return { comments, editor, tableCell, card, teacher, control };
+}
+
+test('personal comments belong to one posted assignment, course, profile and year across reloads', () => {
+  const first = fixture(), ui = commentFixture(first.api);
+  assert.equal(ui.comments.canEdit('aeries:8'), false);
+  assert.equal(ui.comments.canEdit('hypothetical:1'), false);
+  ui.comments.open('aeries:7');
+  const note = 'Review part B\n<em>Show units</em>';
+  ui.editor.value = note; ui.editor.dispatch('input'); ui.control('Save comment').dispatch('click');
+  ui.comments.refresh(['Assignment', 'Comments']);
+  assert.deepEqual(ui.tableCell.children.map(n => n === ui.teacher ? n.textContent : n.children[1].textContent), ['Posted feedback', note]);
+  assert.equal(ui.card.children.length, 1); assert.equal(ui.card.children[0].children[1].textContent, note);
+  const {api} = fixture(first.stored);
+  for (const [course,profile,year] of [['course-b','',''], ['course-a','Other',''], ['course-a','','2030']]) {
+    Object.assign(api.db.settings, {profile,year});
+    const other = commentFixture(api,course); other.comments.open('aeries:7');
+    assert.equal(other.editor.value, ''); assert.equal(other.tableCell.children.length, 1);
+  }
+  Object.assign(api.db.settings, {profile:'', year:''});
+  const restored = commentFixture(api); restored.comments.open('aeries:7');
+  assert.equal(restored.editor.value, note);
+  restored.editor.value = 'Revised note'; restored.editor.dispatch('input'); restored.control('Save comment').dispatch('click');
+  assert.equal(restored.tableCell.children[1].children[1].textContent, 'Revised note');
+  restored.control('Remove comment').dispatch('click');
+  assert.deepEqual(restored.tableCell.children, [restored.teacher]); assert.equal(restored.card.children.length, 0);
+  assert.equal(api.db.personalComments, undefined);
+});
+
+test('failed saves keep the draft and stale tabs preserve other comment writes and deletions', () => {
+  const tab = fixture(), ui = commentFixture(tab.api);
+  ui.comments.open('aeries:7'); ui.editor.value = 'Retry this note'; ui.editor.dispatch('input');
+  tab.failWrite(true); ui.control('Save comment').dispatch('click');
+  assert.equal(tab.stored, null); assert.equal(ui.editor.value, 'Retry this note'); assert.deepEqual(ui.tableCell.children, [ui.teacher]);
+  tab.failWrite(false); ui.control('Save comment').dispatch('click');
+  const stale = fixture(tab.stored), secondCourse = commentFixture(stale.api,'course-b');
+  secondCourse.comments.open('aeries:7'); secondCourse.editor.value = 'Other note'; secondCourse.editor.dispatch('input');
+  secondCourse.control('Save comment').dispatch('click');
+  const latest = plain(stale.stored); latest.settings.precise = false;
+  tab.writeElsewhere(latest); ui.control('Remove comment').dispatch('click');
+  assert.equal(tab.stored.settings.precise, false, 'editing a comment preserves other saved settings');
+  stale.writeElsewhere(tab.stored); assert.equal(stale.api.persist(), true);
+  assert.deepEqual(Object.values(stale.stored.personalComments), ['Other note']);
+  assert.equal(stale.api.clearSavedSettings(), true); assert.equal(stale.stored.personalComments, undefined);
+});
 
 // GPA derives strictly from posted letters; thresholds only affect numeric mode.
 test('GPA honors/AP bonuses apply only to A/B/C, with plus/minus ignored', () => {
