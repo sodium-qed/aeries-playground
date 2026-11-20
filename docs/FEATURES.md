@@ -280,12 +280,6 @@ For a first scenario:
 
 **Add hypothetical assignment** starts testing if needed. Scores and new assignment cards are temporary; grading profiles and replacement rules can save automatically. Read [reset behavior](#reset-or-leave-a-scenario) before using a reset as an undo.
 
-### Personal assignment comments
-
-In the current source, open **Personal comments** in the grade testing lab, choose a posted assignment, enter a note, and select **Save comment**. While testing scores, the **Comment** button on an assignment opens the same editor with that assignment selected.
-
-The note appears under **Personal comment** in the table’s **Comment** column and on the assignment card, alongside any teacher feedback. It stays visible after exiting testing or reloading. To revise it, select the assignment again and save the new text. **Remove comment** deletes just that personal note. Playground keeps the note under the selected profile, school year, course, and assignment number in userscript-manager storage.
-
 ### Edit scores and add assignments
 
 | Control | Use |

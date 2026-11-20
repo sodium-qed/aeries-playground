@@ -24,7 +24,7 @@ Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/).
 | [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the verified stable Latest release. Open **Assets** and choose `aeries-playground.user.js`. |
 | [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js) | Configurable purple score-5 band for grades above the bonus cutoff. |
 | [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) | The unified edition is available separately as a prerelease; use its tagged asset for a fixed version. |
-| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the **3.1.1** bonus band and [personal assignment comments](docs/FEATURES.md#personal-assignment-comments). |
+| [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the **3.1.1** bonus band. Later development can differ from the tagged prerelease asset. |
 
 Check [available downloads and feature differences](docs/FEATURES.md#available-release) before choosing. GitHub's stable **Latest** and **Pre-release** are separate choices.
 
@@ -81,7 +81,6 @@ The schedule countdown can continue to the next school day. Seconds require fres
 | --- | --- |
 | Preferences and course settings | Saved in userscript-manager storage. Course settings belong to the selected profile/year; display toggles, colors, default thresholds, and the ungraded-preview choice are shared. |
 | Grading profiles and replacement rules | Save automatically, including incomplete grading-form drafts and assignment references. Only valid grading profiles become active. Scenario reset does **not** undo saved rule changes. |
-| Personal assignment comments (current source) | **Grade testing lab → Personal comments → Save comment** keeps a note with that assignment across reloads and scenario resets. It appears beside any teacher feedback in the gradebook. |
 | Posted grades and hypothetical work | Posted scores, calculated results, entered hypothetical scores, ranges, and added assignments are **not saved**. Scenario exit, reload, scope changes, and detected gradebook refreshes discard temporary work. |
 
 Profiles organize settings; they are not private accounts. Saved course names, identifiers, and rule references can identify courses or assignments, and manager sync/backups may copy them elsewhere. See [what is saved and when](docs/SETTINGS.md#what-changes-and-what-stays-saved) before sharing configuration or switching students.
