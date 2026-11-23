@@ -1,0 +1,136 @@
+name: Publish Grade Lab comments prerelease 3.1.2
+
+on:
+  push:
+    branches: [ci/publish-grade-lab-comments-3.1.2]
+    paths:
+      - .github/workflows/publish-grade-lab-comments-3.1.2.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeries-playground-3-1-release
+  cancel-in-progress: false
+
+jobs:
+  prerelease:
+    if: github.repository == 'sodium-qed/aeries-playground' && github.ref == 'refs/heads/ci/publish-grade-lab-comments-3.1.2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: v3.1.2
+      RELEASE_COMMIT: edf1a55d00906bdd7e7f6dbaa03442f8d647a781
+      RELEASE_HASH: 0bbfa03a093a8b8fd1a16aaffe7016c7f0c96860b10690683c8235cbfdbad29e
+      RELEASE_BYTES: '390481'
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ env.RELEASE_COMMIT }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Run repository checks
+        run: |
+          node --test tests/*.test.mjs
+          node scripts/check-userscripts.mjs
+          node scripts/check-documentation.mjs
+      - name: Publish the verified userscript as a prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          asset=aeries-playground.user.js
+          notes=docs/RELEASE-3.1.2.md
+          title='Aeries Playground 3.1.2 prerelease'
+
+          repo_api() { gh api "repos/$GITHUB_REPOSITORY/$1" "${@:2}"; }
+
+          release_by_tag() {
+            repo_api 'releases?per_page=100' --paginate --slurp | jq -c --arg tag "$RELEASE_TAG" '
+              [.[][] | select(.tag_name == $tag)] | if length > 1 then error("Duplicate release tag") else .[] end
+            '
+          }
+
+          check_stable_latest() {
+            local latest
+            latest=$(repo_api releases/latest --jq 'select(.tag_name == "v3.0.0" and .draft == false and .prerelease == false) | .id')
+            test "$latest" = 423949198
+          }
+
+          tag_target() {
+            repo_api "git/matching-refs/tags/$RELEASE_TAG" --jq '.[] | select(.ref == "refs/tags/v3.1.2") | .object.type + ":" + .object.sha'
+          }
+
+          checked_release_id() {
+            jq -er --arg title "$title" --arg commit "$RELEASE_COMMIT" --rawfile notes "$notes" '
+              select(.name == $title and .prerelease == true and
+                ((.body | rtrimstr("\n")) == ($notes | rtrimstr("\n"))) and
+                (.draft == false or (.draft == true and .target_commitish == $commit))) | .id
+            ' <<< "$1"
+          }
+
+          verify_asset() {
+            jq -e --arg name "$asset" --arg digest "sha256:$RELEASE_HASH" --argjson size "$RELEASE_BYTES" '
+              .assets | length == 1 and .[0].name == $name and .[0].state == "uploaded" and
+              .[0].size == $size and (.[0].digest == null or .[0].digest == $digest)
+            ' <<< "$1" > /dev/null
+            local download_dir
+            download_dir=$(mktemp -d)
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir "$download_dir"
+            cmp -- "$asset" "$download_dir/$asset"
+          }
+
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$(wc -c < "$asset")" -eq "$RELEASE_BYTES"
+          sha256sum --check --status <<< "$RELEASE_HASH  $asset"
+          check_stable_latest
+
+          state=$(release_by_tag)
+          if [[ -n "$state" ]]; then
+            release_id=$(checked_release_id "$state")
+          fi
+
+          target=$(tag_target)
+          if [[ -z "$target" ]]; then
+            if [[ -n "$state" ]]; then
+              test "$(jq -r .draft <<< "$state")" = true
+            fi
+            repo_api git/refs --method POST -f ref="refs/tags/$RELEASE_TAG" -f sha="$RELEASE_COMMIT" > /dev/null
+          fi
+          test "$(tag_target)" = "commit:$RELEASE_COMMIT"
+
+          if [[ -z "$state" ]]; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$RELEASE_COMMIT" --verify-tag \
+              --draft --prerelease --latest=false --title "$title" --notes-file "$notes"
+            state=$(release_by_tag)
+            test -n "$state"
+            release_id=$(checked_release_id "$state")
+          fi
+
+          if [[ "$(jq -r '.assets | length' <<< "$state")" == 0 ]]; then
+            test "$(jq -r .draft <<< "$state")" = true
+            gh release upload "$RELEASE_TAG" "$asset" --repo "$GITHUB_REPOSITORY"
+            state=$(repo_api "releases/$release_id")
+          fi
+          verify_asset "$state"
+
+          if [[ "$(jq -r .draft <<< "$state")" == true ]]; then
+            check_stable_latest
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
+          fi
+
+          published=$(repo_api "releases/tags/$RELEASE_TAG")
+          test "$(checked_release_id "$published")" = "$release_id"
+          test "$(jq -r .draft <<< "$published")" = false
+          test "$(tag_target)" = "commit:$RELEASE_COMMIT"
+          verify_asset "$published"
+          check_stable_latest
+          jq -r .html_url <<< "$published"
