@@ -23,6 +23,7 @@ This guide includes the published **3.1.0 unified prerelease**. See the [verifie
 
 | Download | What it selects |
 | --- | --- |
+| [3.1.2 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.2) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.2/aeries-playground.user.js) | [Personal assignment comments](#personal-assignment-comments) in the grade testing lab. |
 | [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js) | Configurable purple score-5 band for grades above the bonus cutoff. |
 | [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) · [3.1.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.0/aeries-playground.user.js) | The verified unified prerelease artifact. |
 | [3.0.0 release](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.0.0) · [3.0.0 userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.0.0/aeries-playground.user.js) | The audited stable artifact, still selected as Latest. |
@@ -279,6 +280,12 @@ For a first scenario:
 4. Use the row's **Reset** to undo that score, **Reset hypothetical changes** to clear scenario scores/ranges/additions, or **Exit grade testing** to restore the posted view.
 
 **Add hypothetical assignment** starts testing if needed. Scores and new assignment cards are temporary; grading profiles and replacement rules can save automatically. Read [reset behavior](#reset-or-leave-a-scenario) before using a reset as an undo.
+
+### Personal assignment comments
+
+In the 3.1.2 prerelease, open **Personal comments** in the grade testing lab, choose a posted assignment, enter a note, and select **Save comment**. While testing scores, the **Comment** button on an assignment opens the same editor with that assignment selected.
+
+The note appears under **Personal comment** in the table’s **Comment** column and on the assignment card, alongside any teacher feedback. It stays visible after exiting testing or reloading. To revise it, select the assignment again and save the new text. **Remove comment** deletes just that personal note. Playground keeps the note under the selected profile, school year, course, and assignment number in userscript-manager storage.
 
 ### Edit scores and add assignments
 

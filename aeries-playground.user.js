@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      3.1.1
+// @version      3.1.2
 // @description  Aeries grade tools, a configurable purple bonus grade band, saved and temporary /4 assignment weights, native regression forecasts, validated fractional-score recovery and conservative rounding-aware targets, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
@@ -19,6 +19,10 @@
 // ==/UserScript==
 
 /*
+ * 3.1.2 prerelease: Add personal assignment comments to the grade testing lab.
+ * The manager saves the entered text by profile, school year, course and
+ * assignment number. Playground displays it beside posted feedback locally.
+ *
  * 3.1.1 bonus update after unification: Build on the unified 3.1.0 source.
  * Add a configurable purple bonus band: strictly above 100% or 4 by default,
  * shown as Playground rating 5. Letter-based GPA calculations are unchanged.
@@ -121,6 +125,8 @@
  *   within the current course; invalid, duplicate, or unmatched weights stay
  *   inactive. Temporary Counts as changes stay in the current scenario.
  *   Course discovery can save names/keys automatically when pages are read.
+ *   Saving a personal comment stores the entered text and its assignment
+ *   number within the selected profile, year, and course.
  * - Replacement rules save source/target assignment names, IDs, categories,
  *   a hypothetical-reference flag, policy, and optional cap. This includes
  *   references to hypothetical assignments, but not their entered scores.
@@ -1794,6 +1800,7 @@ const GradeDOM = (() => {
   let storageError = '', storageRecovery = '', storageLoadBlocked = false;
   const storageStatusNodes = new Set();
   const storageRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const supportedSettings = value => value?.version === 1 && storageRecord(value.settings) && storageRecord(value.profiles);
   function storageStatusNote() {
     const node = note(storageError || storageRecovery, 'ap-error');
     node.setAttribute('role', 'status');node.setAttribute('aria-live', 'polite');
@@ -1860,8 +1867,7 @@ const GradeDOM = (() => {
   }
   try {
     const v = GM_getValue(AP_KEY, null);
-    if (v && v.version === 1 && v.settings && typeof v.settings === 'object' && !Array.isArray(v.settings)
-      && v.profiles && typeof v.profiles === 'object' && !Array.isArray(v.profiles)) {
+    if (supportedSettings(v)) {
       db = clone(v);const savedSettings=db.settings;
       db.settings = {...clone(defaults), ...Object.fromEntries(Object.keys(defaults).filter(key=>Object.hasOwn(savedSettings,key)).map(key=>[key,savedSettings[key]]))};
       for (const key of Object.keys(defaults).filter(k=>typeof defaults[k]==='boolean')) if (typeof db.settings[key] !== 'boolean') db.settings[key] = defaults[key];
@@ -1905,8 +1911,8 @@ const GradeDOM = (() => {
   }
   function validCutoffs(v) { return Array.isArray(v) && v.length === 3 && v.every(n => Number.isFinite(n) && n >= 0) && v[0] > v[1] && v[1] > v[2]; }
   let saveTimer,savePending=false;
-  function persist(replaceSaved = false) {
-    clearTimeout(saveTimer);saveTimer=undefined;savePending=true;
+  function persist(replaceSaved = false, commentChange = null) {
+    if(!commentChange){clearTimeout(saveTimer);saveTimer=undefined;savePending=true;}
     if (storageLoadBlocked && replaceSaved !== true) {savePending=false;refreshStorageStatus();return false;}
     try {
       const stored=GM_getValue(AP_KEY,null);
@@ -1915,9 +1921,32 @@ const GradeDOM = (() => {
         storageError='Saved settings were cleared in another tab. Reload this tab before saving.';
         savePending=false;return false;
       }
-      GM_setValue(AP_KEY,clone(db));observedResetMarker=typeof db.resetMarker==='string'?db.resetMarker:'';
-      storageError='';storageLoadBlocked=false;savePending=false;return true;
-    } catch { storageError = 'Could not save to browser storage. Changes work for this visit only.'; return false; }
+      if(commentChange && stored!=null && !supportedSettings(stored)){
+        storageError='Saved settings changed format. Reload before saving a comment.';return false;
+      }
+      const next=clone(commentChange && stored ? stored : db);
+      if(replaceSaved!==true){
+        // Other tabs may have saved or removed a note since this tab opened.
+        // Ordinary settings saves carry those notes forward; a comment edit changes one key.
+        const comments=storageRecord(stored?.personalComments)?{...stored.personalComments}:{};
+        if(commentChange){
+          if(commentChange.text)comments[commentChange.key]=commentChange.text;
+          else delete comments[commentChange.key];
+        }
+        if(Object.keys(comments).length)next.personalComments=comments;
+        else delete next.personalComments;
+      }
+      GM_setValue(AP_KEY,next);
+      if(next.personalComments)db.personalComments=next.personalComments;
+      else delete db.personalComments;
+      observedResetMarker=typeof db.resetMarker==='string'?db.resetMarker:'';
+      storageError='';storageLoadBlocked=false;
+      if(!commentChange)savePending=false;
+      return true;
+    } catch {
+      storageError=commentChange?'Comment could not be saved. Your draft is still in the editor.':'Could not save to browser storage. Changes work for this visit only.';
+      return false;
+    }
     finally {refreshStorageStatus();}
   }
   function queueSave() { clearTimeout(saveTimer);savePending=true;saveTimer=setTimeout(persist,700); }
@@ -2690,7 +2719,11 @@ const GradeDOM = (() => {
     #ap-grade-lab h4{font:inherit;font-weight:700;margin:12px 0 6px}
     #ap-grade-lab .ap-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,185px),1fr));gap:12px;margin:12px 0}
     #ap-grade-lab .ap-plan-field{display:flex;flex-direction:column;gap:5px;color:#475569;font:inherit}
-    #ap-grade-lab .ap-plan-field input,#ap-grade-lab .ap-plan-field select{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:#fff;color:#253858;border:1px solid #aaa3bb;border-radius:5px;padding:7px}
+    #ap-grade-lab .ap-plan-field input,#ap-grade-lab .ap-plan-field select,#ap-grade-lab .ap-plan-field textarea{box-sizing:border-box;width:100%;min-width:0;font:inherit;background:#fff;color:#253858;border:1px solid #aaa3bb;border-radius:5px;padding:7px}
+    #ap-lab-comments .ap-plan-field{margin:8px 0;max-width:48em}
+    #ap-lab-comments textarea{resize:vertical}
+    .ap-personal-comment{display:block;margin:.4em 0;font:inherit;font-weight:normal;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;color:#34425b}
+    .ap-personal-comment strong{display:block;font-size:.9em;color:#514377}
     #ap-grade-lab .ap-plan-field [aria-invalid=true]{border-color:#b42318}
     #ap-grade-lab .ap-plan-message{color:#43328b;line-height:1.6}
     #ap-grade-lab button:disabled{opacity:.5;cursor:default}
@@ -2770,6 +2803,93 @@ const GradeDOM = (() => {
     n.value='';return n;
   }
   function planningField(label,n){const l=field(label,n);l.className='ap-plan-field';return l;}
+  function buildPersonalComments(context){
+    const scope=profileKey();
+    const keyFor=id=>JSON.stringify([scope,context.key,id]);
+    const savedText=id=>{
+      const value=db.personalComments?.[keyFor(id)];
+      return typeof value==='string'?value:'';
+    };
+    const assignments=new Map();
+    for(const assignment of context.parsed.assignments){
+      if(/^aeries:.+/.test(assignment.id)){
+        // A repeated number cannot identify a single posted assignment.
+        assignments.set(assignment.id,assignments.has(assignment.id)?null:assignment);
+      }
+    }
+    for(const [id,assignment] of assignments)if(!assignment)assignments.delete(id);
+    const choices=[...assignments].map(([id,a])=>[id,'#'+id.slice('aeries:'.length)+' · '+a.name]);
+    const panel=el('details',null,{id:'ap-lab-comments',class:'ap-plan-section'});
+    const select=planningSelect('ap-lab-comment-assignment','Choose an assignment',choices);
+    const editor=el('textarea',null,{id:'ap-lab-comment-text',rows:3});
+    const message=el('p','',{role:'status',class:'ap-plan-message'});
+    const save=button('Save comment',()=>write(editor.value.trim()));
+    const remove=button('Remove comment',()=>write(''));
+    const actions=el('div',null,{class:'ap-lab-actions'});
+    actions.append(save,remove);
+    panel.append(el('summary','Personal comments'),
+      note('Saved in Playground for this profile and course. Each note appears in the assignment’s Comment section.'),
+      planningField('Assignment',select),planningField('Personal comment',editor),actions,message);
+    context.toolbar.append(panel);
+
+    const drafts=new Map(),displays=new Map();
+    const commentLabel=/^(?:(?:assignment|teacher|score)\s+)?comments?\s*:?$/i;
+    let column=-1;
+    function refresh(headers){
+      if(headers)column=headers.findIndex(header=>commentLabel.test(header.trim()));
+      const present=new Set();
+      for(const [id,a] of assignments){
+        const text=savedText(id);
+        if(!text)continue;
+        const tableHost=a.sourceRow.cells[column]||a.sourceNameCells[0];
+        const card=a.sourceRows.find(row=>row.matches('tr.CardView'))?.querySelector('.Card');
+        const cardLabel=card && [...card.querySelectorAll('.TextSubSection')].find(label=>commentLabel.test(label.textContent.trim()));
+        for(const host of [tableHost,cardLabel?.parentElement||card]){
+          if(!host)continue;
+          present.add(host);
+          let display=displays.get(host);
+          if(!display){
+            const container=el('span',null,{class:'ap-personal-comment','data-ap-owned':'personal-comment'});
+            const body=el('span');container.append(el('strong','Personal comment'),body);
+            display={container,body};displays.set(host,display);
+          }
+          if(display.body.textContent!==text)display.body.textContent=text;
+          if(display.container.parentNode!==host)host.append(display.container);
+        }
+      }
+      for(const [host,display] of displays)if(!present.has(host)){display.container.remove();displays.delete(host);}
+    }
+    function updateButtons(){
+      const saved=savedText(select.value);
+      editor.disabled=!assignments.has(select.value);
+      save.disabled=editor.disabled||!editor.value.trim()||editor.value.trim()===saved;
+      remove.hidden=!saved;
+    }
+    function loadSelection(){
+      editor.value=drafts.get(select.value)??savedText(select.value);
+      message.textContent=assignments.size?'':'No posted assignments with a unique number are available.';
+      updateButtons();
+    }
+    function write(text){
+      const id=select.value;
+      if(gradeLab!==context||!assignments.has(id))return;
+      if(!persist(false,{key:keyFor(id),text})){
+        message.textContent=storageError;return;
+      }
+      drafts.delete(id);loadSelection();refresh();
+      message.textContent=text?'Comment saved.':'Comment removed.';
+    }
+    select.disabled=!assignments.size;
+    select.addEventListener('change',loadSelection);
+    editor.addEventListener('input',()=>{drafts.set(select.value,editor.value);message.textContent='';updateButtons();});
+    loadSelection();
+    return {
+      canEdit:id=>assignments.has(id),
+      open(id){panel.open=true;select.value=id;loadSelection();editor.focus();},
+      refresh,
+      clear(){for(const {container} of displays.values())container.remove();displays.clear();}
+    };
+  }
   function planningNumber(id){const n=input('','text');n.id=id;n.setAttribute('inputmode','decimal');n.autocomplete='off';return n;}
   function planningRows(){return gradeLab.active?labModel().assignments:gradeLab.parsed.assignments.map(({id,name,category,earned,possible,included,multiplier=1,pointBounds})=>({id,name,category,earned,possible,included,multiplier,pointBounds}));}
   function planningRef(a){
@@ -3332,6 +3452,7 @@ const GradeDOM = (() => {
   }
   function closeGradeLab(){
     if(!gradeLab)return;
+    gradeLab.comments?.clear();
     for(const entry of gradeLab.assignmentButtons?.values()||[])entry.host.remove();
     gradeLab.assignmentButtons?.clear();
     clearLabOverlays();gradeLab.toolbar.remove();gradeLab=null;
@@ -3379,11 +3500,13 @@ const GradeDOM = (() => {
       const precisionNote=note('Some posted scores are rounded. Grade and impact estimates use displayed points; required-score results use the conservative lower bound allowed by those displays.');
       precisionNote.classList.add('ap-lab-precision-note');precisionNote.hidden=!gradeLab.rounding;toolbar.append(precisionNote);
       info.element.before(toolbar);
+      gradeLab.comments=buildPersonalComments(gradeLab);
       if(parsed.rules.averageMaximum)buildSavedAssignmentWeightsUI(toolbar);
       if(parsed.rules.averageMaximum)toolbar.append(note('During grade testing, Counts as changes an assignment’s weight without changing its /4 score. Use 2 for double weight, 3 for triple, or any positive decimal. Reset restores the saved weight.'));
       initPlanningUI();
     }else if(!gradeLab.toolbar.isConnected)info.element.before(gradeLab.toolbar);
     if(weightMapButton)weightMapButton.textContent=gradeLab.active?'Posted assignment weight map':'Assignment weight map';
+    gradeLab.comments?.refresh(info.headers);
     refreshAssignmentLabButtons();
   }
   function assignmentPercentCells(a){
@@ -3696,6 +3819,11 @@ const GradeDOM = (() => {
         const count=el('label');count.append(included,el('span','Count'));
         const undo=button('Reset',()=>{gradeLab.edits.delete(a.id);gradeLab.ranges.delete(a.id);syncLabEditors(a.id);renderGradeLabResult();},'ap-lab-undo');undo.setAttribute('aria-label',`Reset hypothetical score for ${a.name}`);
         const actions=el('span',null,{class:'ap-lab-row-actions','data-ap-owned':'lab-actions'});actions.append(count,undo);labContain(actions);
+        const comments=gradeLab.comments;
+        if(comments.canEdit(a.id)){
+          const editComment=button('Comment',()=>comments.open(a.id));
+          editComment.setAttribute('aria-label',`Personal comment for ${a.name}`);actions.append(editComment);
+        }
         const update=next=>{
           next={...next,included:included.checked};
           if(JSON.stringify(next)===JSON.stringify(labDraft(a)))gradeLab.edits.delete(a.id);else gradeLab.edits.set(a.id,next);
@@ -5237,9 +5365,9 @@ window.addEventListener('pagehide',abortScheduleRequests);
 
       const ok=persist();restoreTitles();scan();message.className=ok?'ap-muted':'ap-error';message.textContent=ok?'Saved.':storageError;
     },'ap-primary'),message);
-    const local=el('div',null,{class:'ap-box'});local.append(el('h3','Saved settings'),note('Your userscript manager stores preferences, discovered course names/keys, customizations, grading rules and drafts, and replacement assignment references. Posted grades, hypothetical scores, and ranges are not saved. Review manager sync/backups if you want configuration kept on one device.'),note('Clear saved settings removes profiles, course customizations, and grading rules, then pauses Playground. Reload other Aeries tabs afterward. This does not remove copies held in manager sync or backups.'));
+    const local=el('div',null,{class:'ap-box'});local.append(el('h3','Saved settings'),note('Your userscript manager stores preferences, discovered course names/keys, customizations, grading rules and drafts, replacement assignment references, and any personal comments you save. Posted grades, hypothetical scores, and ranges are not saved. Review manager sync/backups if you want configuration kept on one device.'),note('Clear saved settings removes profiles, course customizations, grading rules, and personal comments, then pauses Playground. Reload other Aeries tabs afterward. This does not remove copies held in manager sync or backups.'));
     const clearMessage=note('','ap-saving');local.append(button('Clear saved settings and pause',()=>{
-      if(!window.confirm('Clear all Aeries Playground settings, profiles, course customizations, and grading rules? Playground will be paused.'))return;
+      if(!window.confirm('Clear all Aeries Playground settings, profiles, course customizations, grading rules, and personal comments? Playground will be paused.'))return;
       if(clearSavedSettings()){renderTab('settings');content.append(note('Saved settings cleared. Playground is paused. Reload other Aeries tabs.'));}
       else {clearMessage.className='ap-error';clearMessage.textContent=storageError;}
     }),clearMessage);content.append(local);

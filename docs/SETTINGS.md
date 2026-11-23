@@ -19,6 +19,7 @@ Most controls below are shared with public 3.0.0 and the 3.1.0 integration. The 
 | **Settings**: colors, thresholds, profile, year | **Save settings** validates the fields and applies the form | Select **Save settings** and check its message |
 | **Course grading profile** | Edits save automatically; complete valid rules apply, incomplete/invalid edits remain a draft | Check the status; **Save course grading profile** validates explicitly and focuses the first invalid field |
 | Replacement rule list | Adding/removing a rule saves automatically; an explicit save is also available | Finish and add the rule, or clear unfinished entry fields |
+| **Personal comments** in the grade testing lab (3.1.2 prerelease) | **Save comment** stores the selected assignment’s note. **Remove comment** deletes it. | Check for **Comment saved.** or **Comment removed.** |
 | Score, Complete, Count, Range, or a new hypothetical assignment | Changes only the current in-memory scenario | There is no scenario save button |
 
 Switching dialog tabs or reopening a form can discard unsaved Courses and ordinary Settings fields without a warning. **Save settings** does not save the Courses form, and **Save course settings** does not save a scenario. Closing the dialog alone leaves grade testing active.
