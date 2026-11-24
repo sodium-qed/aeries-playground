@@ -18,7 +18,7 @@ class Control {
   constructor(tag) {
     this.tagName = tag.toUpperCase(); this.children = []; this.attributes = new Map();
     this.listeners = new Map(); this.value = ''; this.textContent = ''; this.hidden = false;
-    this.dataset = {}; this.style = {}; this.parentElement = null; this.connected = false;
+    this.dataset = {}; this.style = {setProperty() {}}; this.parentElement = null; this.connected = false;
   }
   get isConnected() { return this.connected || Boolean(this.parentElement?.isConnected); }
   get parentNode() { return this.parentElement; }
@@ -57,6 +57,7 @@ function fixture(initial = null, options = {}) {
     section('const GradeDOM = (() => {', '  // Period-to-course matching stays local;'),
     section('  const CourseSchedule = (() => {', '  const AP_KEY ='),
     section('  const AP_KEY =', '  let cards ='),
+    section('  const fmt =', '  function el(tag,'),
     section('  function el(tag,', '  const dashboardPainted='),
     section('  const OverallMath = (() => {', '  // Keep summaries in normal document flow,'),
     section('  function setToggle(', '  function annotate('),
@@ -64,8 +65,8 @@ function fixture(initial = null, options = {}) {
     'let gradeLab = null;',
     section('  function planningCourse(){', '  function initPlanningUI(){'),
     section('  function buildGradingProfileUI(', '  function labContain('),
-    section('  function labAssignmentDraft(', '  function buildLabRangeControls('),
-    section('  function labDraft(', '  function sizeLabNumberInput('),
+    section('  function labContain(', '  function applyLabActionTypography('),
+    section('  function labAssignmentDraft(', '  function mountLabEditors('),
     section('  function labModel(){', '  function labGrade('),
     `const content=document.createElement('div');document.body.append(content);const kbar={toggle(){},destroy(){},attachControls(){}};`,
     section('  function renderSettings(){', '  let scanTimer'),
@@ -76,6 +77,7 @@ function fixture(initial = null, options = {}) {
       persist, queueSave, clearSavedSettings, cutoffs, planningRef, resolvePlanningRef, bindPlanningRename,
       planningRows, planningRules, serializePlanningRules, savePlanningReplacementRules,
       labDraft, labScoreState, updateLabScoreDraft, labPointDraft, labModel, labRangeState, labRangeScenario,
+      buildLabScoreControls, buildLabRangeControls, connectLabRangeControls,
       labHasCountedRanges, buildGradingProfileUI, buildPersonalComments, setToggle, renderSettings, content,
       get db() { return db; }, get error() { return storageError; }, get recovery() { return typeof storageRecovery==='string'?storageRecovery:''; },
       get pending() { return savePending; }, get blocked() { return typeof storageLoadBlocked==='boolean'?storageLoadBlocked:false; },
@@ -244,6 +246,71 @@ test('raw/point linking preserves entered point precision and raw bounds orderin
   assert.equal(raw.earned,'14.5'); assert.equal(raw.scoreMode,'raw');
   const inverted = api.labRangeState({mode:'raw',lowMode:'raw',highMode:'raw',low:'1.001',high:'1',rawPossible:'1000'},draft({possible:'1'}));
   assert.ok(inverted.error); assert.equal(inverted.invalidLow,true);
+});
+
+test('Grade Lab percentage entry updates linked fields, preserves the total, and switches back to points or raw marks', () => {
+  const { api } = fixture();
+  const original = assignment({earned:30,possible:40,rawEarned:15,rawPossible:20});
+  const state = lab(api,[original]);
+  const editor = api.buildLabScoreControls(api.labDraft(original),original.name,next => state.edits.set(original.id,next));
+  assert.equal(editor.percentage.value,'75');
+  const enter = (field,value) => { editor[field].value=value; editor[field].dispatch('input'); };
+  enter('percentage','87.5%');
+  assert.equal(editor.percentage.value,'87.5');
+  assert.equal(editor.earned.value,'35');
+  assert.equal(editor.possible.value,'40');
+  assert.equal(editor.rawEarned.value,'17.5');
+  assert.equal(api.labModel().assignments[0].earned,35);
+  enter('possible','80');
+  assert.equal(editor.earned.value,'70');
+  assert.equal(editor.percentage.value,'87.5');
+  enter('earned','65');
+  assert.equal(editor.percentage.value,'81.25');
+  enter('rawEarned','18');
+  assert.equal(editor.percentage.value,'90');
+  assert.equal(api.labModel().assignments[0].earned,72);
+  assert.equal(original.earned,30);
+});
+
+test('percentage scores allow zero and extra credit, treat blank as ungraded, and validate counted entries', () => {
+  const { api } = fixture();
+  const score = (value,overrides) => api.labScoreState(api.updateLabScoreDraft(draft(overrides),'percentage',value));
+  assert.equal(score('0').earned,0);
+  assert.equal(score('125',{possible:'4'}).earned,5);
+  assert.equal(score('').earned,null);
+  assert.equal(score('',{possible:''}).error,'');
+  assert.equal(score('90',{possible:''}).invalidPossible,true);
+  assert.equal(score('-1').invalidEarned,true);
+  assert.equal(score('eight').invalidEarned,true);
+  assert.equal(score('eight',{included:false}).error,'');
+  const fractional = score('97.777777',{possible:'15'}).earned;
+  assert.ok(Math.abs(fractional-14.66666655)<1e-12);
+});
+
+test('percentage ranges keep each bound’s entered units and update hypothetical totals', () => {
+  const { api } = fixture();
+  const original = assignment({earned:30,possible:40});
+  const state = lab(api,[original]);
+  let draft = api.updateLabScoreDraft(api.labDraft(original),'percentage','87.5');
+  state.edits.set(original.id,draft);
+  const editor = api.buildLabScoreControls(draft,original.name,next => { draft=next; state.edits.set(original.id,next); });
+  const range = api.buildLabRangeControls(original.id,original.name,() => editor.sync(draft));
+  api.connectLabRangeControls(editor,range);
+  range.enabled.checked=true; range.enabled.dispatch('change');
+  assert.equal(range.mode.value,'percentage');
+  assert.equal(range.low.value,'87.5');
+  assert.equal(editor.percentage.disabled,true);
+  range.low.value='75%'; range.low.dispatch('input');
+  range.mode.value='points'; range.mode.dispatch('change');
+  assert.equal(range.low.value,'30');
+  range.high.value='38'; range.high.dispatch('input');
+  const result = api.labRangeScenario(api.labModel(),rules).result;
+  assert.equal(result.lowResult.value,75);
+  assert.equal(result.highResult.value,95);
+  assert.equal(state.ranges.get(original.id).lowMode,'percentage');
+  range.enabled.checked=false; range.enabled.dispatch('change');
+  assert.equal(editor.percentage.disabled,false);
+  assert.equal(editor.percentage.value,'87.5');
 });
 
 test('weighted profile validates categories activated only by a counted range', () => {

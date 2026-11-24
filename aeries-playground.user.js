@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Aeries Playground
 // @namespace    local.aeries-playground
-// @version      3.1.2
+// @version      3.1.3
 // @description  Aeries grade tools, a configurable purple bonus grade band, saved and temporary /4 assignment weights, native regression forecasts, validated fractional-score recovery and conservative rounding-aware targets, an assignment weight map with an optional ungraded-work preview, compact linked score testing with live grade impact, hypothetical ranges, weighted and unweighted letter-based GPA or a color-coded overall average, a next-class countdown that continues after school using mvhs.io with seconds cross-checked against bell.plus, and optional looping KBAR music (P).
 // @match        https://mvla.aeries.net/student/*
 // @run-at       document-idle
@@ -2741,6 +2741,7 @@ const GradeDOM = (() => {
     .ap-lab-pair input.ap-lab-number[readonly]{border-color:transparent!important}
     .ap-lab-pair input.ap-lab-number::placeholder{color:#9aa6b5;opacity:1}
     .ap-lab-pair[hidden]{display:none!important}
+    .ap-lab-pair[data-score-kind=points]>.ap-lab-pair[data-score-kind=percentage]{margin-inline-start:.45em}
     .ap-lab-raw-fallback{display:flex;flex-basis:100%;align-items:baseline;justify-content:flex-end;gap:5px;font-size:12px;line-height:1.5}
     .ap-lab-pair.ap-lab-has-fallback{flex-wrap:wrap}
     .ap-lab-raw-fallback small{font-size:10px;color:#8a98ab}
@@ -3496,7 +3497,7 @@ const GradeDOM = (() => {
       toolbar.append(actions,el('p',freshNotice?'Gradebook changed. Hypothetical changes were reset.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.',{class:'ap-lab-help'}),
         el('p','',{id:'ap-lab-result','aria-live':'polite','aria-atomic':'true'}),
         el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in userscript-manager storage. Nothing is submitted to Aeries.'),
-        el('p','Turn on Range to enter lower and upper bounds; multiple ranges update the combined grade. Percentage gradebooks allow # correct or Points; four-point gradebooks use Points. For a single score, edit Score or the available Complete fields. Blank means ungraded. Raw scores convert to points rounded down to 2 decimals; directly entered points are not deliberately rounded. For unequal question values, use raw marks.'));
+        el('p','Edit Score, %, or the available Complete fields. A percentage uses the assignment’s Score total. Blank means ungraded. Turn on Range to enter lower and upper bounds in points, percentages, or # correct where available. Raw scores convert to points rounded down to 2 decimals. For unequal question values, use raw marks.'));
       const precisionNote=note('Some posted scores are rounded. Grade and impact estimates use displayed points; required-score results use the conservative lower bound allowed by those displays.');
       precisionNote.classList.add('ap-lab-precision-note');precisionNote.hidden=!gradeLab.rounding;toolbar.append(precisionNote);
       info.element.before(toolbar);
@@ -3555,7 +3556,7 @@ const GradeDOM = (() => {
     const toggle=gradeLab.toolbar.querySelector('#ap-lab-toggle');
     toggle.textContent=active?'Exit grade testing':'Start grade testing';toggle.setAttribute('aria-pressed',String(active));
     gradeLab.toolbar.querySelector('#ap-lab-reset').hidden=!active;
-    gradeLab.toolbar.querySelector('.ap-lab-help').textContent=active?'Edit Score or Complete, or turn on Range for any assignments to enter lower and upper bounds. Count controls whether each assignment contributes.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.';
+    gradeLab.toolbar.querySelector('.ap-lab-help').textContent=active?'Edit Score, %, or Complete, or turn on Range to enter lower and upper bounds. Count controls whether each assignment contributes.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.';
     if(active)mountLabEditors();
     else gradeLab.toolbar.querySelector('#ap-lab-result').textContent='';
     refreshPlanningUI();
@@ -3574,11 +3575,13 @@ const GradeDOM = (() => {
     const possible=GradeMath.parseNumber(draft.possible),rawPossible=GradeMath.parseNumber(bounds.rawPossible);
     const mode=bounds.mode||'points';
     const endpoint=key=>{
-      const basis=bounds[key+'Mode']||'points',text=String(bounds[key]??''),number=GradeMath.parseNumber(text);
+      const basis=bounds[key+'Mode']||'points',text=String(bounds[key]??'');
+      const number=basis==='percentage'?labPercentNumber(text):GradeMath.parseNumber(text);
       const converted=basis==='raw'?GradeMath.convertRawScore(text,bounds.rawPossible,draft.possible):null;
-      const earned=basis==='raw'?converted.earned:number;
-      const raw=basis==='raw'?number:possible>0&&rawPossible>0&&number!==null?number/possible*rawPossible:null;
-      const display=mode===basis?text:mode==='points'?(earned===null?'':String(earned)):(Number.isFinite(raw)?fmt(raw):'');
+      const earned=basis==='raw'?converted.earned:basis==='percentage'?labPercentagePoints(number,possible):number;
+      const ratio=possible>0&&earned!==null?earned/possible:null;
+      const equivalent=mode==='percentage'&&ratio!==null?ratio*100:mode==='raw'&&ratio!==null&&rawPossible>0?ratio*rawPossible:null;
+      const display=mode===basis?text:mode==='points'?(earned===null?'':String(earned)):(Number.isFinite(equivalent)?fmt(equivalent):'');
       return {basis,text,number,earned,display,error:converted?.error||''};
     };
     const low=endpoint('low'),high=endpoint('high');
@@ -3586,7 +3589,8 @@ const GradeDOM = (() => {
     // Two raw bounds are ordered before truncation. Mixed units compare actual
     // point scores, so a raw endpoint and its converted point value can be equal.
     const inverted=low.number!==null&&high.number!==null&&(low.basis===high.basis?low.number>high.number:low.earned>high.earned);
-    const invalidLow=low.number===null||low.number<0||inverted,invalidHigh=high.number===null||high.number<0||inverted;
+    const invalidLow=low.number===null||low.number<0||inverted||(low.basis==='percentage'&&!invalidPossible&&low.earned===null);
+    const invalidHigh=high.number===null||high.number<0||inverted||(high.basis==='percentage'&&!invalidPossible&&high.earned===null);
     const error=invalidPossible?'Enter a positive Score total.':invalidRawPossible?'Enter a positive number of questions or raw marks.':invalidLow||invalidHigh?'Enter nonnegative lower and upper bounds, with lower no greater than upper.':low.error||high.error;
     return {mode,low,high,possible,rawPossible,needsRaw,invalidPossible,invalidRawPossible,invalidLow,invalidHigh,error};
   }
@@ -3617,7 +3621,7 @@ const GradeDOM = (() => {
     const mode=el('select',null,{'data-field':'rangeMode','aria-label':`Bounds entry units for ${name}`});
     const average=Boolean(gradeLab.parsed.rules.averageMaximum);
     if(!average)mode.append(el('option','# correct',{value:'raw'}));
-    mode.append(el('option','Points',{value:'points'}));
+    mode.append(el('option','Points',{value:'points'}),el('option','Percentage (%)',{value:'percentage'}));
     const modeLabel=el('label',null,{class:'ap-lab-range-mode'});modeLabel.append(el('span','Bounds in'),mode);panel.append(modeLabel);
     for(const [label,node] of [['Lower bound',low],['Upper bound',high]]){const group=el('label');group.append(el('span',label),node);panel.append(group);}
     const rawPossible=labField('','rangeRawPossible',`Total questions or raw marks for bounds on ${name}`);
@@ -3632,25 +3636,27 @@ const GradeDOM = (() => {
       rawTotalLabel.hidden=average||!state.needsRaw;
       low.setAttribute('aria-invalid',String(state.invalidLow));high.setAttribute('aria-invalid',String(state.invalidHigh));
       rawPossible.setAttribute('aria-invalid',String(state.invalidRawPossible));
-      low.setAttribute('aria-label',`Lower bound in ${state.mode==='raw'?'number correct':'points'} for ${name}`);
-      high.setAttribute('aria-label',`Upper bound in ${state.mode==='raw'?'number correct':'points'} for ${name}`);
+      const unit=state.mode==='raw'?'number correct':state.mode==='percentage'?'percent':'points';
+      low.setAttribute('aria-label',`Lower bound in ${unit} for ${name}`);
+      high.setAttribute('aria-label',`Upper bound in ${unit} for ${name}`);
       low.disabled=high.disabled=mode.disabled=rawPossible.disabled=!draft.included;panel.dataset.excluded=String(!draft.included);
-      hint.textContent=!draft.included?'Not counted':state.error?state.error:state.mode==='raw'
-        ?`${fmt(state.low.earned)}–${fmt(state.high.earned)} points out of ${fmt(state.possible)}${state.low.basis==='points'||state.high.basis==='points'?' · Equivalent # correct; entered points avoid raw-score conversion.':''}`
+      hint.textContent=!draft.included?'Not counted':state.error?state.error:state.mode!=='points'
+        ?`${fmt(state.low.earned)}–${fmt(state.high.earned)} points out of ${fmt(state.possible)}${state.mode==='raw'&&(state.low.basis!=='raw'||state.high.basis!=='raw')?' · Equivalent # correct.':''}`
         :`Score points out of ${fmt(state.possible)}${state.low.basis==='raw'||state.high.basis==='raw'?' · Linked to # correct.':''}`;
     }};
     enabled.addEventListener('change',()=>{
       if(enabled.checked){
         const draft=labAssignmentDraft(id),state=labScoreState(draft),score=state.error?null:state.earned;
-        const entryMode=!average&&state.rawPossible>0?'raw':'points';
-        const basis=score===null?entryMode:entryMode==='raw'&&draft.scoreMode==='raw'&&!draft.rawDerived?'raw':'points';
-        const value=score===null?'0':basis==='raw'?String(draft.rawEarned):String(score),total=basis==='raw'?state.rawPossible:state.possible;
+        const entryMode=draft.scoreMode==='percentage'?'percentage':!average&&state.rawPossible>0?'raw':'points';
+        const basis=score===null||entryMode==='percentage'?entryMode:entryMode==='raw'&&draft.scoreMode==='raw'&&!draft.rawDerived?'raw':'points';
+        const value=score===null?'0':basis==='percentage'?draft.percentage:basis==='raw'?String(draft.rawEarned):String(score);
+        const total=basis==='percentage'?100:basis==='raw'?state.rawPossible:state.possible;
         gradeLab.ranges.set(id,{mode:entryMode,lowMode:basis,highMode:basis,low:value,high:score===null?(total>0?String(total):''):value,rawPossible:draft.rawPossible||''});
       }else gradeLab.ranges.delete(id);
       onChange();
     });
     mode.addEventListener('change',()=>{
-      const bounds=gradeLab.ranges.get(id);if(!bounds||!['points','raw'].includes(mode.value)||average&&mode.value==='raw')return;
+      const bounds=gradeLab.ranges.get(id);if(!bounds||!['points','raw','percentage'].includes(mode.value)||average&&mode.value==='raw')return;
       // Unit switches only change the display. Each endpoint retains its entered
       // units and precision until that particular endpoint is edited again.
       gradeLab.ranges.set(id,{...bounds,mode:mode.value});onChange();
@@ -3672,7 +3678,7 @@ const GradeDOM = (() => {
       syncScore(draft);range.sync(draft);
       const active=range.enabled.checked;
       if(active && draft.included)scoreControls.possible.setAttribute('aria-invalid',String(!(GradeMath.parseNumber(draft.possible)>0)));
-      for(const node of [scoreControls.earned,scoreControls.rawEarned,scoreControls.rawPossible]){
+      for(const node of [scoreControls.earned,scoreControls.rawEarned,scoreControls.rawPossible,scoreControls.percentage]){
         node.disabled=active;
         if(active)node.setAttribute('aria-invalid','false');
       }
@@ -3699,39 +3705,50 @@ const GradeDOM = (() => {
     const n=input(value);n.dataset.field=name;n.setAttribute('aria-label',label);n.autocomplete='off';
     n.setAttribute('inputmode','decimal');return n;
   }
+  function labPercentNumber(text){return GradeMath.parseNumber(String(text??'').trim().replace(/%$/,''));}
+  function labPercentagePoints(percentage,possible){
+    if(percentage===null||percentage<0||!(possible>0))return null;
+    const points=percentage/100*possible;
+    return Number.isFinite(points)?points:null;
+  }
   function labScoreState(draft){
-    const raw=draft.scoreMode==='raw',text=raw?draft.rawEarned:draft.earned;
+    const raw=draft.scoreMode==='raw',percentage=draft.scoreMode==='percentage';
+    const text=raw?draft.rawEarned:percentage?draft.percentage:draft.earned;
     const blank=String(text??'').trim()==='',possible=GradeMath.parseNumber(draft.possible);
-    const rawTotal=GradeMath.parseNumber(draft.rawPossible),number=GradeMath.parseNumber(text);
+    const rawTotal=GradeMath.parseNumber(draft.rawPossible),number=percentage?labPercentNumber(text):GradeMath.parseNumber(text);
+    const percentPoints=percentage?labPercentagePoints(number,possible):null;
     const counted=draft.included!==false;
-    const invalidEarned=counted&&!blank&&(number===null||number<0);
+    const invalidEarned=counted&&!blank&&(number===null||number<0||(percentage&&possible>0&&percentPoints===null));
     const invalidPossible=counted&&!blank&&(possible===null||possible<=0);
     const invalidRawPossible=counted&&raw&&!blank&&(rawTotal===null||rawTotal<=0);
     const converted=raw&&!blank?GradeMath.convertRawScore(draft.rawEarned,draft.rawPossible,draft.possible):null;
-    const earned=blank?null:raw?converted.earned:invalidEarned?null:number;
+    const earned=blank?null:raw?converted.earned:percentage?percentPoints:invalidEarned?null:number;
     const error=counted&&(invalidEarned||invalidRawPossible||invalidPossible||converted?.error);
     return {earned,possible,blank,invalidEarned,invalidPossible,invalidRawPossible,
       rawEarned:GradeMath.parseNumber(draft.rawEarned),rawPossible:rawTotal,rawDerived:Boolean(draft.rawDerived),
-      error:error?(raw?'Enter a nonnegative number correct and positive totals.':'Enter a nonnegative score and a positive total.'):''};
+      error:error?(raw?'Enter a nonnegative number correct and positive totals.':percentage?'Enter a nonnegative percentage and a positive Score total.':'Enter a nonnegative score and a positive total.'):''};
   }
   function updateLabScoreDraft(draft,field,value){
     const next={...draft};
     if(field==='multiplier')return {...next,multiplier:String(value??'')};
-    if(!['earned','possible','rawEarned','rawPossible'].includes(field))return next;
+    if(!['earned','possible','rawEarned','rawPossible','percentage'].includes(field))return next;
     next[field]=String(value??'');
+    if(field==='percentage')next.percentage=next.percentage.replace(/(\d)\s*%\s*$/,'$1');
     const previous=GradeMath.parseNumber(draft[field]),entered=GradeMath.parseNumber(next[field]);
     // Merely re-entering an equivalent value must not round-trip inferred raw marks.
     if(previous!==null&&entered!==null&&previous===entered)return next;
     const raw=field==='rawEarned'||field==='rawPossible';
-    next.scoreMode=raw?'raw':'points';
+    const percentage=field==='percentage'||(field==='possible'&&draft.scoreMode==='percentage');
+    next.scoreMode=raw?'raw':percentage?'percentage':'points';
     if(raw){
       // When no raw total was available, entering it first links the existing points.
       const points=GradeMath.parseNumber(draft.earned),possible=GradeMath.parseNumber(next.possible);
       if(field==='rawPossible'&&String(draft.rawEarned??'').trim()===''&&draft.scoreMode!=='raw'&&points!==null&&points>=0&&possible>0&&entered>0){
         const equivalent=points/possible*entered;
         next.rawEarned=Number.isFinite(equivalent)?String(equivalent):'';
-        next.scoreMode='points';next.rawDerived=next.rawEarned!=='';return next;
+        next.scoreMode=draft.scoreMode;next.rawDerived=next.rawEarned!=='';return next;
       }
+      delete next.percentage;
       if(field==='rawEarned')next.rawDerived=false;
       if(String(next.rawEarned??'').trim()===''){
         next.earned='';next.rawDerived=false;return next;
@@ -3739,6 +3756,8 @@ const GradeDOM = (() => {
       const converted=GradeMath.convertRawScore(next.rawEarned,next.rawPossible,next.possible);
       next.earned=converted.error?'':String(converted.earned);
     }else{
+      if(percentage)next.earned=labScoreState(next).earned??'';
+      else delete next.percentage;
       const points=GradeMath.parseNumber(next.earned),possible=GradeMath.parseNumber(next.possible),total=GradeMath.parseNumber(next.rawPossible);
       const equivalent=points!==null&&points>=0&&possible>0&&total>0?points/possible*total:NaN;
       next.rawEarned=Number.isFinite(equivalent)?String(equivalent):'';
@@ -3756,32 +3775,38 @@ const GradeDOM = (() => {
   }
   function buildLabScoreControls(draft,name,onChange,average=false){
     const pair=(kind)=>el('span',null,{class:'ap-lab-editor ap-lab-pair','data-score-kind':kind});
-    const score=pair('points'),raw=pair('raw');
+    const score=pair('points'),raw=pair('raw'),percentScore=pair('percentage');
     const earned=labField(draft.earned,'earned',`Hypothetical score for ${name}`);
     const possible=labField(draft.possible,'possible',`Score total for ${name}`);
     const rawEarned=labField(draft.rawEarned||'','rawEarned',`Number correct or raw score for ${name}`);
     const rawPossible=labField(draft.rawPossible||'','rawPossible',`Total questions or raw marks for ${name}`);
+    const percentage=labField(draft.percentage||'','percentage',`Hypothetical score percentage for ${name}`);
     const multiplier=labField(draft.multiplier??'1','multiplier',`Assignment weight for ${name}; counts as this many assignments`);
-    const controls={earned,possible,rawEarned,rawPossible,multiplier};
+    const controls={earned,possible,rawEarned,rawPossible,percentage,multiplier};
     for(const [key,node] of Object.entries(controls)){
       node.className='ap-lab-number'+(/Possible$|^possible$/.test(key)?' ap-lab-denominator':'');
       node.spellcheck=false;node.setAttribute('title',node.getAttribute('aria-label'));
     }
     rawPossible.placeholder='?';
+    percentage.placeholder='—';
     multiplier.className='ap-lab-multiplier';
     const weightControl=el('label',null,{class:'ap-lab-weight'});
     weightControl.append(el('span','Counts as'),multiplier,el('span','×'));
     weightControl.hidden=!average;labContain(weightControl);
     score.append(earned,el('span','/',{'aria-hidden':'true'}),possible);
     raw.append(rawEarned,el('span','/',{'aria-hidden':'true'}),rawPossible);
-    labContain(score);labContain(raw);
+    percentScore.append(percentage,el('span','%',{'aria-hidden':'true'}));
+    labContain(score);labContain(raw);labContain(percentScore);
     if(average){possible.readOnly=true;raw.hidden=true;}
-    const c={score,raw,weightControl,...controls};
+    const c={score,raw,percentScore,weightControl,...controls};
     let current={...draft},editingField='';
     c.sync=next=>{
       current={...next};
-      const rawNumber=GradeMath.parseNumber(next.rawEarned);
-      const values={earned:next.earned,possible:next.possible,multiplier:next.multiplier??'1',rawPossible:next.rawPossible||'',
+      const state=labScoreState(next),fromRaw=next.scoreMode==='raw',fromPercentage=next.scoreMode==='percentage';
+      const rawNumber=state.rawEarned,percent=state.earned!==null&&state.possible>0?state.earned/state.possible*100:null;
+      const values={earned:fromPercentage&&state.earned!==null&&editingField!=='earned'&&document.activeElement!==earned?fmt(state.earned):next.earned,
+        possible:next.possible,multiplier:next.multiplier??'1',rawPossible:next.rawPossible||'',
+        percentage:fromPercentage?next.percentage:Number.isFinite(percent)?fmt(percent):'',
         rawEarned:next.rawDerived&&rawNumber!==null&&editingField!=='rawEarned'&&document.activeElement!==rawEarned?fmt(rawNumber):next.rawEarned||''};
       // Keep the active input node and typed string intact, including partial
       // decimals. Changing a partner never feeds its display rounding back.
@@ -3789,13 +3814,13 @@ const GradeDOM = (() => {
         if(node.value!==String(values[key]??''))node.value=String(values[key]??'');
         sizeLabNumberInput(node);
       }
-      const state=labScoreState(next),fromRaw=next.scoreMode==='raw';
       const weight=GradeMath.parseNumber(next.multiplier??1);
       multiplier.setAttribute('aria-invalid',String(!(weight>0)));
       weightControl.title=!(weight>0)?'Enter a positive weight, such as 1, 2, 3, or 0.5. Use Count to exclude an assignment.':
         `Counts as ${fmt(weight)} assignments inside its category. The score stays out of ${fmt(state.possible)}. Weight applies after any replacement or score limits, including range endpoints. This test weight resets when grade testing ends.`;
-      earned.setAttribute('aria-invalid',String(!fromRaw&&state.invalidEarned));
+      earned.setAttribute('aria-invalid',String(!fromRaw&&!fromPercentage&&state.invalidEarned));
       rawEarned.setAttribute('aria-invalid',String(fromRaw&&state.invalidEarned));
+      percentage.setAttribute('aria-invalid',String(fromPercentage&&state.invalidEarned));
       possible.setAttribute('aria-invalid',String(state.invalidPossible));
       rawPossible.setAttribute('aria-invalid',String(state.invalidRawPossible));
       rawEarned.title=next.rawDerived?'Equivalent raw score (approximate). Your entered points are retained without raw-score conversion.':`Number correct or raw score for ${name}`;
@@ -3836,6 +3861,7 @@ const GradeDOM = (() => {
         c.score.dataset.assignmentId=a.id;c.raw.dataset.assignmentId=a.id;
         const view=cell.closest('tr.assignment-info,tr.CardView');
         const rawCell=rawTargets.find(target=>view?.contains(target)&&target!==cell&&!target.contains(cell)&&!cell.contains(target));
+        c.score.append(c.percentScore);
         labOverlay(cell,c.score);
         if(!gradeLab.parsed.rules.averageMaximum){
           if(rawCell)labOverlay(rawCell,c.raw);
@@ -3929,6 +3955,7 @@ const GradeDOM = (() => {
     };
     scores.append(scoreField('Score',scoreControls.score));
     if(!average)scores.append(scoreField('Complete',scoreControls.raw));
+    scores.append(scoreField('Percentage',scoreControls.percentScore));
     const percent=el('span','—',{class:'ap-lab-new-percent','aria-label':'Hypothetical assignment grade'});
     const toggleHost=el('span',null,{class:'ap-lab-assignment-toggle'});
     toggleHost.append(button('Exit grade testing',()=>setGradeLabActive(false)));
