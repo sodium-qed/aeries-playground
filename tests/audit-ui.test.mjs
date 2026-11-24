@@ -87,14 +87,16 @@ test('lab event containment preserves native Enter activation for buttons and se
 });
 
 function labRenderFixture({ colors, ranged = false, average = false }) {
+  const percentCell = { id: 'assignment-percent' };
   const assignment = { id: 'posted:1', name: 'Fictional practice', category: 'Practice', earned: 80, possible: 100, included: true, sourceNameCells: [element('td')] };
   const added = { id: 'hypothetical:1', name: 'Fictional future', category: 'Practice', earned: 90, possible: 100, included: true };
   const calculated = { value: 85, totalEarned: 170, totalPossible: 200, appliedReplacements: [], effectiveAssignments: [assignment, added], categories: [{ name: 'Practice', percent: 85, earned: 170, possible: 200 }] };
   const summary = Object.fromEntries(['DESC', 'PCT', 'MK', 'PTS', 'MX'].map(key => [key, { id: key, textContent: key === 'DESC' ? 'Total' : '85%' }]));
   const row = { querySelector(selector) { return summary[selector.match(/_td(\w+)/)[1]]; } };
-  const editor = { earned: { style: {} }, rawEarned: { style: {} }, undo: {} };
+  const percentageControls = () => ({ percentEntry: element('span'), percentResult: element('span'), range: { enabled: { checked: ranged } } });
+  const editor = { ...percentageControls(), percentCell, earned: { style: {} }, rawEarned: { style: {} }, undo: {} };
   const addedControls = Object.fromEntries(['name', 'earned', 'rawEarned', 'percent'].map(key => [key, { style: {} }]));
-  Object.assign(addedControls, { included: {}, sync() {} });
+  Object.assign(addedControls, percentageControls(), { included: {}, sync() {} });
   const lab = { active: true, parsed: { assignments: [assignment], rules: { official: 85, officialUnit: 'percent', averageMaximum: average ? 4 : null } },
     edits: new Map([[assignment.id, {}]]), ranges: new Map(), added: [added], editors: new Map([[assignment.id, [editor]]]), addedEditors: new Map([[added.id, addedControls]]), badges: [], toolbar: { querySelector() { return {}; } } };
   const colorsUsed = [], values = [];
@@ -103,11 +105,11 @@ function labRenderFixture({ colors, ranged = false, average = false }) {
     labRangeScenario: () => ({ active: ranged, error: '', result: ranged ? { lowResult: calculated, highResult: calculated, rangeCount: 1 } : null }),
     GradeMath: { calculate: () => calculated }, planningBaselineError: () => '', fmt: String,
     planningFormat: String, detailsColor(value, unit) { colorsUsed.push({ value, unit }); return '#123456'; },
-    labGrade: String, assignmentPercentCells: () => [{ id: 'assignment-percent' }], labValue: (cell, text, color) => values.push({ id: cell?.id, color }),
-    labTag: () => element('span'), detailPaint: (cell, color) => values.push({ id: 'name', color }),
+    labGrade: String, assignmentPercentCells: () => [percentCell], labValue: (cell, text, color) => values.push({ id: cell?.id, color }),
+    labTag: () => element('span'), el: (tag,text) => Object.assign(element(tag), { textContent: text }), detailPaint: (cell, color) => values.push({ id: 'name', color }),
     document: { querySelectorAll: () => [row] }, GradeDOM: { cleanText: node => node.textContent },
     refreshGradeLabImpacts() {}, refreshPlanningUI() {}, refreshAssignmentLabButtons() {} };
-  const { renderGradeLabResult } = load(slice('  function renderGradeLabResult(', '\n  function syncAeriesFont('), ['renderGradeLabResult'], bindings);
+  const { renderGradeLabResult } = load(slice('  function renderLabPercentage(', '\n  function syncAeriesFont('), ['renderGradeLabResult'], bindings);
   renderGradeLabResult();
   return { colorsUsed, values, editor, addedControls };
 }
@@ -119,6 +121,9 @@ test('detailsColors off removes grade-band colors consistently from edited, adde
     assert.equal(result.editor.earned.style.color, '');
     assert.equal(result.editor.rawEarned.style.color, '');
     assert.equal(result.addedControls.name.style.color, '');
+    assert.equal(result.editor.percentEntry.hidden, false);
+    assert.equal(result.editor.percentResult.hidden, true);
+    assert.ok(result.values.every(value => value.id !== 'assignment-percent'));
     assert.ok(result.values.every(value => !value.color));
   }
 });
@@ -134,6 +139,8 @@ test('enabled grade colors still follow numeric values and ranges remain neutral
       assert.deepEqual(neutral.colorsUsed, []);
       assert.equal(neutral.editor.earned.style.color, '#42566f');
       assert.equal(neutral.addedControls.percent.style.color, '#42566f');
+      assert.equal(neutral.editor.percentEntry.hidden, true);
+      assert.deepEqual(neutral.editor.percentResult.children.map(node => node.textContent), ['Lower: 80', 'Upper: 80']);
     }
   }
 });

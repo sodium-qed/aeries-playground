@@ -2741,7 +2741,8 @@ const GradeDOM = (() => {
     .ap-lab-pair input.ap-lab-number[readonly]{border-color:transparent!important}
     .ap-lab-pair input.ap-lab-number::placeholder{color:#9aa6b5;opacity:1}
     .ap-lab-pair[hidden]{display:none!important}
-    .ap-lab-pair[data-score-kind=points]>.ap-lab-pair[data-score-kind=percentage]{margin-inline-start:.45em}
+    .ap-lab-pair[data-score-kind=percentage]{flex-wrap:wrap;column-gap:.35em}
+    .ap-lab-percentage-result[hidden]{display:none!important}
     .ap-lab-raw-fallback{display:flex;flex-basis:100%;align-items:baseline;justify-content:flex-end;gap:5px;font-size:12px;line-height:1.5}
     .ap-lab-pair.ap-lab-has-fallback{flex-wrap:wrap}
     .ap-lab-raw-fallback small{font-size:10px;color:#8a98ab}
@@ -3497,7 +3498,7 @@ const GradeDOM = (() => {
       toolbar.append(actions,el('p',freshNotice?'Gradebook changed. Hypothetical changes were reset.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.',{class:'ap-lab-help'}),
         el('p','',{id:'ap-lab-result','aria-live':'polite','aria-atomic':'true'}),
         el('p','Hypothetical scores reset when you exit, reload, or change gradebooks. Course grading settings and replacement rules save automatically in userscript-manager storage. Nothing is submitted to Aeries.'),
-        el('p','Edit Score, %, or the available Complete fields. A percentage uses the assignment’s Score total. Blank means ungraded. Turn on Range to enter lower and upper bounds in points, percentages, or # correct where available. Raw scores convert to points rounded down to 2 decimals. For unequal question values, use raw marks.'));
+        el('p','Edit the percentage already shown on an assignment, or use Score or Complete. A percentage uses the assignment’s Score total. Blank means ungraded. Turn on Range to enter lower and upper bounds in points, percentages, or # correct where available. Raw scores convert to points rounded down to 2 decimals. For unequal question values, use raw marks.'));
       const precisionNote=note('Some posted scores are rounded. Grade and impact estimates use displayed points; required-score results use the conservative lower bound allowed by those displays.');
       precisionNote.classList.add('ap-lab-precision-note');precisionNote.hidden=!gradeLab.rounding;toolbar.append(precisionNote);
       info.element.before(toolbar);
@@ -3556,7 +3557,7 @@ const GradeDOM = (() => {
     const toggle=gradeLab.toolbar.querySelector('#ap-lab-toggle');
     toggle.textContent=active?'Exit grade testing':'Start grade testing';toggle.setAttribute('aria-pressed',String(active));
     gradeLab.toolbar.querySelector('#ap-lab-reset').hidden=!active;
-    gradeLab.toolbar.querySelector('.ap-lab-help').textContent=active?'Edit Score, %, or Complete, or turn on Range to enter lower and upper bounds. Count controls whether each assignment contributes.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.';
+    gradeLab.toolbar.querySelector('.ap-lab-help').textContent=active?'Edit the percentage, Score, or Complete on an assignment. Use Range for bounds and Count to include or exclude the assignment.':'Edit scores in the gradebook or add an assignment to try a hypothetical grade.';
     if(active)mountLabEditors();
     else gradeLab.toolbar.querySelector('#ap-lab-result').textContent='';
     refreshPlanningUI();
@@ -3776,6 +3777,8 @@ const GradeDOM = (() => {
   function buildLabScoreControls(draft,name,onChange,average=false){
     const pair=(kind)=>el('span',null,{class:'ap-lab-editor ap-lab-pair','data-score-kind':kind});
     const score=pair('points'),raw=pair('raw'),percentScore=pair('percentage');
+    const percentEntry=pair('percentage-entry');
+    const percentResult=el('span','',{class:'ap-lab-percentage-result ap-lab-bound-values',hidden:''});
     const earned=labField(draft.earned,'earned',`Hypothetical score for ${name}`);
     const possible=labField(draft.possible,'possible',`Score total for ${name}`);
     const rawEarned=labField(draft.rawEarned||'','rawEarned',`Number correct or raw score for ${name}`);
@@ -3795,10 +3798,11 @@ const GradeDOM = (() => {
     weightControl.hidden=!average;labContain(weightControl);
     score.append(earned,el('span','/',{'aria-hidden':'true'}),possible);
     raw.append(rawEarned,el('span','/',{'aria-hidden':'true'}),rawPossible);
-    percentScore.append(percentage,el('span','%',{'aria-hidden':'true'}));
+    percentEntry.append(percentage,el('span','%',{'aria-hidden':'true'}));
+    percentScore.append(percentEntry,percentResult);
     labContain(score);labContain(raw);labContain(percentScore);
     if(average){possible.readOnly=true;raw.hidden=true;}
-    const c={score,raw,percentScore,weightControl,...controls};
+    const c={score,raw,percentScore,percentEntry,percentResult,weightControl,...controls};
     let current={...draft},editingField='';
     c.sync=next=>{
       current={...next};
@@ -3837,6 +3841,7 @@ const GradeDOM = (() => {
     for(const a of gradeLab.parsed.assignments){
       const controls=[],sources=a.sourceCells||[a.sourceCell];
       const rawTargets=(a.rawScoreCells||[]).filter(cell=>cell?.isConnected);
+      const percentTargets=assignmentPercentCells(a).filter(cell=>cell.isConnected);
       for(const [index,cell] of sources.entries()){
         if(!cell?.isConnected)continue;
         const draft=gradeLab.edits.get(a.id)||labDraft(a);
@@ -3861,8 +3866,9 @@ const GradeDOM = (() => {
         c.score.dataset.assignmentId=a.id;c.raw.dataset.assignmentId=a.id;
         const view=cell.closest('tr.assignment-info,tr.CardView');
         const rawCell=rawTargets.find(target=>view?.contains(target)&&target!==cell&&!target.contains(cell)&&!cell.contains(target));
-        c.score.append(c.percentScore);
+        const percentCell=percentTargets.find(target=>view?.contains(target)&&target!==cell&&!target.contains(cell)&&!cell.contains(target));
         labOverlay(cell,c.score);
+        if(percentCell)labOverlay(percentCell,c.percentScore);
         if(!gradeLab.parsed.rules.averageMaximum){
           if(rawCell)labOverlay(rawCell,c.raw);
           else{
@@ -3878,7 +3884,7 @@ const GradeDOM = (() => {
         actionSource.append(actions);applyLabActionTypography(actions,actionSource);gradeLab.rowActions.push(actions);
         (cell.closest('.RightSide')||cell).append(range.panel);gradeLab.rowActions.push(range.panel);
         included.addEventListener('change',()=>update(gradeLab.edits.get(a.id)||labDraft(a)));
-        controls.push({...c,ui:c.score,included,undo});
+        controls.push({...c,ui:c.score,included,undo,percentCell});
       }
       gradeLab.editors.set(a.id,controls);
     }
@@ -3955,8 +3961,8 @@ const GradeDOM = (() => {
     };
     scores.append(scoreField('Score',scoreControls.score));
     if(!average)scores.append(scoreField('Complete',scoreControls.raw));
-    scores.append(scoreField('Percentage',scoreControls.percentScore));
-    const percent=el('span','—',{class:'ap-lab-new-percent','aria-label':'Hypothetical assignment grade'});
+    const percent=el('span',null,{class:'ap-lab-new-percent'});
+    percent.append(scoreControls.percentScore);
     const toggleHost=el('span',null,{class:'ap-lab-assignment-toggle'});
     toggleHost.append(button('Exit grade testing',()=>setGradeLabActive(false)));
     toggleHost.firstElementChild.setAttribute('aria-pressed','true');
@@ -4011,6 +4017,16 @@ const GradeDOM = (() => {
     ui.replaceChildren(...(compact?[value]:[labTag(),value]));
     if(posted)ui.append(el('small','Posted: '+posted));
   }
+  function renderLabPercentage(controls,color,rangeText,appliedText){
+    controls.percentEntry.style.color=color||'';
+    controls.percentResult.style.color=color||'';
+    controls.percentEntry.hidden=controls.range.enabled.checked;
+    const text=controls.percentEntry.hidden?rangeText:appliedText;
+    controls.percentResult.hidden=!text;
+    if(controls.percentResult.dataset.text===text)return;
+    controls.percentResult.dataset.text=text;
+    controls.percentResult.replaceChildren(...(text?text.split(' · ').map(line=>el('span',line)):[]));
+  }
   function renderGradeLabResult(){
     if(!gradeLab)return;
     if(!gradeLab.active){refreshAssignmentLabButtons();return;}
@@ -4029,6 +4045,7 @@ const GradeDOM = (() => {
     if(ranged)restoreDetailsColors();
     const neutral='#42566f',bounds=(low,high)=>`Lower: ${low} · Upper: ${high}`;
     const assignmentPercent=a=>a?.included&&a.earned!==null&&a.possible>0?a.earned/a.possible*100:null;
+    const rawAssignments=new Map(model.assignments.map(a=>[a.id,a]));
     const lowAssignments=new Map((result?.effectiveAssignments||model.assignments).map(a=>[a.id,a]));
     const highAssignments=new Map((upper?.effectiveAssignments||[]).map(a=>[a.id,a]));
     const count=gradeLab.edits.size+gradeLab.added.length;
@@ -4038,14 +4055,23 @@ const GradeDOM = (() => {
       `Hypothetical overall grade — lower bound: ${planningFormat(result.value,rules,true)} · upper bound: ${planningFormat(upper.value,rules,true)} · Posted: ${postedText} · ${range.rangeCount} assignment range${range.rangeCount===1?'':'s'}`:
       `Hypothetical overall grade: ${planningFormat(result.value,rules,true)} · Posted: ${postedText} · ${count} hypothetical assignment change${count===1?'':'s'} · ${result.appliedReplacements.length} replacement${result.appliedReplacements.length===1?'':'s'}`;
     if(!error&&gradeLab.rounding)gradeLab.toolbar.querySelector('#ap-lab-result').textContent+=' · Approximate: some posted scores are rounded.';
+    const shownGrade=(percent,highPercent)=>ranged&&!error?bounds(labGrade(percent),labGrade(highPercent)):labGrade(percent);
+    const appliedGrade=(id,percent,highPercent)=>{
+      const entered=labGrade(assignmentPercent(rawAssignments.get(id)));
+      if(error||percent===null||(labGrade(percent)===entered&&(!ranged||labGrade(highPercent)===entered)))return '';
+      return ranged?shownGrade(percent,highPercent):`Applied: ${labGrade(percent)}`;
+    };
     for(const badge of gradeLab.badges)badge.remove();gradeLab.badges=[];
     for(const a of gradeLab.parsed.assignments){
       const modeled=lowAssignments.get(a.id),high=highAssignments.get(a.id),edited=gradeLab.edits.has(a.id)||gradeLab.ranges?.has(a.id);
       const percent=ranged&&error?null:assignmentPercent(modeled),highPercent=assignmentPercent(high);
       const unit=rules.averageMaximum?'average':'percent';
       const color=ranged?neutral:!db.settings.detailsColors||percent===null?null:detailsColor(unit==='average'?percent*rules.averageMaximum/100:percent,unit);
-      for(const c of gradeLab.editors.get(a.id)||[]){c.undo.disabled=!edited;c.earned.style.color=c.rawEarned.style.color=color||'';}
-      const percentCells=assignmentPercentCells(a),percentText=ranged&&!error?bounds(labGrade(percent),labGrade(highPercent)):labGrade(percent);
+      const percentCells=new Set(assignmentPercentCells(a)),percentText=shownGrade(percent,highPercent);
+      for(const c of gradeLab.editors.get(a.id)||[]){
+        c.undo.disabled=!edited;c.earned.style.color=c.rawEarned.style.color=color||'';
+        if(percentCells.delete(c.percentCell))renderLabPercentage(c,color,percentText,appliedGrade(a.id,percent,highPercent));
+      }
       for(const cell of percentCells)labValue(cell,percentText,color,undefined,true);
       if(edited)for(const cell of a.sourceNameCells||[]){const badge=labTag();badge.setAttribute('data-ap-owned','lab-badge');cell.append(badge);gradeLab.badges.push(badge);if(color)detailPaint(cell,color);}
       if(!error&&(modeled?.replacementSourceId||high?.replacementSourceId))for(const cell of a.sourceNameCells||[]){
@@ -4062,7 +4088,8 @@ const GradeDOM = (() => {
       const modeled=lowAssignments.get(a.id),high=highAssignments.get(a.id);
       const percent=ranged&&error?null:assignmentPercent(modeled),highPercent=assignmentPercent(high);
       const color=ranged?neutral:db.settings.detailsColors&&percent!==null?detailsColor(rules.averageMaximum?percent*rules.averageMaximum/100:percent,rules.averageMaximum?'average':'percent'):'';
-      controls.included.checked=a.included;controls.percent.textContent=ranged&&!error?bounds(labGrade(percent),labGrade(highPercent)):labGrade(percent);
+      controls.included.checked=a.included;
+      renderLabPercentage(controls,color,shownGrade(percent,highPercent),appliedGrade(a.id,percent,highPercent));
       for(const node of [controls.name,controls.earned,controls.rawEarned,controls.percent])node.style.color=color;
     }
     const categories=new Map((result?.categories||[]).map(c=>[c.name,c]));
