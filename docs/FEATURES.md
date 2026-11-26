@@ -275,7 +275,7 @@ The preview does not predict an earned score, alter the gradebook, change lab Co
 For a first scenario:
 
 1. [Check the posted baseline](#check-the-posted-baseline), then select **Start grade testing** in the toolbar or beneath an assignment's percentage. Either button starts testing for the whole gradebook.
-2. Change one existing **Score**, or select **Add hypothetical assignment**, give it a name/category, and enter earned/possible points.
+2. Edit the percentage already displayed on an assignment in table or card view. For a new scenario row, select **Add hypothetical assignment**, give it a name and category, and edit the percentage in its grade display. Set a positive **Score** total if one is needed.
 3. Read **Hypothetical overall grade** alongside **Posted**. Open **Explain my grade** to see the calculation.
 4. Use the row's **Reset** to undo that score, **Reset hypothetical changes** to clear scenario scores/ranges/additions, or **Exit grade testing** to restore the posted view.
 
@@ -291,6 +291,7 @@ The note appears under **Personal comment** in the table’s **Comment** column 
 
 | Control | Use |
 | --- | --- |
+| **Assignment percentage** | Edit the percentage in its existing place in the table, on the card, or in the grade display on an added assignment. |
 | **Score** | Earned / possible gradebook points. Directly entered points are not truncated by raw-score conversion. |
 | **Complete** | Number correct / total questions, or earned / total raw marks. Linked proportionally to Score. |
 | **Count** | Includes/excludes a row in the hypothetical calculation, including a locally re-included posted exclusion. A blank single score remains ungraded. |
@@ -299,15 +300,19 @@ The note appears under **Personal comment** in the table’s **Comment** column 
 | **Add hypothetical assignment** | Adds a temporary card with a name, category, score controls, Count, Range, and Remove. |
 | **Remove** | Deletes that hypothetical card; saved rules referencing it may then be unmatched. |
 
-Table/card controls for the same assignment stay synchronized. Raw scores convert proportionally to gradebook points **rounded down to two decimal places**: 2 correct out of 3 on a 10-point assignment becomes **6.66 / 10**. Use raw marks for unequal question values. If no raw total was read, supply it in Complete or enter points directly. An inferred raw equivalent may be approximate; leaving it unchanged does not round-trip the entered point value.
+Table and card controls for the same assignment stay synchronized. Entering **87.5%** on a 40-point assignment gives **35 / 40** and preserves the possible points and assignment weight. If you later change the **Score** total, the entered percentage stays fixed and earned points recalculate. Editing earned points in **Score** or raw marks in **Complete** switches the score to that unit.
 
-Blank is ungraded; zero is a real score. Scores and bounds must be nonnegative, with positive totals when counted. Values above the possible total are not automatically capped; only configured score limits restrict them. Enter ordinary decimal numbers without a percent sign, thousands separators, or scientific notation in Score, Complete, bounds, and target-planner fields.
+Raw scores convert proportionally to gradebook points, rounded down to two decimal places. For example, 2 correct out of 3 on a 10-point assignment becomes **6.66 / 10**. Use raw marks for unequal question values. If no raw total was read, supply it in **Complete** or enter points directly. An inferred raw equivalent may be approximate. Leaving it unchanged preserves the entered point value.
 
-Recognized four-point books use point controls and read-only Score denominators; added assignments also start with the detected four-point denominator. Selecting a different saved simulation scale does not change how the posted row editors were detected.
+Blank means ungraded. Zero counts as a score when **Count** is on, and extra-credit percentages follow the course's score limits. Use ordinary decimal numbers without thousands separators or scientific notation. Percentage scores and percentage bounds accept an optional `%` sign. A counted numeric score or range requires a positive **Score** total.
+
+Recognized four-point gradebooks use a fixed **Score** total of 4 for posted and added assignments. Percentage entry converts to that scale. Selecting a different saved simulation scale does not change how the posted row editors were detected.
 
 A counted scored or ranged hypothetical assignment needs a name and a category. Its category selector uses those already found in the gradebook, with an Uncategorized fallback when none exist; it cannot create an arbitrary new category. Names can contain up to 120 characters.
 
 As you edit, Playground overlays assignment grades, category totals, and the hypothetical overall result. The toolbar remains marked as testing, edited rows have **Hypothetical** badges, and the posted overall grade remains available for comparison. It does not generate a hypothetical teacher letter grade. Turning **Count** off excludes that row from the total and from score, total, name, and category validation. Its typed scores and bounds stay in the draft; turning Count back on validates them again. Other counted rows and the posted baseline must still be valid.
+
+Hypothetical score changes stay local to Playground. The lab never submits them to Aeries.
 
 Printing while testing is active can include hypothetical values. Exit testing first when you want to print the posted gradebook.
 
@@ -382,9 +387,9 @@ Rules save their policy and assignment references, not assignment scores. See [r
 
 Turn on **Range** beside one or more assignments. Enter **Lower bound** and **Upper bound**; the combined result updates automatically.
 
-- Percentage-based books offer **Bounds in → # correct / Points**. Raw bounds also need a positive **Out of** total. Four-point books use points.
+- Choose **Percentage (%)** under **Bounds in** to enter both bounds as percentages. **Points** is also available. Percentage-based gradebooks additionally offer **# correct**, which requires a positive **Out of** total.
 - Each endpoint retains its entered units and precision when you switch the displayed unit. Editing a raw total can change the conversion for raw-based bounds.
-- The single earned-score/Complete controls are disabled while Range is on. Score possible points remain editable where the detected gradebook permits it.
+- While **Range** is on, the bounds replace that row's percentage editor. Single earned-point and **Complete** controls are disabled. **Score** possible points remain editable where the detected gradebook permits it.
 - Bounds must be nonnegative and ordered, with positive totals. Count off removes the range from the endpoints and disables its bound controls.
 - The calculator evaluates all lower scores together and all upper scores together; other single scores stay fixed. It reapplies replacements, limits, weights, and final-grade rounding at both endpoints.
 - Invalid bounds, incomplete baseline data, unmatched saved rules, or an unfinished replacement entry make the combined result unavailable.
