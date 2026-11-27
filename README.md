@@ -1,6 +1,6 @@
 # Aeries Playground
 
-> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) and [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) are published prereleases.
+> **Available releases:** [v3.0.0](https://github.com/sodium-qed/aeries-playground/releases/latest) is the stable Latest release. The [v3.1.0 integration](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0), [v3.1.1 bonus-band update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1), and [v3.1.2 personal-comments update](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.2) are published prereleases.
 
 
 Make your Aeries dashboard easier to read, understand how assignments affect a grade, and try “what if?” scores in your browser. Aeries Playground is a userscript for the **MVLA Aeries student portal**, with an optional next-class panel for **Mountain View High School**.
@@ -22,6 +22,7 @@ Use a modern desktop browser with [Tampermonkey](https://www.tampermonkey.net/).
 | Download | What you are choosing |
 | --- | --- |
 | [Stable release](https://github.com/sodium-qed/aeries-playground/releases/latest) | **3.0.0** remains the verified stable Latest release. Open **Assets** and choose `aeries-playground.user.js`. |
+| [3.1.2 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.2) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.2/aeries-playground.user.js) | Adds locally stored personal assignment comments. This prerelease is distributed as a release asset; the moving `main` source currently identifies itself as 3.1.1. |
 | [3.1.1 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.1) · [Download userscript](https://github.com/sodium-qed/aeries-playground/releases/download/v3.1.1/aeries-playground.user.js) | Configurable purple score-5 band for grades above the bonus cutoff. |
 | [3.1.0 prerelease](https://github.com/sodium-qed/aeries-playground/releases/tag/v3.1.0) | The unified edition is available separately as a prerelease; use its tagged asset for a fixed version. |
 | [Install current source](https://github.com/sodium-qed/aeries-playground/raw/refs/heads/main/aeries-playground.user.js) | The moving `main` source includes the **3.1.1** bonus band. Later development can differ from the tagged prerelease asset. |
